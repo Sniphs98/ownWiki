@@ -1,7 +1,21 @@
 services:
+  app:
+    build: .
+    restart: always
+    ports:
+      - 3000:3000
+    env_file:
+      - .env
+    volumes:
+      - wikidata:/app/data
+
+  # Only needed when DATABASE_DIALECT=postgresql. The default (sqlite)
+  # setup needs nothing but the `app` service above.
+  # Start both with: docker compose --profile postgresql up
   db:
     image: postgres
     restart: always
+    profiles: [postgresql]
     ports:
       - 5432:5432
     environment:
@@ -10,5 +24,7 @@ services:
       POSTGRES_DB: local
     volumes:
       - pgdata:/var/lib/postgresql
+
 volumes:
   pgdata:
+  wikidata:
