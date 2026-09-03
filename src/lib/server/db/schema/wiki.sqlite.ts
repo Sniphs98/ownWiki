@@ -1,0 +1,73 @@
+import { relations, sql } from 'drizzle-orm';
+import { sqliteTable, text, integer, blob, uniqueIndex, index } from 'drizzle-orm/sqlite-core';
+import { user } from './auth.sqlite';
+
+const timestampMs = (name: string) =>
+	integer(name, { mode: 'timestamp_ms' }).default(
+		sql`(cast(unixepoch('subsecond') * 1000 as integer))`
+	);
+
+export const page = sqliteTable(
+	'page',
+	{
+		id: text('id').primaryKey(),
+		path: text('path').notNull(),
+		createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestampMs('created_at').notNull(),
+		updatedAt: timestampMs('updated_at')
+			.$onUpdate(() => new Date())
+			.notNull()
+	},
+	(table) => [uniqueIndex('page_path_uidx').on(table.path)]
+);
+
+export const pageVersion = sqliteTable(
+	'page_version',
+	{
+		id: text('id').primaryKey(),
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		versionNumber: integer('version_number').notNull(),
+		title: text('title').notNull(),
+		content: text('content').notNull(),
+		changeSummary: text('change_summary'),
+		authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestampMs('created_at').notNull()
+	},
+	(table) => [
+		uniqueIndex('page_version_page_id_version_number_uidx').on(table.pageId, table.versionNumber),
+		index('page_version_page_id_idx').on(table.pageId)
+	]
+);
+
+export const attachment = sqliteTable(
+	'attachment',
+	{
+		id: text('id').primaryKey(),
+		pageId: text('page_id').references(() => page.id, { onDelete: 'cascade' }),
+		filename: text('filename').notNull(),
+		mimeType: text('mime_type').notNull(),
+		size: integer('size').notNull(),
+		data: blob('data', { mode: 'buffer' }).notNull(),
+		uploadedBy: text('uploaded_by').references(() => user.id, { onDelete: 'set null' }),
+		createdAt: timestampMs('created_at').notNull()
+	},
+	(table) => [index('attachment_page_id_idx').on(table.pageId)]
+);
+
+export const pageRelations = relations(page, ({ many, one }) => ({
+	versions: many(pageVersion),
+	attachments: many(attachment),
+	createdByUser: one(user, { fields: [page.createdBy], references: [user.id] })
+}));
+
+export const pageVersionRelations = relations(pageVersion, ({ one }) => ({
+	page: one(page, { fields: [pageVersion.pageId], references: [page.id] }),
+	author: one(user, { fields: [pageVersion.authorId], references: [user.id] })
+}));
+
+export const attachmentRelations = relations(attachment, ({ one }) => ({
+	page: one(page, { fields: [attachment.pageId], references: [page.id] }),
+	uploadedByUser: one(user, { fields: [attachment.uploadedBy], references: [user.id] })
+}));
