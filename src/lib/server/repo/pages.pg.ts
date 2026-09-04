@@ -81,3 +81,11 @@ export async function addPageVersion(input: AddVersionInput): Promise<number> {
 
 	return versionNumber;
 }
+
+// page_version and attachment both reference page.id with onDelete: 'cascade',
+// so this also removes every version and attachment — including their
+// BLOB/bytea data, since attachments are stored inline rather than in
+// external object storage.
+export async function deletePage(pageId: string): Promise<void> {
+	await pg.delete(page).where(eq(page.id, pageId));
+}

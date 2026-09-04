@@ -8,5 +8,6 @@ export const getPageWithLatestVersion = impl.getPageWithLatestVersion;
 export const listVersions = impl.listVersions;
 export const createPage = impl.createPage;
 export const addPageVersion = impl.addPageVersion;
+export const deletePage = impl.deletePage;
 
 export type { PageSummary, CreatePageInput, AddVersionInput } from './pages.types';

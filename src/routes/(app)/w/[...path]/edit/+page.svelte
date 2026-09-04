@@ -2,6 +2,8 @@
 	import PageEditForm from '$lib/components/wiki/page-edit-form.svelte';
 
 	let { data, form } = $props();
+
+	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.path}/`)));
 </script>
 
 <div class="mx-auto max-w-3xl p-8">
@@ -10,6 +12,7 @@
 			path={data.path}
 			pageId={data.page?.id}
 			pageExists={data.page !== null}
+			{hasChildren}
 			existingTitle={data.prefillTitle}
 			existingContent={data.version?.content ?? ''}
 			attachments={data.attachments}

@@ -1,6 +1,11 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { requireEditAccess } from '$lib/server/require-edit-access';
-import { addPageVersion, createPage, getPageWithLatestVersion } from '$lib/server/repo/pages';
+import {
+	addPageVersion,
+	createPage,
+	deletePage,
+	getPageWithLatestVersion
+} from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -43,5 +48,16 @@ export const actions: Actions = {
 		}
 
 		redirect(303, `/w/${path}`);
+	},
+
+	delete: async (event) => {
+		requireEditAccess(event);
+
+		const existing = await getPageWithLatestVersion(event.params.path);
+		if (!existing) error(404, 'Seite nicht gefunden');
+
+		await deletePage(existing.page.id);
+
+		redirect(303, '/');
 	}
 };
