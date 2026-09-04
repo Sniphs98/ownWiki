@@ -16,13 +16,16 @@
 		event.preventDefault();
 		if (!path) return;
 		open = false;
-		const target = title.trim();
+		// Capture both before resetting `title` below — `path` is derived from
+		// it, so clearing `title` first would resolve against an empty path.
+		const targetPath = path;
+		const targetTitle = title.trim();
 		title = '';
 		const destination = new URL(
-			resolve('/(app)/w/[...path]/edit', { path }),
+			resolve('/(app)/w/[...path]/edit', { path: targetPath }),
 			window.location.origin
 		);
-		destination.searchParams.set('title', target);
+		destination.searchParams.set('title', targetTitle);
 		// The pathname is already resolved above; the rule can't see that
 		// through the URL object.
 		// eslint-disable-next-line svelte/no-navigation-without-resolve
@@ -42,7 +45,7 @@
 			<Field.FieldGroup>
 				<Field.Field>
 					<Field.FieldLabel for="new-page-title">Titel</Field.FieldLabel>
-					<Input id="new-page-title" bind:value={title} autofocus required />
+					<Input id="new-page-title" bind:value={title} required />
 					{#if path}
 						<Field.FieldDescription>Pfad: /w/{path}</Field.FieldDescription>
 					{/if}
