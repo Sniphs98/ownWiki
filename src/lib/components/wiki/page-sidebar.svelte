@@ -45,7 +45,7 @@
 						<p class="px-2 py-1.5 text-sm text-muted-foreground">Noch keine Seiten.</p>
 					{/if}
 					{#each tree as node (node.fullPath)}
-						<PageTreeItem {node} />
+						<PageTreeItem {node} {canEdit} />
 					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>

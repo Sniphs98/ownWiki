@@ -1,58 +1,101 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { deserialize } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { slugifyPath } from '$lib/slug';
+	import type { ActionResult } from '@sveltejs/kit';
 
-	let { open = $bindable(false) }: { open?: boolean } = $props();
+	let {
+		open = $bindable(false),
+		parentPath,
+		parentTitle
+	}: { open?: boolean; parentPath?: string; parentTitle?: string } = $props();
 
-	let title = $state('');
-	const path = $derived(slugifyPath(title));
+	let name = $state('');
+	let creating = $state(false);
+	let errorMessage = $state('');
 
-	function submit(event: SubmitEvent) {
+	const path = $derived.by(() => {
+		const slug = slugifyPath(name);
+		if (!slug) return '';
+		return parentPath ? `${parentPath}/${slug}` : slug;
+	});
+
+	async function submit(event: SubmitEvent) {
 		event.preventDefault();
-		if (!path) return;
-		open = false;
-		// Capture both before resetting `title` below — `path` is derived from
-		// it, so clearing `title` first would resolve against an empty path.
+		if (!path || creating) return;
+
+		creating = true;
+		errorMessage = '';
+
+		const targetTitle = name.trim();
 		const targetPath = path;
-		const targetTitle = title.trim();
-		title = '';
-		const destination = new URL(
-			resolve('/(app)/w/[...path]/edit', { path: targetPath }),
-			window.location.origin
-		);
-		destination.searchParams.set('title', targetTitle);
-		// The pathname is already resolved above; the rule can't see that
-		// through the URL object.
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
-		goto(destination);
+
+		const body = new FormData();
+		body.set('title', targetTitle);
+		body.set('content', `# ${targetTitle}\n\nSchreibe hier deinen Inhalt ...`);
+
+		const actionUrl = `${resolve('/(app)/w/[...path]/edit', { path: targetPath })}?/save`;
+		const response = await fetch(actionUrl, {
+			method: 'POST',
+			body,
+			headers: { 'x-sveltekit-action': 'true' }
+		});
+		const result: ActionResult = deserialize(await response.text());
+
+		creating = false;
+
+		if (result.type === 'failure') {
+			errorMessage =
+				(result.data as { message?: string } | undefined)?.message ?? 'Anlegen fehlgeschlagen.';
+			return;
+		}
+		if (result.type === 'error') {
+			errorMessage = 'Unerwarteter Fehler beim Anlegen.';
+			return;
+		}
+
+		name = '';
+		open = false;
+		await invalidateAll();
+		goto(resolve('/(app)/w/[...path]/edit', { path: targetPath }));
 	}
 </script>
 
 <Dialog.Root bind:open>
 	<Dialog.Content>
 		<Dialog.Header>
-			<Dialog.Title>Neue Seite</Dialog.Title>
+			<Dialog.Title>{parentPath ? 'Neue Unterseite' : 'Neue Seite'}</Dialog.Title>
 			<Dialog.Description>
-				Nutze "/" um die Seite in einem Ordner abzulegen, z. B. "Personal/Kündigung".
+				{#if parentPath}
+					Wird als Unterseite von „{parentTitle}" angelegt.
+				{:else}
+					Sie wird sofort mit einem Platzhaltertext angelegt — du kannst den Inhalt danach jederzeit
+					anpassen.
+				{/if}
 			</Dialog.Description>
 		</Dialog.Header>
 		<form onsubmit={submit}>
 			<Field.FieldGroup>
-				<Field.Field>
-					<Field.FieldLabel for="new-page-title">Titel</Field.FieldLabel>
-					<Input id="new-page-title" bind:value={title} required />
+				<Field.Field data-invalid={!!errorMessage}>
+					<Field.FieldLabel for="new-page-title">Name</Field.FieldLabel>
+					<Input id="new-page-title" bind:value={name} required />
 					{#if path}
-						<Field.FieldDescription>Pfad: /w/{path}</Field.FieldDescription>
+						<Field.FieldDescription>Adresse: /w/{path}</Field.FieldDescription>
+					{/if}
+					{#if errorMessage}
+						<Field.FieldError>{errorMessage}</Field.FieldError>
 					{/if}
 				</Field.Field>
 			</Field.FieldGroup>
 			<Dialog.Footer class="mt-4">
-				<Button type="submit" disabled={!path}>Erstellen</Button>
+				<Button type="submit" disabled={!path || creating}>
+					{creating ? 'Wird angelegt …' : 'Erstellen'}
+				</Button>
 			</Dialog.Footer>
 		</form>
 	</Dialog.Content>

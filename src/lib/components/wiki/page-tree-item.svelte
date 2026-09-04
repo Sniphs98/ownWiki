@@ -3,19 +3,22 @@
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import FolderIcon from '@lucide/svelte/icons/folder';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import PlusIcon from '@lucide/svelte/icons/plus';
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Sidebar from '$lib/components/ui/sidebar';
+	import NewPageDialog from './new-page-dialog.svelte';
 	import { resolve } from '$app/paths';
 	import { page as currentPage } from '$app/state';
 	import type { PageTreeNode } from '$lib/page-tree';
 
-	let { node }: { node: PageTreeNode } = $props();
+	let { node, canEdit = false }: { node: PageTreeNode; canEdit?: boolean } = $props();
 
 	const href = $derived(resolve('/(app)/w/[...path]', { path: node.fullPath }));
 	const isActive = $derived(currentPage.url.pathname === href);
 	const isAncestorOfActive = $derived(currentPage.url.pathname.startsWith(href + '/'));
 
 	let open = $state(isAncestorOfActive);
+	let addOpen = $state(false);
 </script>
 
 {#if node.children.length > 0}
@@ -41,6 +44,17 @@
 						{/snippet}
 					</Collapsible.Trigger>
 				{/if}
+				{#if canEdit}
+					<Sidebar.MenuAction
+						showOnHover
+						class="right-6"
+						title="Unterseite hinzufügen"
+						onclick={() => (addOpen = true)}
+					>
+						<PlusIcon />
+						<span class="sr-only">Unterseite hinzufügen</span>
+					</Sidebar.MenuAction>
+				{/if}
 				<Collapsible.Trigger>
 					{#snippet child({ props })}
 						<Sidebar.MenuAction
@@ -55,7 +69,7 @@
 			<Collapsible.Content>
 				<Sidebar.MenuSub class="mr-0 pr-0">
 					{#each node.children as child (child.fullPath)}
-						<Self node={child} />
+						<Self node={child} {canEdit} />
 					{/each}
 				</Sidebar.MenuSub>
 			</Collapsible.Content>
@@ -63,13 +77,33 @@
 	</Collapsible.Root>
 {:else}
 	<Sidebar.MenuItem>
-		<Sidebar.MenuButton {isActive}>
-			{#snippet child({ props })}
-				<a {...props} {href}>
-					<FileTextIcon />
-					<span>{node.page?.title ?? node.name}</span>
-				</a>
-			{/snippet}
-		</Sidebar.MenuButton>
+		<div class="flex items-center">
+			<Sidebar.MenuButton {isActive} class="flex-1">
+				{#snippet child({ props })}
+					<a {...props} {href}>
+						<FileTextIcon />
+						<span>{node.page?.title ?? node.name}</span>
+					</a>
+				{/snippet}
+			</Sidebar.MenuButton>
+			{#if canEdit}
+				<Sidebar.MenuAction
+					showOnHover
+					title="Unterseite hinzufügen"
+					onclick={() => (addOpen = true)}
+				>
+					<PlusIcon />
+					<span class="sr-only">Unterseite hinzufügen</span>
+				</Sidebar.MenuAction>
+			{/if}
+		</div>
 	</Sidebar.MenuItem>
+{/if}
+
+{#if canEdit}
+	<NewPageDialog
+		bind:open={addOpen}
+		parentPath={node.fullPath}
+		parentTitle={node.page?.title ?? node.name}
+	/>
 {/if}
