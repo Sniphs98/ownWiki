@@ -5,18 +5,24 @@
 	import { Input } from '$lib/components/ui/input';
 	import * as Field from '$lib/components/ui/field';
 	import MarkdownEditor from './markdown-editor.svelte';
+	import AttachmentsPanel from './attachments-panel.svelte';
+	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
 	let {
 		path,
+		pageId,
 		pageExists,
 		existingTitle,
 		existingContent,
+		attachments,
 		errorMessage
 	}: {
 		path: string;
+		pageId?: string;
 		pageExists: boolean;
 		existingTitle: string;
 		existingContent: string;
+		attachments: AttachmentMeta[];
 		errorMessage?: string;
 	} = $props();
 
@@ -61,7 +67,7 @@
 	<input type="hidden" name="content" value={content} />
 
 	<div class="mt-4">
-		<MarkdownEditor bind:value={content} />
+		<MarkdownEditor bind:value={content} {pageId} />
 	</div>
 
 	<div class="mt-4 flex items-center justify-end gap-2">
@@ -74,3 +80,13 @@
 		<Button type="submit" disabled={saving}>{saving ? 'Speichert …' : 'Speichern'}</Button>
 	</div>
 </form>
+
+{#if pageId}
+	<div class="mt-6">
+		<AttachmentsPanel {pageId} {attachments} canEdit={true} />
+	</div>
+{:else}
+	<p class="mt-6 text-sm text-muted-foreground">
+		Speichere die Seite einmal, um Bilder einzufügen oder Dateien anzuhängen.
+	</p>
+{/if}

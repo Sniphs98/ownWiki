@@ -2,6 +2,7 @@
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
+	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
@@ -30,5 +31,11 @@
 			</Button>
 		{/if}
 	</div>
-	<MarkdownEditor value={data.version.content} readonly />
+	<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+
+	{#if canEdit || data.attachments.length > 0}
+		<div class="mt-6">
+			<AttachmentsPanel pageId={data.page.id} attachments={data.attachments} {canEdit} />
+		</div>
+	{/if}
 </div>

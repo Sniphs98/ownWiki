@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { getPageWithLatestVersion } from '$lib/server/repo/pages';
+import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -8,6 +9,7 @@ export const load: PageServerLoad = async (event) => {
 
 	return {
 		page: result.page,
-		version: result.version
+		version: result.version,
+		attachments: await listAttachmentsForPage(result.page.id)
 	};
 };

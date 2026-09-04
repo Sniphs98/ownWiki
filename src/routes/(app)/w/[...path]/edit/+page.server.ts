@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { requireEditAccess } from '$lib/server/require-edit-access';
 import { addPageVersion, createPage, getPageWithLatestVersion } from '$lib/server/repo/pages';
+import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -13,7 +14,8 @@ export const load: PageServerLoad = async (event) => {
 		path,
 		page: existing?.page ?? null,
 		version: existing?.version ?? null,
-		prefillTitle: existing?.version.title ?? event.url.searchParams.get('title') ?? ''
+		prefillTitle: existing?.version.title ?? event.url.searchParams.get('title') ?? '',
+		attachments: existing ? await listAttachmentsForPage(existing.page.id) : []
 	};
 };
 

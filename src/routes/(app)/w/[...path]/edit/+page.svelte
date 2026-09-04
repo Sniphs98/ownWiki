@@ -8,9 +8,11 @@
 	{#key data.path}
 		<PageEditForm
 			path={data.path}
+			pageId={data.page?.id}
 			pageExists={data.page !== null}
 			existingTitle={data.prefillTitle}
 			existingContent={data.version?.content ?? ''}
+			attachments={data.attachments}
 			errorMessage={form?.message}
 		/>
 	{/key}
