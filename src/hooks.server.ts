@@ -1,9 +1,24 @@
 import type { Handle } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
+import { authMode } from '$lib/server/auth-mode';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
-const handleBetterAuth: Handle = async ({ event, resolve }) => {
+// Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
+// log in on a `full` (private) wiki.
+const PUBLIC_PATHS = new Set(['/login']);
+const PUBLIC_PATH_PREFIXES = ['/api/auth/'];
+
+function isPublicPath(pathname: string) {
+	return (
+		PUBLIC_PATHS.has(pathname) || PUBLIC_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+	);
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const handleAuth: Handle = async ({ event, resolve }) => {
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
 	if (session) {
@@ -11,7 +26,22 @@ const handleBetterAuth: Handle = async ({ event, resolve }) => {
 		event.locals.user = session.user;
 	}
 
+	event.locals.authMode = authMode;
+
+	if (!building && !isPublicPath(event.url.pathname)) {
+		const requiresAuth =
+			authMode === 'full' || (authMode === 'read-only' && WRITE_METHODS.has(event.request.method));
+
+		if (requiresAuth && !session) {
+			if (event.request.headers.get('accept')?.includes('text/html')) {
+				const redirectTo = event.url.pathname + event.url.search;
+				redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+			}
+			error(401, 'Authentication required');
+		}
+	}
+
 	return svelteKitHandler({ event, resolve, auth, building });
 };
 
-export const handle: Handle = handleBetterAuth;
+export const handle: Handle = handleAuth;
