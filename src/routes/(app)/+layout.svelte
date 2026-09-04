@@ -3,6 +3,7 @@
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
 	import PageSidebar from '$lib/components/wiki/page-sidebar.svelte';
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
+	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
@@ -49,7 +50,8 @@
 					</Breadcrumb.List>
 				</Breadcrumb.Root>
 			{/if}
-			<div class="ml-auto">
+			<div class="ml-auto flex items-center gap-1">
+				<ThemeToggle />
 				<UserMenu user={data.user} />
 			</div>
 		</header>

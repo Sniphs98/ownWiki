@@ -5,6 +5,7 @@
 	import * as Field from '$lib/components/ui/field';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
+	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import type { ActionData } from './$types';
 
 	let { form }: { form: ActionData } = $props();
@@ -20,7 +21,10 @@
 	<title>Anmelden</title>
 </svelte:head>
 
-<div class="flex min-h-svh items-center justify-center p-4">
+<div class="relative flex min-h-svh items-center justify-center p-4">
+	<div class="absolute top-4 right-4">
+		<ThemeToggle />
+	</div>
 	<Card.Root class="w-full max-w-sm">
 		<Card.Header>
 			<Card.Title>Willkommen</Card.Title>
