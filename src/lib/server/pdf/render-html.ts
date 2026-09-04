@@ -95,20 +95,37 @@ const PRINT_STYLES = `
 		color: #1a1a1a;
 		line-height: 1.6;
 		font-size: 11pt;
+		orphans: 3;
+		widows: 3;
 	}
-	h1, h2, h3, h4, h5, h6 { font-weight: 600; line-height: 1.25; margin: 1.4em 0 0.5em; }
+	h1, h2, h3, h4, h5, h6 {
+		font-weight: 600;
+		line-height: 1.25;
+		margin: 1.4em 0 0.5em;
+		break-after: avoid;
+		break-inside: avoid;
+	}
 	h1 { font-size: 22pt; border-bottom: 1px solid #ddd; padding-bottom: 0.3em; }
 	h2 { font-size: 16pt; }
 	h3 { font-size: 13pt; }
 	p, ul, ol, blockquote, table { margin: 0.6em 0; }
 	a { color: #2563eb; text-decoration: none; }
 	code { font-family: 'Cascadia Code', Consolas, monospace; background: #f1f1f1; padding: 0.1em 0.35em; border-radius: 4px; font-size: 0.9em; }
-	pre { background: #f5f5f5; padding: 0.8em 1em; border-radius: 6px; overflow-x: auto; }
+	pre {
+		background: #f5f5f5;
+		padding: 0.8em 1em;
+		border-radius: 6px;
+		overflow-x: auto;
+		break-inside: avoid;
+	}
 	pre code { background: none; padding: 0; }
-	blockquote { border-left: 3px solid #ddd; margin-left: 0; padding-left: 1em; color: #555; }
-	table { border-collapse: collapse; width: 100%; }
+	blockquote { border-left: 3px solid #ddd; margin-left: 0; padding-left: 1em; color: #555; break-inside: avoid; }
+	table { border-collapse: collapse; width: 100%; break-inside: auto; }
+	tr { break-inside: avoid; break-after: auto; }
+	thead { display: table-header-group; }
 	th, td { border: 1px solid #ddd; padding: 0.4em 0.7em; text-align: left; }
-	img { max-width: 100%; }
+	img { max-width: 100%; break-inside: avoid; }
+	li { break-inside: avoid; }
 	.wiki-chapter { page-break-before: always; }
 	.wiki-chapter:first-child { page-break-before: avoid; }
 	.wiki-chapter-title { font-size: 22pt; font-weight: 700; margin: 0 0 0.2em; }
