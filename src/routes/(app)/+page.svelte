@@ -1,5 +1,6 @@
 <script lang="ts">
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
+	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import * as Empty from '$lib/components/ui/empty';
 	import { Button } from '$lib/components/ui/button';
 	import { resolve } from '$app/paths';
@@ -33,7 +34,13 @@
 			</Empty.Header>
 		</Empty.Root>
 	{:else}
-		<h1 class="mb-4 text-2xl font-semibold">Seiten</h1>
+		<div class="mb-4 flex items-center justify-between">
+			<h1 class="text-2xl font-semibold">Seiten</h1>
+			<Button href="/api/pdf" variant="outline" size="sm">
+				<FileDownIcon data-icon="inline-start" />
+				Ganzes Wiki als PDF
+			</Button>
+		</div>
 		<ul class="flex flex-col gap-1">
 			{#each topLevel as node (node.fullPath)}
 				<li>

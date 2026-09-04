@@ -28,6 +28,11 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/scripts ./scripts
+# Chromium for server-side PDF export (src/lib/server/pdf) — the biggest
+# single contributor to this image's size, but it's what lets a click on
+# "Als PDF exportieren" render an accurate, styled PDF entirely server-side.
+RUN node node_modules/playwright/cli.js install --with-deps chromium \
+	&& rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /app/data
 VOLUME ["/app/data"]
 EXPOSE 3000

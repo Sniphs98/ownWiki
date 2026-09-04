@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import HistoryIcon from '@lucide/svelte/icons/history';
+	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
 	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
@@ -9,6 +10,7 @@
 	let { data } = $props();
 
 	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
+	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.page.path}/`)));
 </script>
 
 <svelte:head>
@@ -29,7 +31,25 @@
 				· zuletzt geändert am {data.page.updatedAt.toLocaleString('de-DE')}
 			</p>
 		</div>
-		<div class="flex shrink-0 gap-2">
+		<div class="flex shrink-0 items-center gap-2">
+			<div class="flex flex-col items-end">
+				<Button href="/api/pdf/{data.page.path}" variant="ghost">
+					<FileDownIcon data-icon="inline-start" />
+					PDF
+				</Button>
+				{#if hasChildren}
+					<!-- File download, not an SPA navigation; resolve() has no route
+						for a raw query-string suffix like this. -->
+					<!-- eslint-disable svelte/no-navigation-without-resolve -->
+					<a
+						href="/api/pdf/{data.page.path}?scope=subtree"
+						class="text-xs text-muted-foreground hover:underline"
+					>
+						mit Unterseiten
+					</a>
+					<!-- eslint-enable svelte/no-navigation-without-resolve -->
+				{/if}
+			</div>
 			<Button
 				href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
 				variant="ghost"
