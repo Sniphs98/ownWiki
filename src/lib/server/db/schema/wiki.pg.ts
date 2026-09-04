@@ -21,6 +21,9 @@ export const page = pgTable(
 	{
 		id: text('id').primaryKey(),
 		path: text('path').notNull(),
+		// Denormalized from the latest page_version, so the sidebar and page
+		// listing don't need a join/window-function per page.
+		title: text('title').notNull(),
 		createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')

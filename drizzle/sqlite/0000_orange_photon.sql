@@ -70,6 +70,7 @@ CREATE INDEX `attachment_page_id_idx` ON `attachment` (`page_id`);--> statement-
 CREATE TABLE `page` (
 	`id` text PRIMARY KEY NOT NULL,
 	`path` text NOT NULL,
+	`title` text NOT NULL,
 	`created_by` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,

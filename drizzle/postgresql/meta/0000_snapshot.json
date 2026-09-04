@@ -1,5 +1,5 @@
 {
-  "id": "e66a13ba-a928-41f9-b703-f9e4da48d5fb",
+  "id": "9f4b736a-ffa5-4bd4-9203-082e45bc8f0e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -503,6 +503,12 @@
         },
         "path": {
           "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true

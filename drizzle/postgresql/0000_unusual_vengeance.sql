@@ -61,6 +61,7 @@ CREATE TABLE "attachment" (
 CREATE TABLE "page" (
 	"id" text PRIMARY KEY NOT NULL,
 	"path" text NOT NULL,
+	"title" text NOT NULL,
 	"created_by" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
