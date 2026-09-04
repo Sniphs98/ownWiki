@@ -68,7 +68,9 @@
 			{/if}
 		</div>
 	</div>
-	<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+	{#key data.version.id}
+		<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+	{/key}
 
 	{#if canEdit || data.attachments.length > 0}
 		<div class="mt-6">
