@@ -21,7 +21,11 @@ const EDITOR_CHROME_SELECTORS = [
 	'.milkdown-table-block .cell-handle',
 	'.milkdown-table-block .line-handle',
 	// The edit button on diagrams.
-	'[data-diagram-edit]'
+	'[data-diagram-edit]',
+	// The source editor of a code block that shows its preview instead (a
+	// diagram): invisible, but a large diagram's source is thousands of
+	// lines that pagedjs would still try to lay out.
+	'.milkdown-code-block .codemirror-host.hidden'
 ];
 
 /**

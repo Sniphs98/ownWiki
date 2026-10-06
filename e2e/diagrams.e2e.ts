@@ -77,3 +77,26 @@ test('an Excalidraw drawing can be inserted, drawn and saved', async ({ page, ba
 	});
 	expect(external).toEqual([]);
 });
+
+test('a diagram that starts a PDF page gets its page-break marker', async ({ page }) => {
+	// Seeded: three paragraphs, then a BPMN diagram without any text that is
+	// too tall to fit below them, so it starts page 2.
+	const path = 'e2e/diagram-break';
+	await page.goto(`/print/${path}`);
+	await page.locator('body[data-print-ready="true"]').waitFor({ state: 'attached' });
+	const sheets = page.locator('.pagedjs_page');
+	await expect(sheets.nth(0).locator('.wiki-diagram')).toHaveCount(0);
+	await expect(sheets.nth(1).locator('.wiki-diagram[data-diagram="bpmn"]')).toHaveCount(1);
+	// The diagram's hidden source editor is not laid out at all.
+	await expect(page.locator('.pagedjs_pages .codemirror-host')).toHaveCount(0);
+
+	await page.setViewportSize({ width: 1400, height: 900 });
+	await page.goto(`/w/${path}`);
+	const marker = page.locator('[data-page-break="2"]');
+	await expect(marker).toBeAttached({ timeout: 15_000 });
+	const markerTop = await marker.evaluate((el) => el.getBoundingClientRect().top);
+	const diagramTop = await page
+		.locator('.wiki-diagram[data-diagram="bpmn"]')
+		.evaluate((el) => el.getBoundingClientRect().top);
+	expect(Math.abs(markerTop - diagramTop)).toBeLessThan(12);
+});

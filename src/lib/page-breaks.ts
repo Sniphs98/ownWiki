@@ -84,10 +84,14 @@ export async function measurePageBreaks(
 			const textOffset = start.splitText
 				? Math.max(0, (element.textContent ?? '').length - (start.copy.textContent ?? '').length)
 				: null;
-			const startText = (codeLine ? (start.copy.textContent ?? '') : (element.textContent ?? ''))
-				.slice(textOffset ?? 0)
-				.trim()
-				.slice(0, 40);
+			// The copy, not the live element: it has no editor controls (e.g. a
+			// diagram's "Bearbeiten" button). Only a split paragraph needs the
+			// live text, as the offset is counted there.
+			const text =
+				textOffset === null
+					? (start.copy.textContent ?? '')
+					: (element.textContent ?? '').slice(textOffset);
+			const startText = text.trim().slice(0, 40);
 			breaks.push({ page: i + 1, element, textOffset, startText, codeLine });
 		}
 		return breaks;
@@ -109,7 +113,7 @@ function findPageStart(content: Element): { copy: Element; splitText: boolean } 
 			(el) =>
 				!el.hasAttribute(REPEATED_HEADER_ATTR) &&
 				!el.hasAttribute(PRINT_GUTTER_ATTR) &&
-				el.textContent?.trim()
+				hasVisibleContent(el)
 		);
 		if (!child) return null;
 
@@ -120,6 +124,13 @@ function findPageStart(content: Element): { copy: Element; splitText: boolean } 
 		if (isCopy && startsWithText(child)) return { copy: child, splitText: true };
 		node = child;
 	}
+}
+
+/** Text, or graphics without text — a diagram or image can start a page too. */
+const GRAPHICS = 'svg, img, canvas, video, hr';
+
+function hasVisibleContent(el: Element): boolean {
+	return !!el.textContent?.trim() || el.matches(GRAPHICS) || !!el.querySelector(GRAPHICS);
 }
 
 function startsWithText(el: Element): boolean {

@@ -14,6 +14,8 @@ import { EditorView } from '@codemirror/view';
 export function renderAllCodeLines(root: Element): () => void {
 	const views: PrintableView[] = [];
 	for (const dom of root.querySelectorAll<HTMLElement>('.cm-editor')) {
+		// Hidden behind a preview (diagrams): never printed, see print-dom.ts.
+		if (dom.closest('.codemirror-host.hidden')) continue;
 		const view = EditorView.findFromDOM(dom) as PrintableView | null;
 		if (!view?.viewState) continue;
 		view.viewState.printing = true;
