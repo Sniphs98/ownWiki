@@ -99,4 +99,16 @@
 	.milkdown-editor-root :global(.milkdown) {
 		--crepe-color-background: transparent;
 	}
+
+	/* Crepe's default 60px/120px padding would shrink the text column below
+	   the width the surrounding page sets (PRINT_TEXT_WIDTH) — drop it so
+	   the editor, the page view and the PDF all wrap text identically. */
+	.milkdown-editor-root :global(.milkdown .ProseMirror) {
+		padding: 0;
+	}
+
+	/* Keep some room to click into when editing an (almost) empty page. */
+	.milkdown-editor-root :global(.milkdown .ProseMirror[contenteditable='true']) {
+		min-height: 12rem;
+	}
 </style>

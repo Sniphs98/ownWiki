@@ -1,5 +1,12 @@
 <script lang="ts">
 	import MarkdownEditor from './markdown-editor.svelte';
+	import PageHeader from './page-header.svelte';
+	import {
+		PRINT_MARGIN_X_MM,
+		PRINT_MARGIN_Y_MM,
+		PRINT_PAGE_SIZE,
+		PRINT_TEXT_WIDTH
+	} from '$lib/print-layout';
 	import type { PrintablePage } from '$lib/server/pdf/printable-pages';
 
 	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
@@ -25,8 +32,8 @@
 	// parser doesn't understand.
 	const PRINT_CSS = `
 		@page {
-			size: A4;
-			margin: 20mm 16mm;
+			size: ${PRINT_PAGE_SIZE};
+			margin: ${PRINT_MARGIN_Y_MM}mm ${PRINT_MARGIN_X_MM}mm;
 
 			@bottom-center {
 				content: counter(page) ' / ' counter(pages);
@@ -38,18 +45,6 @@
 
 		.wiki-chapter { break-before: page; }
 		.wiki-chapter:first-child { break-before: avoid; }
-		.wiki-chapter-title {
-			font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
-			font-size: 22pt;
-			font-weight: 700;
-			margin: 0 0 0.2em;
-		}
-		.wiki-chapter-path {
-			font-family: 'Cascadia Code', Consolas, 'Fira Code', monospace;
-			color: #4f4539;
-			font-size: 9pt;
-			margin: 0 0 1.5em;
-		}
 		.wiki-cover { text-align: center; padding-top: 30vh; break-after: page; }
 		.wiki-cover h1 { font-family: Georgia, Cambria, 'Times New Roman', Times, serif; font-size: 28pt; }
 		.wiki-cover p { color: #4f4539; }
@@ -97,7 +92,7 @@
 </svelte:head>
 
 {#if !hideSource}
-	<div bind:this={sourceEl} class="print-source">
+	<div bind:this={sourceEl} class="print-source" style:width={PRINT_TEXT_WIDTH}>
 		{#if isMulti}
 			<div class="wiki-cover">
 				<h1>{wikiTitle}</h1>
@@ -106,10 +101,7 @@
 		{/if}
 		{#each pages as p (p.path)}
 			<div class="wiki-chapter">
-				{#if isMulti}
-					<p class="wiki-chapter-path">/w/{p.path}</p>
-					<h1 class="wiki-chapter-title">{p.title}</h1>
-				{/if}
+				<PageHeader title={p.title} versionNumber={p.versionNumber} updatedAt={p.updatedAt} />
 				<MarkdownEditor value={p.content} readonly onready={onChapterReady} />
 			</div>
 		{/each}
@@ -138,6 +130,5 @@
 		position: absolute;
 		top: 0;
 		left: -99999px;
-		width: 178mm;
 	}
 </style>

@@ -6,6 +6,8 @@ export interface PrintablePage {
 	title: string;
 	path: string;
 	content: string;
+	versionNumber: number;
+	updatedAt: Date;
 }
 
 export interface PrintableResult {
@@ -20,7 +22,7 @@ const ATTACHMENT_MD_PATTERN = /\]\(\/api\/files\/([a-f0-9-]{36})\)/g;
  * the markdown source, before it's handed to Crepe. Keeps the print route
  * fully self-contained (no authenticated fetch back to /api/files needed
  * from the PDF generator's loopback browser context) — mirrors the image
- * inlining the old marked-based renderer used to do on the rendered HTML.
+ * inlining the previous server-side renderer did on its rendered HTML.
  */
 async function inlineAttachmentImages(markdown: string): Promise<string> {
 	const ids = [...markdown.matchAll(ATTACHMENT_MD_PATTERN)].map((m) => m[1]);
@@ -69,7 +71,13 @@ export async function resolvePrintablePages(
 		if (!found) continue;
 		const withLinks = resolveWikiLinks(found.version.content, allPages);
 		const withImages = await inlineAttachmentImages(withLinks);
-		pages.push({ title: found.version.title, path: found.page.path, content: withImages });
+		pages.push({
+			title: found.version.title,
+			path: found.page.path,
+			content: withImages,
+			versionNumber: found.version.versionNumber,
+			updatedAt: found.page.updatedAt
+		});
 	}
 
 	return { pages, wikiTitle: result.page.title };
@@ -85,7 +93,13 @@ export async function resolveAllPrintablePages(): Promise<PrintableResult> {
 		if (!found) continue;
 		const withLinks = resolveWikiLinks(found.version.content, allPages);
 		const withImages = await inlineAttachmentImages(withLinks);
-		pages.push({ title: found.version.title, path: found.page.path, content: withImages });
+		pages.push({
+			title: found.version.title,
+			path: found.page.path,
+			content: withImages,
+			versionNumber: found.version.versionNumber,
+			updatedAt: found.page.updatedAt
+		});
 	}
 
 	return { pages, wikiTitle: 'ownWiki' };

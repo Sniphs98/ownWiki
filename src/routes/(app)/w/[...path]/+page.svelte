@@ -6,6 +6,8 @@
 	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
 	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
+	import PageHeader from '$lib/components/wiki/page-header.svelte';
+	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
 
 	let { data } = $props();
@@ -18,61 +20,56 @@
 	<title>{data.version.title} · ownWiki</title>
 </svelte:head>
 
-<div class="mx-auto w-[210mm] max-w-full p-8">
-	<div class="mb-6 flex items-start justify-between gap-4">
-		<div>
-			<h1 class="text-3xl font-bold">{data.version.title}</h1>
-			<p class="text-sm text-muted-foreground">
+<div
+	class="mx-auto box-content max-w-[calc(100%-4rem)] p-8"
+	style:width={PRINT_TEXT_WIDTH}
+>
+	<div class="mb-2 flex flex-wrap items-start justify-end gap-2">
+		<div class="flex flex-col items-end">
+			<Button href="/api/pdf/{data.page.path}" variant="ghost">
+				<FileDownIcon data-icon="inline-start" />
+				PDF
+			</Button>
+			{#if hasChildren}
+				<!-- File download, not an SPA navigation; resolve() has no route
+					for a raw query-string suffix like this. -->
+				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
-					href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
-					class="hover:underline"
+					href="/api/pdf/{data.page.path}?scope=subtree"
+					class="text-xs text-muted-foreground hover:underline"
 				>
-					Version {data.version.versionNumber}
+					mit Unterseiten
 				</a>
-				· zuletzt geändert am {data.page.updatedAt.toLocaleString('de-DE')}
-			</p>
-		</div>
-		<div class="flex shrink-0 items-center gap-2">
-			<div class="flex flex-col items-end">
-				<Button href="/api/pdf/{data.page.path}" variant="ghost">
-					<FileDownIcon data-icon="inline-start" />
-					PDF
-				</Button>
-				{#if hasChildren}
-					<!-- File download, not an SPA navigation; resolve() has no route
-						for a raw query-string suffix like this. -->
-					<!-- eslint-disable svelte/no-navigation-without-resolve -->
-					<a
-						href="/api/pdf/{data.page.path}?scope=subtree"
-						class="text-xs text-muted-foreground hover:underline"
-					>
-						mit Unterseiten
-					</a>
-					<!-- eslint-enable svelte/no-navigation-without-resolve -->
-				{/if}
-			</div>
-			<Button href="/print/{data.page.path}" target="_blank" variant="ghost">
-				<BookOpenIcon data-icon="inline-start" />
-				Seitenweise
-			</Button>
-			<Button
-				href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
-				variant="ghost"
-			>
-				<HistoryIcon data-icon="inline-start" />
-				Verlauf
-			</Button>
-			{#if canEdit}
-				<Button
-					href={resolve('/(app)/w/[...path]/edit', { path: data.page.path })}
-					variant="outline"
-				>
-					<PencilIcon data-icon="inline-start" />
-					Bearbeiten
-				</Button>
+				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			{/if}
 		</div>
+		<Button href="/print/{data.page.path}" target="_blank" variant="ghost">
+			<BookOpenIcon data-icon="inline-start" />
+			Seitenweise
+		</Button>
+		<Button
+			href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
+			variant="ghost"
+		>
+			<HistoryIcon data-icon="inline-start" />
+			Verlauf
+		</Button>
+		{#if canEdit}
+			<Button
+				href={resolve('/(app)/w/[...path]/edit', { path: data.page.path })}
+				variant="outline"
+			>
+				<PencilIcon data-icon="inline-start" />
+				Bearbeiten
+			</Button>
+		{/if}
 	</div>
+	<PageHeader
+		title={data.version.title}
+		versionNumber={data.version.versionNumber}
+		updatedAt={data.page.updatedAt}
+		historyHref={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
+	/>
 	{#key data.version.id}
 		<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
 	{/key}
