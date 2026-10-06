@@ -118,6 +118,32 @@
 		--crepe-font-code: 'Fira Code Variable', Menlo, Monaco, 'Courier New', monospace;
 	}
 
+	/* Only Crepe's light theme is loaded; in the app's dark mode, swap in the
+	   colors of its dark theme (@milkdown/crepe/theme/classic-dark.css).
+	   Printing always uses the light theme (print-preview.svelte). */
+	:global(.dark) .milkdown-editor-root :global(.milkdown) {
+		--crepe-color-on-background: #eae1d9;
+		--crepe-color-surface: #18120b;
+		--crepe-color-surface-low: #201b13;
+		--crepe-color-on-surface: #ede0d4;
+		--crepe-color-on-surface-variant: #d3c4b4;
+		--crepe-color-outline: #9c8f80;
+		--crepe-color-primary: #f4bd6f;
+		--crepe-color-secondary: #56442a;
+		--crepe-color-on-secondary: #fbdebc;
+		--crepe-color-inverse: #ede0d4;
+		--crepe-color-on-inverse: #362f27;
+		--crepe-color-inline-code: #ffb4ab;
+		--crepe-color-error: #ffb4ab;
+		--crepe-color-hover: #251f17;
+		--crepe-color-selected: #3b342b;
+		--crepe-color-inline-area: #3f3830;
+		--crepe-shadow-1:
+			0px 1px 2px 0px rgba(255, 255, 255, 0.3), 0px 1px 3px 1px rgba(255, 255, 255, 0.15);
+		--crepe-shadow-2:
+			0px 1px 2px 0px rgba(255, 255, 255, 0.3), 0px 2px 6px 2px rgba(255, 255, 255, 0.15);
+	}
+
 	/* Crepe's default 60px/120px padding would shrink the text column below
 	   the width the surrounding page sets (PRINT_TEXT_WIDTH) — drop it so
 	   the editor, the page view and the PDF all wrap text identically. */
