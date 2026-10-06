@@ -20,10 +20,7 @@
 	<title>{data.version.title} · ownWiki</title>
 </svelte:head>
 
-<div
-	class="mx-auto box-content max-w-[calc(100%-4rem)] p-8"
-	style:width={PRINT_TEXT_WIDTH}
->
+<div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>
 	<div class="mb-2 flex flex-wrap items-start justify-end gap-2">
 		<div class="flex flex-col items-end">
 			<Button href="/api/pdf/{data.page.path}" variant="ghost">
@@ -47,18 +44,12 @@
 			<BookOpenIcon data-icon="inline-start" />
 			Seitenweise
 		</Button>
-		<Button
-			href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
-			variant="ghost"
-		>
+		<Button href={resolve('/(app)/w/[...path]/history', { path: data.page.path })} variant="ghost">
 			<HistoryIcon data-icon="inline-start" />
 			Verlauf
 		</Button>
 		{#if canEdit}
-			<Button
-				href={resolve('/(app)/w/[...path]/edit', { path: data.page.path })}
-				variant="outline"
-			>
+			<Button href={resolve('/(app)/w/[...path]/edit', { path: data.page.path })} variant="outline">
 				<PencilIcon data-icon="inline-start" />
 				Bearbeiten
 			</Button>

@@ -7,10 +7,7 @@
 	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.path}/`)));
 </script>
 
-<div
-	class="mx-auto box-content max-w-[calc(100%-4rem)] p-8"
-	style:width={PRINT_TEXT_WIDTH}
->
+<div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>
 	{#key data.path}
 		<PageEditForm
 			path={data.path}
