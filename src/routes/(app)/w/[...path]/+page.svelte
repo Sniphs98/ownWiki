@@ -2,6 +2,7 @@
 	import PencilIcon from '@lucide/svelte/icons/pencil';
 	import HistoryIcon from '@lucide/svelte/icons/history';
 	import FileDownIcon from '@lucide/svelte/icons/file-down';
+	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
 	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
@@ -17,7 +18,7 @@
 	<title>{data.version.title} · ownWiki</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl p-8">
+<div class="mx-auto w-[210mm] max-w-full p-8">
 	<div class="mb-6 flex items-start justify-between gap-4">
 		<div>
 			<h1 class="text-3xl font-bold">{data.version.title}</h1>
@@ -50,6 +51,10 @@
 					<!-- eslint-enable svelte/no-navigation-without-resolve -->
 				{/if}
 			</div>
+			<Button href="/print/{data.page.path}" target="_blank" variant="ghost">
+				<BookOpenIcon data-icon="inline-start" />
+				Seitenweise
+			</Button>
 			<Button
 				href={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
 				variant="ghost"

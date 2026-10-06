@@ -36,10 +36,16 @@
 	{:else}
 		<div class="mb-4 flex items-center justify-between">
 			<h1 class="text-2xl font-semibold">Seiten</h1>
-			<Button href="/api/pdf" variant="outline" size="sm">
-				<FileDownIcon data-icon="inline-start" />
-				Ganzes Wiki als PDF
-			</Button>
+			<div class="flex items-center gap-2">
+				<Button href="/print" target="_blank" variant="ghost" size="sm">
+					<BookOpenIcon data-icon="inline-start" />
+					Seitenweise Vorschau
+				</Button>
+				<Button href="/api/pdf" variant="outline" size="sm">
+					<FileDownIcon data-icon="inline-start" />
+					Ganzes Wiki als PDF
+				</Button>
+			</div>
 		</div>
 		<ul class="flex flex-col gap-1">
 			{#each topLevel as node (node.fullPath)}

@@ -6,13 +6,16 @@
 		value = $bindable(''),
 		readonly = false,
 		placeholder = 'Tippe "/" für Befehle …',
-		pageId
+		pageId,
+		onready
 	}: {
 		value?: string;
 		readonly?: boolean;
 		placeholder?: string;
 		/** Enables image upload/paste/drag-drop once the page has an id (i.e. exists). */
 		pageId?: string;
+		/** Fires once the Crepe instance has finished mounting. */
+		onready?: () => void;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -76,6 +79,7 @@
 			}
 
 			crepe = instance;
+			onready?.();
 		})();
 
 		return () => {

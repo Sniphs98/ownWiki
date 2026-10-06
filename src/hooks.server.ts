@@ -3,6 +3,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { authMode } from '$lib/server/auth-mode';
+import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from '$lib/server/pdf/internal-token';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
@@ -32,7 +33,14 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 		const requiresAuth =
 			authMode === 'full' || (authMode === 'read-only' && WRITE_METHODS.has(event.request.method));
 
-		if (requiresAuth && !session) {
+		// The PDF generator (generate-pdf.ts) navigates here from a loopback
+		// Playwright browser to render /print/... for screenshotting — it has
+		// no real session, so it authenticates with this process-local secret
+		// instead.
+		const hasInternalToken =
+			event.request.headers.get(PDF_INTERNAL_TOKEN_HEADER) === PDF_INTERNAL_TOKEN;
+
+		if (requiresAuth && !session && !hasInternalToken) {
 			if (event.request.headers.get('accept')?.includes('text/html')) {
 				const redirectTo = event.url.pathname + event.url.search;
 				redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
