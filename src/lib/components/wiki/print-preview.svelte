@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import MarkdownEditor from './markdown-editor.svelte';
 	import PageHeader from './page-header.svelte';
 	import {
@@ -13,6 +14,12 @@
 	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
 
 	const isMulti = $derived(pages.length > 1);
+
+	// Paper is white: the preview and the PDF always use the light theme,
+	// whatever the viewer picked for the app (app.html applies .dark early).
+	onMount(() => {
+		document.documentElement.classList.remove('dark');
+	});
 
 	let readyCount = $state(0);
 	let paginated = $state(false);
