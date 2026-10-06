@@ -143,6 +143,18 @@
 	async function uploadImage(file: File): Promise<string> {
 		if (!pageId)
 			throw new Error(
+
+		// While editing, a click on a link places the cursor in it. Without
+		// this, SvelteKit's router follows it (it handles link clicks
+		// anywhere in the document) and unsaved changes are lost.
+		// Ctrl/Cmd-click opens it in a new tab instead.
+		const link = (event.target as Element | null)?.closest?.('a[href]');
+		if (link instanceof HTMLAnchorElement) {
+			event.preventDefault();
+			if (event.ctrlKey || event.metaKey) window.open(link.href, '_blank', 'noopener');
+			return;
+		}
+
 				'Seite muss zuerst gespeichert werden, bevor Bilder hochgeladen werden können.'
 			);
 
