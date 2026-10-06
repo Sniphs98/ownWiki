@@ -1,5 +1,7 @@
+import { error } from '@sveltejs/kit';
 import { chromium } from 'playwright';
 import { env } from '$env/dynamic/private';
+import { dev } from '$app/environment';
 import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from './internal-token';
 
 /**
@@ -8,13 +10,20 @@ import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from './internal-token'
  * the app's public origin, which may be unset, or sit behind a proxy/DNS
  * name this container can't resolve to itself.
  */
-function internalOrigin(): string {
-	const port = env.PORT || '5173';
-	// Not 127.0.0.1: some dev setups (e.g. Vite on Windows) bind only the
-	// IPv6 loopback (::1), which refuses IPv4 connections outright.
-	// "localhost" resolves correctly either way, in dev and in the container.
-	return `http://localhost:${port}`;
+function internalOrigin(requestUrl: URL): string {
+	// The Vite dev server picks its own port (5173, or the next free one) and
+	// doesn't expose it via PORT — but in dev the request URL is the dev
+	// server itself, reachable from this machine.
+	if (dev) return requestUrl.origin;
+
+	// adapter-node listens on PORT, defaulting to 3000. Not 127.0.0.1: some
+	// setups bind only the IPv6 loopback (::1), which refuses IPv4
+	// connections outright; "localhost" resolves correctly either way.
+	return `http://localhost:${env.PORT || '3000'}`;
 }
+
+/** How long the print view may take to render and paginate. */
+const PRINT_TIMEOUT_MS = 60_000;
 
 /**
  * Renders the given /print/... path — the same page a user can open
@@ -23,8 +32,8 @@ function internalOrigin(): string {
  * real Milkdown Crepe editor (readonly) laid out by pagedjs, not a
  * reimplementation of the markdown rendering.
  */
-export async function generatePdf(printPathAndQuery: string): Promise<Buffer> {
-	const url = new URL(printPathAndQuery, internalOrigin());
+export async function generatePdf(printPathAndQuery: string, requestUrl: URL): Promise<Buffer> {
+	const url = new URL(printPathAndQuery, internalOrigin(requestUrl));
 
 	const browser = await chromium.launch();
 	try {
@@ -32,8 +41,27 @@ export async function generatePdf(printPathAndQuery: string): Promise<Buffer> {
 		await context.setExtraHTTPHeaders({ [PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN });
 		const page = await context.newPage();
 
-		await page.goto(url.toString(), { waitUntil: 'load' });
-		await page.waitForSelector('[data-print-ready="true"]', { timeout: 60000 });
+		const response = await page.goto(url.toString(), { waitUntil: 'load' });
+		if (!response?.ok()) {
+			throw new Error(`Druckansicht ${url.pathname} antwortet mit HTTP ${response?.status()}`);
+		}
+
+		// print-preview.svelte sets one of these once it's done — or has given
+		// up, so a broken page fails fast instead of running into the timeout.
+		await page
+			.waitForSelector('[data-print-ready="true"], [data-print-error]', {
+				// <body> has no visible content when rendering failed.
+				state: 'attached',
+				timeout: PRINT_TIMEOUT_MS
+			})
+			.catch(() => {
+				throw new Error(
+					`Druckansicht ${url.pathname} wurde nicht innerhalb von ${PRINT_TIMEOUT_MS / 1000} s fertig`
+				);
+			});
+		const printError = await page.evaluate(() => document.body.dataset.printError);
+		if (printError) throw new Error(`Druckansicht fehlgeschlagen: ${printError}`);
+
 		// Let a font that finished loading at the last moment reach the
 		// rendered layout before it's printed.
 		await page.evaluate(async () => {
@@ -42,7 +70,7 @@ export async function generatePdf(printPathAndQuery: string): Promise<Buffer> {
 		});
 
 		// pagedjs already lays out each page's margins (and its own page-number
-		// footer, see the @page rule in print/[...path]/+page.svelte) as real
+		// footer, see the @page rule in print-preview.svelte) as real
 		// content inside the fixed-size .pagedjs_page boxes, so Chromium just
 		// needs to print those boxes as-is with no margin/header-footer of its
 		// own layered on top.
@@ -54,5 +82,19 @@ export async function generatePdf(printPathAndQuery: string): Promise<Buffer> {
 		return pdf;
 	} finally {
 		await browser.close();
+	}
+}
+
+/**
+ * generatePdf for request handlers: logs the cause and answers with a
+ * readable 500 instead of SvelteKit's generic "Internal Error".
+ */
+export async function generatePdfOrFail(printPathAndQuery: string, requestUrl: URL) {
+	try {
+		return await generatePdf(printPathAndQuery, requestUrl);
+	} catch (cause) {
+		console.error('PDF export failed:', cause);
+		const reason = cause instanceof Error ? cause.message : String(cause);
+		error(500, `PDF-Export fehlgeschlagen: ${reason}`);
 	}
 }

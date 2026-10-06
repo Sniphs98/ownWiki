@@ -31,6 +31,13 @@
 		readyCount += 1;
 	}
 
+	// generate-pdf.ts waits for this (or data-print-ready) so a broken page
+	// fails the export right away with a reason instead of a timeout.
+	function failPrint(error: unknown) {
+		console.error('Druckansicht fehlgeschlagen:', error);
+		document.body.dataset.printError = error instanceof Error ? error.message : String(error);
+	}
+
 	// Only the pagination-specific rules (@page, break-*) need to go through
 	// pagedjs's polisher — everything else (Crepe's theme, Tailwind) is
 	// already applied live by the browser and stays that way. Passing this
@@ -97,7 +104,7 @@
 		if (readyCount < pages.length || paginated || !sourceEl || !targetEl) return;
 		paginated = true;
 
-		(async () => {
+		const paginate = async () => {
 			// pagedjs measures text to decide where pages break — if a web
 			// font is still loading at that point, it measures the fallback
 			// font and breaks in the wrong places (and Chromium may print the
@@ -125,7 +132,9 @@
 			// generate-pdf.ts waits on this to know the paginated layout is
 			// final before calling page.pdf().
 			document.body.dataset.printReady = 'true';
-		})();
+		};
+
+		paginate().catch(failPrint);
 	});
 </script>
 
@@ -144,7 +153,7 @@
 		{#each pages as p (p.path)}
 			<div class="wiki-chapter">
 				<PageHeader title={p.title} versionNumber={p.versionNumber} updatedAt={p.updatedAt} />
-				<MarkdownEditor value={p.content} readonly onready={onChapterReady} />
+				<MarkdownEditor value={p.content} readonly onready={onChapterReady} onerror={failPrint} />
 			</div>
 		{/each}
 	</div>

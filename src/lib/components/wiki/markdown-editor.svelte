@@ -7,7 +7,8 @@
 		readonly = false,
 		placeholder = 'Tippe "/" für Befehle …',
 		pageId,
-		onready
+		onready,
+		onerror
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -16,6 +17,8 @@
 		pageId?: string;
 		/** Fires once the Crepe instance has finished mounting. */
 		onready?: () => void;
+		/** Fires if Crepe fails to load or mount. */
+		onerror?: (error: unknown) => void;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -44,7 +47,7 @@
 	onMount(() => {
 		let destroyed = false;
 
-		(async () => {
+		const mount = async () => {
 			const [{ Crepe }] = await Promise.all([
 				import('@milkdown/crepe'),
 				import('@milkdown/crepe/theme/common/style.css'),
@@ -80,7 +83,12 @@
 
 			crepe = instance;
 			onready?.();
-		})();
+		};
+
+		mount().catch((error) => {
+			console.error('Editor konnte nicht geladen werden:', error);
+			onerror?.(error);
+		});
 
 		return () => {
 			destroyed = true;
