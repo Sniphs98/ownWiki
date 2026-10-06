@@ -35,6 +35,10 @@ const PRINT_CSS = `
 	.milkdown .ProseMirror table,
 	.milkdown .ProseMirror .tableWrapper,
 	.milkdown .milkdown-table-block .table-wrapper { overflow: visible; }
+	/* Same for CodeMirror's horizontally scrolling code blocks, so pagedjs
+	   can break between code lines (see linearizeCodeBlocks). */
+	.milkdown .cm-editor,
+	.milkdown .cm-scroller { overflow: visible; }
 	table { break-inside: auto; }
 	tr { break-inside: avoid; break-after: auto; }
 	thead { display: table-header-group; }

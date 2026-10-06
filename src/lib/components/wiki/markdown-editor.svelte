@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Crepe as CrepeType } from '@milkdown/crepe';
+	import { installEagerCodeBlocks } from '$lib/eager-code-blocks';
 
 	let {
 		value = $bindable(''),
@@ -48,6 +49,8 @@
 		let destroyed = false;
 
 		const mount = async () => {
+			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
+			installEagerCodeBlocks();
 			const [{ Crepe }] = await Promise.all([
 				import('@milkdown/crepe'),
 				import('@milkdown/crepe/theme/common/style.css'),
@@ -120,6 +123,12 @@
 	   the editor, the page view and the PDF all wrap text identically. */
 	.milkdown-editor-root :global(.milkdown .ProseMirror) {
 		padding: 0;
+	}
+
+	/* CodeMirror's base theme sets a generic "monospace" (Consolas on
+	   Windows, something else in the PDF container) over Crepe's code font. */
+	.milkdown-editor-root :global(.milkdown .cm-scroller) {
+		font-family: var(--crepe-font-code);
 	}
 
 	/* Keep some room to click into when editing an (almost) empty page. */

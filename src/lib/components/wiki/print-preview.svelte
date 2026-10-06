@@ -34,6 +34,34 @@
 		document.body.dataset.printError = error instanceof Error ? error.message : String(error);
 	}
 
+	/**
+	 * Crepe has mounted, but code blocks still load their language and
+	 * re-render with syntax highlighting asynchronously — wait until the
+	 * source stops changing so the PDF doesn't capture them half-done.
+	 */
+	function waitForDomToSettle(root: Element, quietMs = 300, maxMs = 5000) {
+		return new Promise<void>((resolve) => {
+			let quietTimer = setTimeout(done, quietMs);
+			const maxTimer = setTimeout(done, maxMs);
+			const observer = new MutationObserver(() => {
+				clearTimeout(quietTimer);
+				quietTimer = setTimeout(done, quietMs);
+			});
+			observer.observe(root, {
+				subtree: true,
+				childList: true,
+				characterData: true,
+				attributes: true
+			});
+			function done() {
+				observer.disconnect();
+				clearTimeout(quietTimer);
+				clearTimeout(maxTimer);
+				resolve();
+			}
+		});
+	}
+
 	// Runs once every chapter's (readonly) Crepe instance has finished
 	// mounting — only then does the DOM actually contain the real,
 	// pixel-accurate rendering pagedjs needs to paginate.
@@ -42,6 +70,7 @@
 		paginated = true;
 
 		const paginate = async () => {
+			await waitForDomToSettle(sourceEl!);
 			// Passing the live sourceEl node itself (instead of its HTML as a
 			// string) made pagedjs's chunker nest a clone of the *whole*
 			// document (html>body>...) inside every paginated page, pushing the

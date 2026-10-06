@@ -98,6 +98,28 @@ test('long tables break across pages and repeat their header row', async ({ page
 	expect(tablePages.reduce((sum, p) => sum + p.bodyRows, 0)).toBe(TABLE_ROWS);
 });
 
+test('long code blocks are printed completely, numbered and split by line', async ({ page }) => {
+	await page.goto('/print/e2e/long-code');
+	await page.locator('body[data-print-ready="true"]').waitFor({ state: 'attached' });
+
+	const sheets = await page.evaluate(() =>
+		[...document.querySelectorAll('.pagedjs_page')].map((sheet) =>
+			[...sheet.querySelectorAll('.cm-line')].map((line) => ({
+				text: line.textContent?.trim(),
+				number: line.parentElement?.querySelector('.cm-gutterElement')?.textContent
+			}))
+		)
+	);
+	const lines = sheets.flat();
+
+	expect(sheets.filter((sheet) => sheet.length > 0).length).toBeGreaterThan(1);
+	expect(lines).toHaveLength(150);
+	lines.forEach((line, i) => {
+		expect(line.text).toBe(`zeile_${String(i + 1).padStart(3, '0')}: wert ${i + 1}`);
+		expect(line.number).toBe(String(i + 1));
+	});
+});
+
 test('editor controls are not part of the printed pages', async ({ page }) => {
 	await openPrintView(page);
 	const controls = page.locator(

@@ -17,6 +17,16 @@ const fixtures = [
 		path: 'e2e/pdf-export',
 		title: 'PDF-Export Prüfseite',
 		content: readFileSync(new URL('./fixtures/pdf-export.md', import.meta.url), 'utf8')
+	},
+	{
+		path: 'e2e/long-text',
+		title: 'Fließtext Prüfseite',
+		content: readFileSync(new URL('./fixtures/long-text.md', import.meta.url), 'utf8')
+	},
+	{
+		path: 'e2e/long-code',
+		title: 'Code Prüfseite',
+		content: readFileSync(new URL('./fixtures/long-code.md', import.meta.url), 'utf8')
 	}
 ];
 

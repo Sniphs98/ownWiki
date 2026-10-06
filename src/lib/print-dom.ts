@@ -1,3 +1,5 @@
+import { linearizeCodeBlocks, renderAllCodeLines } from '$lib/code-mirror-print';
+
 /**
  * Crepe renders interactive editor chrome next to the actual content even
  * when readonly: floating menus/toolbars beside the ProseMirror root, table
@@ -37,19 +39,61 @@ function promoteHeaderRows(root: HTMLElement) {
 	}
 }
 
+/**
+ * pagedjs collapses whitespace-only text nodes unless they're inside a
+ * <pre> — but CodeMirror renders code lines as <div>s, so indentation would
+ * vanish. Non-breaking spaces look the same in monospace and survive.
+ */
+function protectCodeIndentation(root: HTMLElement) {
+	const nbsp = String.fromCharCode(0xa0);
+	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+		const text = node as Text;
+		const isIndentation = text.data.length > 0 && text.data.trim() === '';
+		if (isIndentation && text.parentElement?.closest('.cm-content')) {
+			text.data = text.data.replaceAll(' ', nbsp);
+		}
+	}
+}
+
 /** Removes all editor-only chrome from `root` (a copy, never the live editor). */
 export function stripEditorChrome(root: HTMLElement) {
 	for (const el of root.querySelectorAll(EDITOR_CHROME_SELECTORS.join(','))) el.remove();
+	// CodeMirror highlights the line holding its (invisible) cursor.
+	for (const el of root.querySelectorAll('.cm-activeLine, .cm-activeLineGutter')) {
+		el.classList.remove('cm-activeLine', 'cm-activeLineGutter');
+	}
 	for (const el of root.querySelectorAll('[contenteditable], [draggable]')) {
 		el.removeAttribute('contenteditable');
 		el.removeAttribute('draggable');
 	}
 	promoteHeaderRows(root);
+	protectCodeIndentation(root);
+}
+
+/**
+ * Deep-copies `source` with every code block fully rendered and laid out
+ * line by line (see code-mirror-print.ts). `beforeRestore` runs first,
+ * while the copy still matches the live DOM element for element.
+ */
+export function copyForPrint(
+	source: HTMLElement,
+	beforeRestore?: (copy: HTMLElement) => void
+): HTMLElement {
+	const restore = renderAllCodeLines(source);
+	try {
+		const copy = source.cloneNode(true) as HTMLElement;
+		beforeRestore?.(copy);
+		linearizeCodeBlocks(source, copy);
+		return copy;
+	} finally {
+		restore();
+	}
 }
 
 /** Returns the HTML of `source` with all editor-only chrome removed. */
 export function toPrintableHtml(source: HTMLElement): string {
-	const copy = source.cloneNode(true) as HTMLElement;
+	const copy = copyForPrint(source);
 	stripEditorChrome(copy);
 	return copy.innerHTML;
 }
