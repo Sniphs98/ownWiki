@@ -7,4 +7,11 @@ declare module 'pagedjs' {
 			renderTo?: Element
 		): Promise<{ total: number; pages: unknown[] }>;
 	}
+
+	/** Base class for pagedjs hooks; methods named after a hook are registered on it. */
+	export class Handler {
+		constructor(chunker: unknown, polisher: unknown, caller: unknown);
+	}
+
+	export function registerHandlers(...handlers: (typeof Handler)[]): void;
 }

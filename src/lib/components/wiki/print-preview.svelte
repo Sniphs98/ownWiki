@@ -7,6 +7,7 @@
 		PRINT_PAGE_SIZE,
 		PRINT_TEXT_WIDTH
 	} from '$lib/print-layout';
+	import { registerPrintHandlers, toPrintableHtml } from '$lib/print-dom';
 	import type { PrintablePage } from '$lib/server/pdf/printable-pages';
 
 	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
@@ -50,6 +51,12 @@
 		.wiki-cover p { color: #4f4539; }
 
 		img { max-width: 100%; break-inside: avoid; }
+		/* prosemirror-tables clips tables (overflow: hidden) and wraps them
+		   in a horizontal scroll container — pagedjs can't split a clipped
+		   box, it moves it whole and leaves an empty page behind. */
+		.milkdown .ProseMirror table,
+		.milkdown .ProseMirror .tableWrapper,
+		.milkdown .milkdown-table-block .table-wrapper { overflow: visible; }
 		table { break-inside: auto; }
 		tr { break-inside: avoid; break-after: auto; }
 		thead { display: table-header-group; }
@@ -64,7 +71,8 @@
 		paginated = true;
 
 		(async () => {
-			const { Previewer } = await import('pagedjs');
+			const paged = await import('pagedjs');
+			registerPrintHandlers(paged);
 			const blobUrl = URL.createObjectURL(new Blob([PRINT_CSS], { type: 'text/css' }));
 			// Passing the live sourceEl node itself (instead of its HTML as a
 			// string) made pagedjs's chunker nest a clone of the *whole*
@@ -72,7 +80,7 @@
 			// real content off to the source's off-screen position — pass a
 			// plain string, matching pagedjs's documented usage, so it parses
 			// fresh content instead.
-			await new Previewer().preview(sourceEl!.innerHTML, [blobUrl], targetEl);
+			await new paged.Previewer().preview(toPrintableHtml(sourceEl!), [blobUrl], targetEl);
 			URL.revokeObjectURL(blobUrl);
 			// The source has been cloned into targetEl's paginated layout by
 			// now; hiding it (the {#if !hideSource} below) is no longer just
@@ -123,6 +131,23 @@
 			background: white;
 			box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
 			margin: 12mm auto;
+		}
+	}
+
+	@media print {
+		/* pagedjs ends every page with break-after: page — on the last one
+		   that makes Chromium emit a trailing blank page. */
+		:global(.pagedjs_page:last-of-type) {
+			break-after: auto;
+		}
+		/* The paginated pages are exactly one sheet tall each; anything that
+		   adds height beyond them (even sub-pixel rounding) spills onto an
+		   extra blank sheet. */
+		:global(body) {
+			overflow: hidden;
+		}
+		:global(#svelte-announcer) {
+			display: none;
 		}
 	}
 
