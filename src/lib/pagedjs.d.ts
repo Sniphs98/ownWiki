@@ -1,6 +1,8 @@
 declare module 'pagedjs' {
 	export class Previewer {
 		constructor(options?: unknown);
+		chunker: { destroy(): void };
+		polisher: { destroy(): void };
 		preview(
 			content?: Element | string,
 			stylesheets?: string[],

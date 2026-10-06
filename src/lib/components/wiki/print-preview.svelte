@@ -2,13 +2,9 @@
 	import { onMount } from 'svelte';
 	import MarkdownEditor from './markdown-editor.svelte';
 	import PageHeader from './page-header.svelte';
-	import {
-		PRINT_MARGIN_X_MM,
-		PRINT_MARGIN_Y_MM,
-		PRINT_PAGE_SIZE,
-		PRINT_TEXT_WIDTH
-	} from '$lib/print-layout';
-	import { registerPrintHandlers, toPrintableHtml } from '$lib/print-dom';
+	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
+	import { toPrintableHtml } from '$lib/print-dom';
+	import { loadPrintFonts, paginate as paginateHtml } from '$lib/paginate';
 	import type { PrintablePage } from '$lib/server/pdf/printable-pages';
 
 	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
@@ -38,65 +34,6 @@
 		document.body.dataset.printError = error instanceof Error ? error.message : String(error);
 	}
 
-	// Only the pagination-specific rules (@page, break-*) need to go through
-	// pagedjs's polisher — everything else (Crepe's theme, Tailwind) is
-	// already applied live by the browser and stays that way. Passing this
-	// explicit stylesheet instead of leaving pagedjs auto-discover every
-	// stylesheet element on the page also sidesteps it choking on Tailwind's
-	// generated CSS, which uses @media/@container syntax pagedjs's CSS
-	// parser doesn't understand.
-	const PRINT_CSS = `
-		@page {
-			size: ${PRINT_PAGE_SIZE};
-			margin: ${PRINT_MARGIN_Y_MM}mm ${PRINT_MARGIN_X_MM}mm;
-
-			@bottom-center {
-				content: counter(page) ' / ' counter(pages);
-				font-family: 'Inter Variable', Arial, Helvetica, sans-serif;
-				font-size: 8pt;
-				color: #999;
-			}
-		}
-
-		.wiki-chapter { break-before: page; }
-		.wiki-chapter:first-child { break-before: avoid; }
-		.wiki-cover { text-align: center; padding-top: 30vh; break-after: page; }
-		.wiki-cover h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
-		.wiki-cover p { color: #4f4539; }
-
-		img { max-width: 100%; break-inside: avoid; }
-		/* prosemirror-tables clips tables (overflow: hidden) and wraps them
-		   in a horizontal scroll container — pagedjs can't split a clipped
-		   box, it moves it whole and leaves an empty page behind. */
-		.milkdown .ProseMirror table,
-		.milkdown .ProseMirror .tableWrapper,
-		.milkdown .milkdown-table-block .table-wrapper { overflow: visible; }
-		table { break-inside: auto; }
-		tr { break-inside: avoid; break-after: auto; }
-		thead { display: table-header-group; }
-		pre, blockquote, li { break-inside: avoid; }
-	`;
-
-	const PRINT_FONTS = [
-		'"Inter Variable"',
-		'"Open Sans Variable"',
-		'"Gelasio Variable"',
-		'"Fira Code Variable"'
-	];
-
-	async function loadPrintFonts() {
-		// The sample text pulls in the latin + latin-ext subsets (umlauts, €).
-		const sample = 'AaÄäÖöÜüß€';
-		await Promise.all(
-			PRINT_FONTS.flatMap((family) => [
-				document.fonts.load(`400 16px ${family}`, sample),
-				document.fonts.load(`700 16px ${family}`, sample),
-				document.fonts.load(`italic 400 16px ${family}`, sample)
-			])
-		);
-		await document.fonts.ready;
-	}
-
 	// Runs once every chapter's (readonly) Crepe instance has finished
 	// mounting — only then does the DOM actually contain the real,
 	// pixel-accurate rendering pagedjs needs to paginate.
@@ -105,23 +42,13 @@
 		paginated = true;
 
 		const paginate = async () => {
-			// pagedjs measures text to decide where pages break — if a web
-			// font is still loading at that point, it measures the fallback
-			// font and breaks in the wrong places (and Chromium may print the
-			// fallback, too). document.fonts.ready alone isn't enough: it only
-			// covers fonts the browser has already started loading.
-			await loadPrintFonts();
-			const paged = await import('pagedjs');
-			registerPrintHandlers(paged);
-			const blobUrl = URL.createObjectURL(new Blob([PRINT_CSS], { type: 'text/css' }));
 			// Passing the live sourceEl node itself (instead of its HTML as a
 			// string) made pagedjs's chunker nest a clone of the *whole*
 			// document (html>body>...) inside every paginated page, pushing the
 			// real content off to the source's off-screen position — pass a
 			// plain string, matching pagedjs's documented usage, so it parses
 			// fresh content instead.
-			await new paged.Previewer().preview(toPrintableHtml(sourceEl!), [blobUrl], targetEl);
-			URL.revokeObjectURL(blobUrl);
+			await paginateHtml(toPrintableHtml(sourceEl!), targetEl!);
 			// The source has been cloned into targetEl's paginated layout by
 			// now; hiding it (the {#if !hideSource} below) is no longer just
 			// cosmetic — its huge negative offset (needed so Crepe still gets a

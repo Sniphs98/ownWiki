@@ -37,21 +37,27 @@ function promoteHeaderRows(root: HTMLElement) {
 	}
 }
 
-/** Returns the HTML of `source` with all editor-only chrome removed. */
-export function toPrintableHtml(source: HTMLElement): string {
-	const copy = source.cloneNode(true) as HTMLElement;
-
-	for (const el of copy.querySelectorAll(EDITOR_CHROME_SELECTORS.join(','))) el.remove();
-	for (const el of copy.querySelectorAll('[contenteditable], [draggable]')) {
+/** Removes all editor-only chrome from `root` (a copy, never the live editor). */
+export function stripEditorChrome(root: HTMLElement) {
+	for (const el of root.querySelectorAll(EDITOR_CHROME_SELECTORS.join(','))) el.remove();
+	for (const el of root.querySelectorAll('[contenteditable], [draggable]')) {
 		el.removeAttribute('contenteditable');
 		el.removeAttribute('draggable');
 	}
-	promoteHeaderRows(copy);
+	promoteHeaderRows(root);
+}
 
+/** Returns the HTML of `source` with all editor-only chrome removed. */
+export function toPrintableHtml(source: HTMLElement): string {
+	const copy = source.cloneNode(true) as HTMLElement;
+	stripEditorChrome(copy);
 	return copy.innerHTML;
 }
 
 type PagedModule = typeof import('pagedjs');
+
+/** Marks a <thead> copied onto a continuation page by RepeatTableHeaders. */
+export const REPEATED_HEADER_ATTR = 'data-repeated-header';
 
 let handlersRegistered = false;
 
@@ -84,6 +90,7 @@ export function registerPrintHandlers({ Handler, registerHandlers }: PagedModule
 			for (const el of [header, ...header.querySelectorAll('[data-ref]')]) {
 				el.removeAttribute('data-ref');
 			}
+			header.setAttribute(REPEATED_HEADER_ATTR, '');
 			table.insertBefore(header, table.firstChild);
 		}
 	}
