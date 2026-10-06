@@ -9,18 +9,20 @@
 		DIAGRAM_ICONS,
 		DIAGRAM_KINDS,
 		DIAGRAM_LABELS,
-		DIAGRAM_TEMPLATES,
 		isDiagramKind,
 		type DiagramKind
 	} from '$lib/diagrams/kinds';
 	import { renderDiagramPreview } from '$lib/diagrams/render';
+	import type { ToolbarEntry, ToolbarItemKey } from '$lib/toolbar';
 	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
+	import EditorToolbar from './editor-toolbar.svelte';
 
 	let {
 		value = $bindable(''),
 		readonly = false,
 		placeholder = 'Tippe "/" für Befehle …',
 		pageId,
+		toolbar,
 		onready,
 		onerror
 	}: {
@@ -29,6 +31,8 @@
 		placeholder?: string;
 		/** Enables image upload/paste/drag-drop once the page has an id (i.e. exists). */
 		pageId?: string;
+		/** Shows this toolbar above the editor while it's editable. */
+		toolbar?: ToolbarEntry[];
 		/** Fires once the Crepe instance has finished mounting. */
 		onready?: () => void;
 		/** Fires if Crepe fails to load or mount. */
@@ -38,6 +42,50 @@
 	let container: HTMLDivElement;
 	let crepe: CrepeType | undefined;
 	let getView: (() => EditorView) | undefined;
+	let commands: typeof import('$lib/editor-commands') | undefined;
+
+	let toolbarActive = $state<Partial<Record<ToolbarItemKey, boolean>>>({});
+	let headingLevel = $state<number | null>(null);
+
+	/** Recomputes which toolbar items are active at the cursor. */
+	function refreshToolbar() {
+		if (!crepe || !commands || !toolbar || readonly) return;
+		const { TOOLBAR_COMMANDS, currentHeadingLevel } = commands;
+		crepe.editor.action((ctx) => {
+			const next: Partial<Record<ToolbarItemKey, boolean>> = {};
+			for (const [key, command] of Object.entries(TOOLBAR_COMMANDS)) {
+				if (command.active) next[key as ToolbarItemKey] = command.active(ctx);
+			}
+			toolbarActive = next;
+			headingLevel = currentHeadingLevel(ctx);
+		});
+	}
+
+	function runToolbarItem(key: Exclude<ToolbarItemKey, 'heading'>) {
+		if (!crepe || !commands) return;
+		const { TOOLBAR_COMMANDS } = commands;
+		crepe.editor.action((ctx) => {
+			if (isDiagramKind(key)) insertDiagramAndEdit(ctx, key);
+			else TOOLBAR_COMMANDS[key].run(ctx);
+		});
+		getView?.().focus();
+		refreshToolbar();
+	}
+
+	function setHeading(level: number | null) {
+		if (!crepe || !commands) return;
+		const { setHeading } = commands;
+		crepe.editor.action((ctx) => setHeading(ctx, level));
+		getView?.().focus();
+		refreshToolbar();
+	}
+
+	/** Inserts a diagram (from the toolbar or "/" menu) and opens its editor. */
+	function insertDiagramAndEdit(ctx: Ctx, kind: DiagramKind, clearSlashText = false) {
+		const pos = commands?.insertDiagram(ctx, kind, clearSlashText);
+		const dom = pos != null ? getView?.().nodeDOM(pos) : null;
+		if (dom instanceof Element) setTimeout(() => openDiagramEditor(dom));
+	}
 
 	/** The diagram code block being edited in the dialog, if any. */
 	let diagramEdit = $state<{ kind: DiagramKind; source: string; dom: Element } | null>(null);
@@ -118,15 +166,16 @@
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
 			installEagerCodeBlocks();
-			const [{ Crepe }, { commandsCtx, editorViewCtx }, commonmark] = await Promise.all([
+			const [{ Crepe }, { editorViewCtx }, editorCommands] = await Promise.all([
 				import('@milkdown/crepe'),
 				import('@milkdown/kit/core'),
-				import('@milkdown/kit/preset/commonmark'),
+				import('$lib/editor-commands'),
 				import('@milkdown/crepe/theme/common/style.css'),
 				import('@milkdown/crepe/theme/classic.css')
 			]);
 
 			if (destroyed) return;
+			commands = editorCommands;
 
 			const instance = new Crepe({
 				root: container,
@@ -150,13 +199,39 @@
 						}
 					},
 					[Crepe.Feature.BlockEdit]: {
+						// The "/" menu, in German.
+						textGroup: {
+							label: 'Text',
+							text: { label: 'Text' },
+							h1: { label: 'Überschrift 1' },
+							h2: { label: 'Überschrift 2' },
+							h3: { label: 'Überschrift 3' },
+							h4: { label: 'Überschrift 4' },
+							h5: { label: 'Überschrift 5' },
+							h6: { label: 'Überschrift 6' },
+							quote: { label: 'Zitat' },
+							divider: { label: 'Trennlinie' }
+						},
+						listGroup: {
+							label: 'Listen',
+							bulletList: { label: 'Aufzählung' },
+							orderedList: { label: 'Nummerierte Liste' },
+							taskList: { label: 'Checkliste' }
+						},
+						advancedGroup: {
+							label: 'Einfügen',
+							image: { label: 'Bild' },
+							codeBlock: { label: 'Codeblock' },
+							table: { label: 'Tabelle' },
+							math: { label: 'Formel' }
+						},
 						buildMenu: (builder) => {
 							const group = builder.addGroup('diagrams', 'Diagramme');
 							for (const kind of DIAGRAM_KINDS) {
 								group.addItem(kind, {
 									label: DIAGRAM_LABELS[kind],
 									icon: DIAGRAM_ICONS[kind],
-									onRun: (ctx) => insertDiagram(ctx, kind)
+									onRun: (ctx) => insertDiagramAndEdit(ctx, kind, true)
 								});
 							}
 						}
@@ -164,33 +239,12 @@
 				}
 			});
 
-			function insertDiagram(ctx: Ctx, kind: DiagramKind) {
-				const view = ctx.get(editorViewCtx);
-				const commands = ctx.get(commandsCtx);
-				commands.call(commonmark.clearTextInCurrentBlockCommand.key);
-				const { from } = view.state.selection;
-				const node = commonmark.codeBlockSchema
-					.type(ctx)
-					.create({ language: kind }, view.state.schema.text(DIAGRAM_TEMPLATES[kind]));
-				commands.call(commonmark.addBlockTypeCommand.key, { nodeType: node });
-				// Open the new diagram's editor right away.
-				const doc = view.state.doc;
-				doc.nodesBetween(
-					Math.max(0, from - 2),
-					Math.min(doc.content.size, from + 2),
-					(candidate, pos) => {
-						if (candidate.type.name !== 'code_block') return;
-						const dom = view.nodeDOM(pos);
-						if (dom instanceof Element) setTimeout(() => openDiagramEditor(dom));
-						return false;
-					}
-				);
-			}
-
 			instance.on((listener) => {
 				listener.markdownUpdated((_ctx, markdown) => {
 					value = markdown;
 				});
+				listener.selectionUpdated(() => refreshToolbar());
+				listener.updated(() => refreshToolbar());
 			});
 
 			instance.setReadonly(readonly);
@@ -203,6 +257,7 @@
 
 			crepe = instance;
 			getView = () => instance.editor.ctx.get(editorViewCtx);
+			refreshToolbar();
 			onready?.();
 		};
 
@@ -221,6 +276,16 @@
 		crepe?.setReadonly(readonly);
 	});
 </script>
+
+{#if toolbar && !readonly}
+	<EditorToolbar
+		layout={toolbar}
+		active={toolbarActive}
+		{headingLevel}
+		onrun={runToolbarItem}
+		onheading={setHeading}
+	/>
+{/if}
 
 <!-- Delegates clicks on the diagram edit buttons inside; they're keyboard-reachable buttons themselves. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->

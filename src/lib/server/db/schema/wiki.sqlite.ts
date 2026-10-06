@@ -74,3 +74,15 @@ export const attachmentRelations = relations(attachment, ({ one }) => ({
 	page: one(page, { fields: [attachment.pageId], references: [page.id] }),
 	uploadedByUser: one(user, { fields: [attachment.uploadedBy], references: [user.id] })
 }));
+
+/** Per-user UI settings. One row per user, created on first save. */
+export const userPreference = sqliteTable('user_preference', {
+	userId: text('user_id')
+		.primaryKey()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	/** JSON array of editor toolbar item keys, see $lib/toolbar.ts. */
+	toolbar: text('toolbar'),
+	updatedAt: timestampMs('updated_at')
+		.$onUpdate(() => new Date())
+		.notNull()
+});

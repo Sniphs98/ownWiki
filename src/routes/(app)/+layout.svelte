@@ -4,12 +4,19 @@
 	import PageSidebar from '$lib/components/wiki/page-sidebar.svelte';
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import { Button } from '$lib/components/ui/button';
+	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
 	let { data, children } = $props();
 
 	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
+
+	$effect(() => {
+		toolbarSetting.init(data.toolbar, !!data.user);
+	});
 
 	const crumbs = $derived.by(() => {
 		const match = page.url.pathname.match(/^\/w\/(.+)$/);
@@ -51,6 +58,15 @@
 				</Breadcrumb.Root>
 			{/if}
 			<div class="ml-auto flex items-center gap-1">
+				<Button
+					href={resolve('/(app)/settings')}
+					variant="ghost"
+					size="icon"
+					title="Einstellungen"
+					aria-label="Einstellungen"
+				>
+					<SettingsIcon />
+				</Button>
 				<ThemeToggle />
 				<UserMenu user={data.user} />
 			</div>

@@ -9,6 +9,7 @@
 	import MarkdownEditor from './markdown-editor.svelte';
 	import PageBreakMarkers from './page-break-markers.svelte';
 	import PageBreakToggle from './page-break-toggle.svelte';
+	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
 	import AttachmentsPanel from './attachments-panel.svelte';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
@@ -82,7 +83,7 @@
 
 	<div class="mt-2">
 		<PageBreakMarkers {title} versionNumber={nextVersionNumber} updatedAt={new Date()} {content}>
-			<MarkdownEditor bind:value={content} {pageId} />
+			<MarkdownEditor bind:value={content} {pageId} toolbar={toolbarSetting.layout} />
 		</PageBreakMarkers>
 	</div>
 
