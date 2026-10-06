@@ -7,6 +7,8 @@
 	import * as Field from '$lib/components/ui/field';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import MarkdownEditor from './markdown-editor.svelte';
+	import PageBreakMarkers from './page-break-markers.svelte';
+	import PageBreakToggle from './page-break-toggle.svelte';
 	import AttachmentsPanel from './attachments-panel.svelte';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
@@ -17,6 +19,7 @@
 		hasChildren,
 		existingTitle,
 		existingContent,
+		nextVersionNumber,
 		attachments,
 		errorMessage
 	}: {
@@ -26,6 +29,8 @@
 		hasChildren: boolean;
 		existingTitle: string;
 		existingContent: string;
+		/** Version number this save will create — shown in the PDF page header. */
+		nextVersionNumber: number;
 		attachments: AttachmentMeta[];
 		errorMessage?: string;
 	} = $props();
@@ -71,8 +76,14 @@
 
 	<input type="hidden" name="content" value={content} />
 
-	<div class="mt-4">
-		<MarkdownEditor bind:value={content} {pageId} />
+	<div class="mt-4 flex justify-end">
+		<PageBreakToggle />
+	</div>
+
+	<div class="mt-2">
+		<PageBreakMarkers {title} versionNumber={nextVersionNumber} updatedAt={new Date()} {content}>
+			<MarkdownEditor bind:value={content} {pageId} />
+		</PageBreakMarkers>
 	</div>
 
 	<div class="mt-4 flex items-center justify-between gap-2">

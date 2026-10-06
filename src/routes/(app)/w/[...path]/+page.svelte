@@ -7,6 +7,8 @@
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
 	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
 	import PageHeader from '$lib/components/wiki/page-header.svelte';
+	import PageBreakMarkers from '$lib/components/wiki/page-break-markers.svelte';
+	import PageBreakToggle from '$lib/components/wiki/page-break-toggle.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
 
@@ -40,6 +42,7 @@
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			{/if}
 		</div>
+		<PageBreakToggle />
 		<Button href="/print/{data.page.path}" target="_blank" variant="ghost">
 			<BookOpenIcon data-icon="inline-start" />
 			Seitenweise
@@ -62,7 +65,14 @@
 		historyHref={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
 	/>
 	{#key data.version.id}
-		<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+		<PageBreakMarkers
+			title={data.version.title}
+			versionNumber={data.version.versionNumber}
+			updatedAt={data.page.updatedAt}
+			content={data.version.content}
+		>
+			<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+		</PageBreakMarkers>
 	{/key}
 
 	{#if canEdit || data.attachments.length > 0}

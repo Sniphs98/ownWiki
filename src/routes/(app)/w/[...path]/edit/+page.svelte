@@ -16,6 +16,7 @@
 			{hasChildren}
 			existingTitle={data.prefillTitle}
 			existingContent={data.version?.content ?? ''}
+			nextVersionNumber={(data.version?.versionNumber ?? 0) + 1}
 			attachments={data.attachments}
 			errorMessage={form?.message}
 		/>

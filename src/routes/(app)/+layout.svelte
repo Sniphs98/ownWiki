@@ -55,7 +55,9 @@
 				<UserMenu user={data.user} />
 			</div>
 		</header>
-		<main class="flex-1 overflow-y-auto">
+		<!-- overflow-x-hidden: page-break labels sit in the margin beside the
+			 text column and must not cause a horizontal scrollbar. -->
+		<main class="flex-1 overflow-x-hidden overflow-y-auto">
 			{@render children()}
 		</main>
 	</Sidebar.Inset>
