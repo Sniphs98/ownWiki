@@ -37,6 +37,11 @@ const fixtures = [
 		path: 'e2e/diagram-break',
 		title: 'Diagramm am Seitenanfang',
 		content: readFileSync(new URL('./fixtures/diagram-break.md', import.meta.url), 'utf8')
+	},
+	{
+		path: 'e2e/files',
+		title: 'Dateien Prüfseite',
+		content: readFileSync(new URL('./fixtures/files.md', import.meta.url), 'utf8')
 	}
 ];
 

@@ -2,8 +2,9 @@ import { error } from '@sveltejs/kit';
 import { resolveAllPrintablePages } from '$lib/server/pdf/printable-pages';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async (event) => {
 	const result = await resolveAllPrintablePages();
 	if (result.pages.length === 0) error(404, 'Noch keine Seiten vorhanden');
-	return result;
+	// adapter-node derives the URL from ORIGIN, so this is the public origin.
+	return { ...result, linkOrigin: event.url.origin };
 };

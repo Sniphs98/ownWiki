@@ -6,5 +6,6 @@ export const load: PageServerLoad = async (event) => {
 	const scope = event.url.searchParams.get('scope');
 	const result = await resolvePrintablePages(event.params.path, scope);
 	if (!result) error(404, 'Seite nicht gefunden');
-	return result;
+	// adapter-node derives the URL from ORIGIN, so this is the public origin.
+	return { ...result, linkOrigin: event.url.origin };
 };

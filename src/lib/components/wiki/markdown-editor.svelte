@@ -17,6 +17,10 @@
 	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
 	import EditorToolbar from './editor-toolbar.svelte';
 
+	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
+	const PAPERCLIP_ICON =
+		'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>';
+
 	let {
 		value = $bindable(''),
 		readonly = false,
@@ -24,7 +28,8 @@
 		pageId,
 		toolbar,
 		onready,
-		onerror
+		onerror,
+		onupload
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -37,6 +42,8 @@
 		onready?: () => void;
 		/** Fires if Crepe fails to load or mount. */
 		onerror?: (error: unknown) => void;
+		/** Fires after a file or image was uploaded to the page. */
+		onupload?: () => void;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -63,6 +70,10 @@
 
 	function runToolbarItem(key: Exclude<ToolbarItemKey, 'heading'>) {
 		if (!crepe || !commands) return;
+		if (key === 'file') {
+			pickFiles();
+			return;
+		}
 		const { TOOLBAR_COMMANDS } = commands;
 		crepe.editor.action((ctx) => {
 			if (isDiagramKind(key)) insertDiagramAndEdit(ctx, key);
@@ -132,17 +143,6 @@
 	// have its own handler — catch its clicks here instead.
 	function onEditorClick(event: MouseEvent) {
 		if (readonly) return;
-		const button = (event.target as Element | null)?.closest?.('[data-diagram-edit]');
-		const block = button?.closest('.milkdown-code-block');
-		if (!block) return;
-		event.preventDefault();
-		event.stopPropagation();
-		openDiagramEditor(block);
-	}
-
-	async function uploadImage(file: File): Promise<string> {
-		if (!pageId)
-			throw new Error(
 
 		// While editing, a click on a link places the cursor in it. Without
 		// this, SvelteKit's router follows it (it handles link clicks
@@ -155,7 +155,18 @@
 			return;
 		}
 
-				'Seite muss zuerst gespeichert werden, bevor Bilder hochgeladen werden können.'
+		const button = (event.target as Element | null)?.closest?.('[data-diagram-edit]');
+		const block = button?.closest('.milkdown-code-block');
+		if (!block) return;
+		event.preventDefault();
+		event.stopPropagation();
+		openDiagramEditor(block);
+	}
+
+	async function uploadFile(file: File): Promise<{ url: string; filename: string }> {
+		if (!pageId)
+			throw new Error(
+				'Seite muss zuerst gespeichert werden, bevor Dateien hochgeladen werden können.'
 			);
 
 		const body = new FormData();
@@ -168,8 +179,52 @@
 			throw new Error(message || 'Upload fehlgeschlagen.');
 		}
 
-		const result: { url: string } = await response.json();
-		return result.url;
+		const result: { url: string; filename: string } = await response.json();
+		onupload?.();
+		return result;
+	}
+
+	const uploadImage = async (file: File) => (await uploadFile(file)).url;
+
+	let fileInput: HTMLInputElement | undefined = $state();
+	let fileError = $state('');
+
+	function pickFiles() {
+		fileError = '';
+		fileInput?.click();
+	}
+
+	async function onFilesPicked(files: FileList | null) {
+		if (!files?.length) return;
+		const picked = [...files];
+		if (fileInput) fileInput.value = '';
+		try {
+			for (const [index, file] of picked.entries()) {
+				const { url, filename } = await uploadFile(file);
+				insertFileLink(url, filename, index > 0);
+			}
+		} catch (error) {
+			fileError = error instanceof Error ? error.message : String(error);
+		}
+	}
+
+	/**
+	 * Inserts a download link to an uploaded file at the cursor, e.g.
+	 * [Handbuch.pdf](/api/files/…). Used for new uploads and by the page's
+	 * list of files that aren't linked anywhere.
+	 */
+	export function insertFileLink(url: string, filename: string, separate = false) {
+		const view = getView?.();
+		if (!view || readonly) return;
+		const { schema } = view.state;
+		const link = schema.marks.link.create({ href: url });
+		let tr = view.state.tr;
+		if (separate) tr = tr.insertText(', ');
+		tr = tr.replaceSelectionWith(schema.text(filename, [link]), false);
+		// Keep typing after the link as plain text.
+		tr = tr.removeStoredMark(schema.marks.link).insertText(' ');
+		view.dispatch(tr.scrollIntoView());
+		view.focus();
 	}
 
 	onMount(() => {
@@ -238,6 +293,14 @@
 							math: { label: 'Formel' }
 						},
 						buildMenu: (builder) => {
+							builder.getGroup('advanced').addItem('file', {
+								label: 'Datei',
+								icon: PAPERCLIP_ICON,
+								onRun: (ctx) => {
+									editorCommands.clearSlashText(ctx);
+									pickFiles();
+								}
+							});
 							const group = builder.addGroup('diagrams', 'Diagramme');
 							for (const kind of DIAGRAM_KINDS) {
 								group.addItem(kind, {
@@ -302,6 +365,18 @@
 <!-- Delegates clicks on the diagram edit buttons inside; they're keyboard-reachable buttons themselves. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div bind:this={container} class="milkdown-editor-root" onclick={onEditorClick}></div>
+
+<input
+	bind:this={fileInput}
+	type="file"
+	multiple
+	class="hidden"
+	aria-label="Datei hochladen"
+	onchange={(event) => onFilesPicked(event.currentTarget.files)}
+/>
+{#if fileError}
+	<p role="alert" class="mt-2 text-sm text-destructive">{fileError}</p>
+{/if}
 
 <DiagramEditorDialog
 	kind={diagramEdit?.kind ?? null}
@@ -415,6 +490,20 @@
 	}
 	.milkdown-editor-root :global(.ProseMirror[contenteditable='false'] .wiki-diagram-edit) {
 		display: none;
+	}
+
+	/* A paperclip in front of links to uploaded files (see insertFileLink).
+	   *= rather than ^=: the PDF makes links absolute (print-dom.ts). */
+	.milkdown-editor-root :global(.milkdown a[href*='/api/files/']::before) {
+		content: '';
+		display: inline-block;
+		width: 0.9em;
+		height: 0.9em;
+		margin-right: 0.15em;
+		vertical-align: -0.1em;
+		background-color: currentColor;
+		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551'/%3E%3C/svg%3E")
+			center / contain no-repeat;
 	}
 
 	/* Keep some room to click into when editing an (almost) empty page. */

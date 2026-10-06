@@ -1,6 +1,5 @@
 import { error } from '@sveltejs/kit';
 import { getPageWithLatestVersion, listPages } from '$lib/server/repo/pages';
-import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import { resolveWikiLinks } from '$lib/wiki-links';
 import type { PageServerLoad } from './$types';
 
@@ -15,7 +14,6 @@ export const load: PageServerLoad = async (event) => {
 		version: {
 			...result.version,
 			content: resolveWikiLinks(result.version.content, pages)
-		},
-		attachments: await listAttachmentsForPage(result.page.id)
+		}
 	};
 };

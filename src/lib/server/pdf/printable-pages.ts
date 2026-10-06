@@ -34,7 +34,8 @@ async function inlineAttachmentImages(markdown: string): Promise<string> {
 	await Promise.all(
 		unique.map(async (id) => {
 			const file = await getAttachment(id);
-			if (!file) return;
+			// Only images: a link to some other file stays a link.
+			if (!file || !file.mimeType.startsWith('image/')) return;
 			replacements.set(id, `data:${file.mimeType};base64,${file.data.toString('base64')}`);
 		})
 	);

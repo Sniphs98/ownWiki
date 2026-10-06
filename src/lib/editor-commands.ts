@@ -61,6 +61,11 @@ export function setHeading(ctx: Ctx, level: number | null) {
 	}
 }
 
+/** Removes the "/…" the user typed to open the slash menu. */
+export function clearSlashText(ctx: Ctx) {
+	ctx.get(commandsCtx).call(clearTextInCurrentBlockCommand.key);
+}
+
 /**
  * Inserts a diagram code block with the kind's template. Returns the
  * position of the new block, so the caller can open its editor.
@@ -98,8 +103,11 @@ type Command = {
 
 const command = (run: (ctx: Ctx) => void): Command => ({ run });
 
-/** All toolbar items except "heading" (a selector, see editor-toolbar.svelte). */
-export const TOOLBAR_COMMANDS: Record<Exclude<ToolbarItemKey, 'heading'>, Command> = {
+/**
+ * All toolbar items except "heading" (a selector, see editor-toolbar.svelte)
+ * and "file" (opens a file picker, see markdown-editor.svelte).
+ */
+export const TOOLBAR_COMMANDS: Record<Exclude<ToolbarItemKey, 'heading' | 'file'>, Command> = {
 	bold: {
 		run: (ctx) => ctx.get(commandsCtx).call(toggleStrongCommand.key),
 		active: (ctx) => isMarkActive(ctx, strongSchema.type(ctx))

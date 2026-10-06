@@ -8,7 +8,16 @@
 	import { whenDiagramsRendered } from '$lib/diagrams/render';
 	import type { PrintablePage } from '$lib/server/pdf/printable-pages';
 
-	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
+	let {
+		wikiTitle,
+		pages,
+		linkOrigin
+	}: {
+		wikiTitle: string;
+		pages: PrintablePage[];
+		/** The wiki's public origin, to make links in the PDF absolute. */
+		linkOrigin: string;
+	} = $props();
 
 	const isMulti = $derived(pages.length > 1);
 
@@ -79,7 +88,7 @@
 			// real content off to the source's off-screen position — pass a
 			// plain string, matching pagedjs's documented usage, so it parses
 			// fresh content instead.
-			await paginateHtml(toPrintableHtml(sourceEl!), targetEl!);
+			await paginateHtml(toPrintableHtml(sourceEl!, linkOrigin), targetEl!);
 			// The source has been cloned into targetEl's paginated layout by
 			// now; hiding it (the {#if !hideSource} below) is no longer just
 			// cosmetic — its huge negative offset (needed so Crepe still gets a

@@ -4,4 +4,4 @@
 	let { data } = $props();
 </script>
 
-<PrintPreview wikiTitle={data.wikiTitle} pages={data.pages} />
+<PrintPreview wikiTitle={data.wikiTitle} pages={data.pages} linkOrigin={data.linkOrigin} />

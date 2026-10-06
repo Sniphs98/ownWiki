@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button';
@@ -10,7 +11,7 @@
 	import PageBreakMarkers from './page-break-markers.svelte';
 	import PageBreakToggle from './page-break-toggle.svelte';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
-	import AttachmentsPanel from './attachments-panel.svelte';
+	import UnlinkedFiles from './unlinked-files.svelte';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
 	let {
@@ -40,6 +41,7 @@
 	let content = $state(existingContent);
 	let saving = $state(false);
 	let deleting = $state(false);
+	let editor: MarkdownEditor | undefined = $state();
 </script>
 
 <svelte:head>
@@ -83,7 +85,13 @@
 
 	<div class="mt-2">
 		<PageBreakMarkers {title} versionNumber={nextVersionNumber} updatedAt={new Date()} {content}>
-			<MarkdownEditor bind:value={content} {pageId} toolbar={toolbarSetting.layout} />
+			<MarkdownEditor
+				bind:this={editor}
+				bind:value={content}
+				{pageId}
+				toolbar={toolbarSetting.layout}
+				onupload={() => invalidateAll()}
+			/>
 		</PageBreakMarkers>
 	</div>
 
@@ -146,10 +154,14 @@
 
 {#if pageId}
 	<div class="mt-6">
-		<AttachmentsPanel {pageId} {attachments} canEdit={true} />
+		<UnlinkedFiles
+			{attachments}
+			{content}
+			oninsert={(file) => editor?.insertFileLink(`/api/files/${file.id}`, file.filename)}
+		/>
 	</div>
 {:else}
 	<p class="mt-6 text-sm text-muted-foreground">
-		Speichere die Seite einmal, um Bilder einzufügen oder Dateien anzuhängen.
+		Speichere die Seite einmal, um Bilder oder Dateien einzufügen.
 	</p>
 {/if}

@@ -9,6 +9,7 @@
 	import ListTodoIcon from '@lucide/svelte/icons/list-todo';
 	import LinkIcon from '@lucide/svelte/icons/link';
 	import ImageIcon from '@lucide/svelte/icons/image';
+	import PaperclipIcon from '@lucide/svelte/icons/paperclip';
 	import TableIcon from '@lucide/svelte/icons/table';
 	import SquareCodeIcon from '@lucide/svelte/icons/square-code';
 	import SigmaIcon from '@lucide/svelte/icons/sigma';
@@ -32,6 +33,7 @@
 		'task-list': ListTodoIcon,
 		link: LinkIcon,
 		image: ImageIcon,
+		file: PaperclipIcon,
 		table: TableIcon,
 		'code-block': SquareCodeIcon,
 		math: SigmaIcon,
@@ -90,7 +92,7 @@
 >
 	{#each toolbarGroups(layout) as group, groupIndex (groupIndex)}
 		{#if groupIndex > 0}
-			<div class="mx-1 h-5 w-px bg-border" role="separator"></div>
+			<div class="mx-0.5 h-5 w-px bg-border" role="separator"></div>
 		{/if}
 		{#each group as key (key)}
 			{#if key === 'heading'}
@@ -101,7 +103,7 @@
 								{...props}
 								variant="ghost"
 								size="sm"
-								class="w-32 justify-between"
+								class="w-28 justify-between"
 								title={TOOLBAR_ITEMS.heading}
 								onpointerdown={keepEditorFocus}
 							>

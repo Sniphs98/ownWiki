@@ -10,7 +10,9 @@ export const GET: RequestHandler = async (event) => {
 		headers: {
 			'content-type': file.mimeType,
 			'content-length': String(file.size),
-			'content-disposition': `inline; filename="${encodeURIComponent(file.filename)}"`,
+			// RFC 6266/5987: a plain filename="…" can't carry umlauts or spaces
+			// percent-encoded — browsers would save "Handbuch%20v2.pdf".
+			'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
 			'cache-control': 'private, max-age=31536000, immutable'
 		}
 	});

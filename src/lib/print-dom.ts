@@ -97,10 +97,19 @@ export function copyForPrint(
 	}
 }
 
-/** Returns the HTML of `source` with all editor-only chrome removed. */
-export function toPrintableHtml(source: HTMLElement): string {
+/**
+ * Returns the HTML of `source` with all editor-only chrome removed. With
+ * `linkOrigin`, links within the wiki (/w/…, /api/files/…) become absolute
+ * — in a PDF there's no page URL to resolve them against.
+ */
+export function toPrintableHtml(source: HTMLElement, linkOrigin?: string): string {
 	const copy = copyForPrint(source);
 	stripEditorChrome(copy);
+	if (linkOrigin) {
+		for (const link of copy.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+			link.href = new URL(link.getAttribute('href')!, linkOrigin).href;
+		}
+	}
 	return copy.innerHTML;
 }
 

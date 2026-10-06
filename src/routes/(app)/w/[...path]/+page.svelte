@@ -5,7 +5,6 @@
 	import BookOpenIcon from '@lucide/svelte/icons/book-open';
 	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
-	import AttachmentsPanel from '$lib/components/wiki/attachments-panel.svelte';
 	import PageHeader from '$lib/components/wiki/page-header.svelte';
 	import PageBreakMarkers from '$lib/components/wiki/page-break-markers.svelte';
 	import PageBreakToggle from '$lib/components/wiki/page-break-toggle.svelte';
@@ -74,10 +73,4 @@
 			<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
 		</PageBreakMarkers>
 	{/key}
-
-	{#if canEdit || data.attachments.length > 0}
-		<div class="mt-6">
-			<AttachmentsPanel pageId={data.page.id} attachments={data.attachments} {canEdit} />
-		</div>
-	{/if}
 </div>
