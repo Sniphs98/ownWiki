@@ -34,6 +34,12 @@ export async function generatePdf(printPathAndQuery: string): Promise<Buffer> {
 
 		await page.goto(url.toString(), { waitUntil: 'load' });
 		await page.waitForSelector('[data-print-ready="true"]', { timeout: 60000 });
+		// Let a font that finished loading at the last moment reach the
+		// rendered layout before it's printed.
+		await page.evaluate(async () => {
+			await document.fonts.ready;
+			await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		});
 
 		// pagedjs already lays out each page's margins (and its own page-number
 		// footer, see the @page rule in print/[...path]/+page.svelte) as real

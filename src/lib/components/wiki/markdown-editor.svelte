@@ -98,6 +98,13 @@
 <style>
 	.milkdown-editor-root :global(.milkdown) {
 		--crepe-color-background: transparent;
+		/* Crepe's defaults name fonts that are only present if installed on
+		   the viewer's machine (Open Sans, Georgia, Fira Code) — the PDF
+		   renderer's container has none of them. Use the self-hosted copies
+		   from layout.css instead; Gelasio is metric-compatible with Georgia. */
+		--crepe-font-default: 'Open Sans Variable', Arial, Helvetica, sans-serif;
+		--crepe-font-title: 'Gelasio Variable', Georgia, 'Times New Roman', serif;
+		--crepe-font-code: 'Fira Code Variable', Menlo, Monaco, 'Courier New', monospace;
 	}
 
 	/* Crepe's default 60px/120px padding would shrink the text column below

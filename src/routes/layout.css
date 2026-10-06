@@ -2,6 +2,14 @@
 @import 'tw-animate-css';
 @import 'shadcn-svelte/tailwind.css';
 @import '@fontsource-variable/inter';
+/* Self-hosted fonts for the editor content (see markdown-editor.svelte):
+   the browser and the PDF renderer must use the exact same font files, or
+   text wraps differently on paper than on screen. */
+@import '@fontsource-variable/open-sans/wght.css';
+@import '@fontsource-variable/open-sans/wght-italic.css';
+@import '@fontsource-variable/gelasio/wght.css';
+@import '@fontsource-variable/gelasio/wght-italic.css';
+@import '@fontsource-variable/fira-code/wght.css';
 
 @custom-variant dark (&:is(.dark *));
 @plugin '@tailwindcss/forms';

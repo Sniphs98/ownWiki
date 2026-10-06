@@ -47,7 +47,7 @@
 		.wiki-chapter { break-before: page; }
 		.wiki-chapter:first-child { break-before: avoid; }
 		.wiki-cover { text-align: center; padding-top: 30vh; break-after: page; }
-		.wiki-cover h1 { font-family: Georgia, Cambria, 'Times New Roman', Times, serif; font-size: 28pt; }
+		.wiki-cover h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
 		.wiki-cover p { color: #4f4539; }
 
 		img { max-width: 100%; break-inside: avoid; }
@@ -63,6 +63,26 @@
 		pre, blockquote, li { break-inside: avoid; }
 	`;
 
+	const PRINT_FONTS = [
+		'"Inter Variable"',
+		'"Open Sans Variable"',
+		'"Gelasio Variable"',
+		'"Fira Code Variable"'
+	];
+
+	async function loadPrintFonts() {
+		// The sample text pulls in the latin + latin-ext subsets (umlauts, €).
+		const sample = 'AaÄäÖöÜüß€';
+		await Promise.all(
+			PRINT_FONTS.flatMap((family) => [
+				document.fonts.load(`400 16px ${family}`, sample),
+				document.fonts.load(`700 16px ${family}`, sample),
+				document.fonts.load(`italic 400 16px ${family}`, sample)
+			])
+		);
+		await document.fonts.ready;
+	}
+
 	// Runs once every chapter's (readonly) Crepe instance has finished
 	// mounting — only then does the DOM actually contain the real,
 	// pixel-accurate rendering pagedjs needs to paginate.
@@ -71,6 +91,12 @@
 		paginated = true;
 
 		(async () => {
+			// pagedjs measures text to decide where pages break — if a web
+			// font is still loading at that point, it measures the fallback
+			// font and breaks in the wrong places (and Chromium may print the
+			// fallback, too). document.fonts.ready alone isn't enough: it only
+			// covers fonts the browser has already started loading.
+			await loadPrintFonts();
 			const paged = await import('pagedjs');
 			registerPrintHandlers(paged);
 			const blobUrl = URL.createObjectURL(new Blob([PRINT_CSS], { type: 'text/css' }));
@@ -88,6 +114,7 @@
 			// real layout box while off-screen) has been seen to confuse
 			// Chromium's full-page rendering if left in place.
 			hideSource = true;
+			await loadPrintFonts();
 			// generate-pdf.ts waits on this to know the paginated layout is
 			// final before calling page.pdf().
 			document.body.dataset.printReady = 'true';
