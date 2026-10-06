@@ -28,7 +28,7 @@ const PRINT_CSS = `
 	.wiki-cover h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
 	.wiki-cover p { color: #4f4539; }
 
-	img { max-width: 100%; break-inside: avoid; }
+	img, .wiki-diagram { max-width: 100%; break-inside: avoid; }
 	/* prosemirror-tables clips tables (overflow: hidden) and wraps them
 	   in a horizontal scroll container — pagedjs can't split a clipped
 	   box, it moves it whole and leaves an empty page behind. */

@@ -27,6 +27,11 @@ const fixtures = [
 		path: 'e2e/long-code',
 		title: 'Code Prüfseite',
 		content: readFileSync(new URL('./fixtures/long-code.md', import.meta.url), 'utf8')
+	},
+	{
+		path: 'e2e/diagrams',
+		title: 'Diagramme Prüfseite',
+		content: readFileSync(new URL('./fixtures/diagrams.md', import.meta.url), 'utf8')
 	}
 ];
 

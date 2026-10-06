@@ -1,7 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Crepe as CrepeType } from '@milkdown/crepe';
+	import type { Ctx } from '@milkdown/kit/ctx';
+	import type { Node as ProseNode } from '@milkdown/kit/prose/model';
+	import type { EditorView } from '@milkdown/kit/prose/view';
 	import { installEagerCodeBlocks } from '$lib/eager-code-blocks';
+	import {
+		DIAGRAM_ICONS,
+		DIAGRAM_KINDS,
+		DIAGRAM_LABELS,
+		DIAGRAM_TEMPLATES,
+		isDiagramKind,
+		type DiagramKind
+	} from '$lib/diagrams/kinds';
+	import { renderDiagramPreview } from '$lib/diagrams/render';
+	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
 
 	let {
 		value = $bindable(''),
@@ -24,6 +37,60 @@
 
 	let container: HTMLDivElement;
 	let crepe: CrepeType | undefined;
+	let getView: (() => EditorView) | undefined;
+
+	/** The diagram code block being edited in the dialog, if any. */
+	let diagramEdit = $state<{ kind: DiagramKind; source: string; dom: Element } | null>(null);
+
+	/** Finds the code_block node a node view's DOM element belongs to. */
+	function findCodeBlock(view: EditorView, dom: Element) {
+		let found: { node: ProseNode; pos: number } | null = null;
+		view.state.doc.descendants((node, pos) => {
+			if (found) return false;
+			if (node.type.name === 'code_block' && view.nodeDOM(pos) === dom) {
+				found = { node, pos };
+				return false;
+			}
+		});
+		return found as { node: ProseNode; pos: number } | null;
+	}
+
+	function openDiagramEditor(dom: Element) {
+		const view = getView?.();
+		const block = view && findCodeBlock(view, dom);
+		const language = String(block?.node.attrs.language ?? '');
+		if (!block || !isDiagramKind(language)) return;
+		diagramEdit = {
+			kind: language.toLowerCase() as DiagramKind,
+			source: block.node.textContent,
+			dom
+		};
+	}
+
+	function saveDiagram(source: string) {
+		const view = getView?.();
+		const edit = diagramEdit;
+		diagramEdit = null;
+		// Look the block up again: the document may have changed meanwhile.
+		const block = view && edit && findCodeBlock(view, edit.dom);
+		if (!view || !block) return;
+		const content = source ? view.state.schema.text(source) : [];
+		view.dispatch(
+			view.state.tr.replaceWith(block.pos + 1, block.pos + block.node.nodeSize - 1, content)
+		);
+	}
+
+	// The edit button lives in Crepe-sanitized preview HTML, so it can't
+	// have its own handler — catch its clicks here instead.
+	function onEditorClick(event: MouseEvent) {
+		if (readonly) return;
+		const button = (event.target as Element | null)?.closest?.('[data-diagram-edit]');
+		const block = button?.closest('.milkdown-code-block');
+		if (!block) return;
+		event.preventDefault();
+		event.stopPropagation();
+		openDiagramEditor(block);
+	}
 
 	async function uploadImage(file: File): Promise<string> {
 		if (!pageId)
@@ -51,8 +118,10 @@
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
 			installEagerCodeBlocks();
-			const [{ Crepe }] = await Promise.all([
+			const [{ Crepe }, { commandsCtx, editorViewCtx }, commonmark] = await Promise.all([
 				import('@milkdown/crepe'),
+				import('@milkdown/kit/core'),
+				import('@milkdown/kit/preset/commonmark'),
 				import('@milkdown/crepe/theme/common/style.css'),
 				import('@milkdown/crepe/theme/classic.css')
 			]);
@@ -66,9 +135,57 @@
 					[Crepe.Feature.Placeholder]: { text: placeholder },
 					[Crepe.Feature.ImageBlock]: {
 						onUpload: uploadImage
+					},
+					// Diagram code blocks show the rendered diagram instead of
+					// their source; see $lib/diagrams.
+					[Crepe.Feature.CodeMirror]: {
+						previewOnlyByDefault: true,
+						previewLabel: 'Vorschau',
+						previewLoading: 'Diagramm wird geladen …',
+						renderPreview: (language, content, applyPreview) => {
+							if (!isDiagramKind(language)) return null;
+							const kind = language.toLowerCase() as DiagramKind;
+							renderDiagramPreview(kind, content).then(applyPreview);
+							return undefined;
+						}
+					},
+					[Crepe.Feature.BlockEdit]: {
+						buildMenu: (builder) => {
+							const group = builder.addGroup('diagrams', 'Diagramme');
+							for (const kind of DIAGRAM_KINDS) {
+								group.addItem(kind, {
+									label: DIAGRAM_LABELS[kind],
+									icon: DIAGRAM_ICONS[kind],
+									onRun: (ctx) => insertDiagram(ctx, kind)
+								});
+							}
+						}
 					}
 				}
 			});
+
+			function insertDiagram(ctx: Ctx, kind: DiagramKind) {
+				const view = ctx.get(editorViewCtx);
+				const commands = ctx.get(commandsCtx);
+				commands.call(commonmark.clearTextInCurrentBlockCommand.key);
+				const { from } = view.state.selection;
+				const node = commonmark.codeBlockSchema
+					.type(ctx)
+					.create({ language: kind }, view.state.schema.text(DIAGRAM_TEMPLATES[kind]));
+				commands.call(commonmark.addBlockTypeCommand.key, { nodeType: node });
+				// Open the new diagram's editor right away.
+				const doc = view.state.doc;
+				doc.nodesBetween(
+					Math.max(0, from - 2),
+					Math.min(doc.content.size, from + 2),
+					(candidate, pos) => {
+						if (candidate.type.name !== 'code_block') return;
+						const dom = view.nodeDOM(pos);
+						if (dom instanceof Element) setTimeout(() => openDiagramEditor(dom));
+						return false;
+					}
+				);
+			}
 
 			instance.on((listener) => {
 				listener.markdownUpdated((_ctx, markdown) => {
@@ -85,6 +202,7 @@
 			}
 
 			crepe = instance;
+			getView = () => instance.editor.ctx.get(editorViewCtx);
 			onready?.();
 		};
 
@@ -104,7 +222,16 @@
 	});
 </script>
 
-<div bind:this={container} class="milkdown-editor-root"></div>
+<!-- Delegates clicks on the diagram edit buttons inside; they're keyboard-reachable buttons themselves. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+<div bind:this={container} class="milkdown-editor-root" onclick={onEditorClick}></div>
+
+<DiagramEditorDialog
+	kind={diagramEdit?.kind ?? null}
+	source={diagramEdit?.source ?? ''}
+	onsave={saveDiagram}
+	oncancel={() => (diagramEdit = null)}
+/>
 
 <style>
 	.milkdown-editor-root :global(.milkdown) {
@@ -155,6 +282,62 @@
 	   Windows, something else in the PDF container) over Crepe's code font. */
 	.milkdown-editor-root :global(.milkdown .cm-scroller) {
 		font-family: var(--crepe-font-code);
+	}
+
+	/* Diagrams (see $lib/diagrams/render.ts): always drawn light on a white
+	   card, in dark mode too, so they look the same on screen and on paper. */
+	.milkdown-editor-root :global(.wiki-diagram) {
+		position: relative;
+		border: 1px solid #e5e5e5;
+		border-radius: 6px;
+		background: #ffffff;
+		padding: 12px;
+		text-align: center;
+		white-space: normal;
+	}
+	/* A diagram replaces the code block's own frame rather than sitting
+	   inside it. */
+	.milkdown-editor-root :global(.milkdown .milkdown-code-block:has(.wiki-diagram)) {
+		background: transparent;
+		padding: 0;
+	}
+	.milkdown-editor-root :global(.milkdown .milkdown-code-block:has(.wiki-diagram) .preview-panel) {
+		padding: 0;
+		margin: 0;
+	}
+	/* Language picker / copy / "show source" are for editing only. */
+	.milkdown-editor-root
+		:global(.ProseMirror[contenteditable='false'] .milkdown-code-block:has(.wiki-diagram) .tools) {
+		display: none;
+	}
+	.milkdown-editor-root :global(.wiki-diagram svg) {
+		display: inline-block;
+		max-width: 100%;
+		height: auto;
+	}
+	.milkdown-editor-root :global(.wiki-diagram-error) {
+		color: #ba1a1a;
+		font-size: 0.875rem;
+		text-align: left;
+		white-space: pre-wrap;
+	}
+	.milkdown-editor-root :global(.wiki-diagram-edit) {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		border: 1px solid #d4d4d4;
+		border-radius: 6px;
+		background: #ffffff;
+		color: #171717;
+		padding: 2px 10px;
+		font-size: 0.8125rem;
+		cursor: pointer;
+	}
+	.milkdown-editor-root :global(.wiki-diagram-edit:hover) {
+		background: #f5f5f5;
+	}
+	.milkdown-editor-root :global(.ProseMirror[contenteditable='false'] .wiki-diagram-edit) {
+		display: none;
 	}
 
 	/* Keep some room to click into when editing an (almost) empty page. */

@@ -5,6 +5,7 @@
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { toPrintableHtml } from '$lib/print-dom';
 	import { loadPrintFonts, paginate as paginateHtml } from '$lib/paginate';
+	import { whenDiagramsRendered } from '$lib/diagrams/render';
 	import type { PrintablePage } from '$lib/server/pdf/printable-pages';
 
 	let { wikiTitle, pages }: { wikiTitle: string; pages: PrintablePage[] } = $props();
@@ -70,6 +71,7 @@
 		paginated = true;
 
 		const paginate = async () => {
+			await whenDiagramsRendered();
 			await waitForDomToSettle(sourceEl!);
 			// Passing the live sourceEl node itself (instead of its HTML as a
 			// string) made pagedjs's chunker nest a clone of the *whole*

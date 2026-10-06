@@ -19,7 +19,9 @@ const EDITOR_CHROME_SELECTORS = [
 	'.milkdown-table-block .handle',
 	'.milkdown-table-block .drag-preview',
 	'.milkdown-table-block .cell-handle',
-	'.milkdown-table-block .line-handle'
+	'.milkdown-table-block .line-handle',
+	// The edit button on diagrams.
+	'[data-diagram-edit]'
 ];
 
 /**
