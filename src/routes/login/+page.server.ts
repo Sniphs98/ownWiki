@@ -2,11 +2,11 @@ import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
 import { isSignupAllowed } from '$lib/server/signup';
+import { safeRedirectPath } from '$lib/safe-redirect';
 import type { Actions, PageServerLoad } from './$types';
 
 function redirectTarget(url: URL) {
-	const redirectTo = url.searchParams.get('redirectTo');
-	return redirectTo?.startsWith('/') ? redirectTo : '/';
+	return safeRedirectPath(url.searchParams.get('redirectTo'), url.origin);
 }
 
 export const load: PageServerLoad = async (event) => {
