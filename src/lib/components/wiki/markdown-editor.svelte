@@ -233,13 +233,15 @@
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
 			installEagerCodeBlocks();
-			const [{ Crepe }, { editorViewCtx }, editorCommands] = await Promise.all([
-				import('@milkdown/crepe'),
-				import('@milkdown/kit/core'),
-				import('$lib/editor-commands'),
-				import('@milkdown/crepe/theme/common/style.css'),
-				import('@milkdown/crepe/theme/classic.css')
-			]);
+			const [{ Crepe }, { editorViewCtx }, editorCommands, { codeHighlighting }] =
+				await Promise.all([
+					import('@milkdown/crepe'),
+					import('@milkdown/kit/core'),
+					import('$lib/editor-commands'),
+					import('$lib/code-highlight'),
+					import('@milkdown/crepe/theme/common/style.css'),
+					import('@milkdown/crepe/theme/classic.css')
+				]);
 
 			if (destroyed) return;
 			commands = editorCommands;
@@ -255,6 +257,8 @@
 					// Diagram code blocks show the rendered diagram instead of
 					// their source; see $lib/diagrams.
 					[Crepe.Feature.CodeMirror]: {
+						// Instead of One Dark, see $lib/code-highlight.ts.
+						theme: codeHighlighting,
 						previewOnlyByDefault: true,
 						previewLabel: 'Vorschau',
 						previewLoading: 'Diagramm wird geladen …',
@@ -397,30 +401,90 @@
 		--crepe-font-code: 'Fira Code Variable', Menlo, Monaco, 'Courier New', monospace;
 	}
 
-	/* Only Crepe's light theme is loaded; in the app's dark mode, swap in the
-	   colors of its dark theme (@milkdown/crepe/theme/classic-dark.css).
-	   Printing always uses the light theme (print-preview.svelte). */
-	:global(.dark) .milkdown-editor-root :global(.milkdown) {
-		--crepe-color-on-background: #eae1d9;
-		--crepe-color-surface: #18120b;
-		--crepe-color-surface-low: #201b13;
-		--crepe-color-on-surface: #ede0d4;
-		--crepe-color-on-surface-variant: #d3c4b4;
-		--crepe-color-outline: #9c8f80;
-		--crepe-color-primary: #f4bd6f;
-		--crepe-color-secondary: #56442a;
-		--crepe-color-on-secondary: #fbdebc;
-		--crepe-color-inverse: #ede0d4;
-		--crepe-color-on-inverse: #362f27;
-		--crepe-color-inline-code: #ffb4ab;
-		--crepe-color-error: #ffb4ab;
-		--crepe-color-hover: #251f17;
-		--crepe-color-selected: #3b342b;
-		--crepe-color-inline-area: #3f3830;
-		--crepe-shadow-1:
-			0px 1px 2px 0px rgba(255, 255, 255, 0.3), 0px 1px 3px 1px rgba(255, 255, 255, 0.15);
-		--crepe-shadow-2:
-			0px 1px 2px 0px rgba(255, 255, 255, 0.3), 0px 2px 6px 2px rgba(255, 255, 255, 0.15);
+	/* Crepe's colors, mapped onto the app's design tokens (layout.css) so
+	   the editor and its popups (the "/" menu, the formatting toolbar, link
+	   tooltips …) look like the rest of the app — and follow light/dark mode
+	   by themselves. Printing always uses the light tokens
+	   (print-preview.svelte). */
+	.milkdown-editor-root :global(.milkdown) {
+		--crepe-color-on-background: var(--foreground);
+		--crepe-color-surface: var(--popover);
+		--crepe-color-surface-low: var(--muted);
+		--crepe-color-on-surface: var(--popover-foreground);
+		--crepe-color-on-surface-variant: var(--muted-foreground);
+		--crepe-color-outline: var(--muted-foreground);
+		--crepe-color-primary: var(--primary);
+		--crepe-color-secondary: var(--accent);
+		--crepe-color-on-secondary: var(--accent-foreground);
+		--crepe-color-inverse: var(--foreground);
+		--crepe-color-on-inverse: var(--background);
+		--crepe-color-inline-code: var(--foreground);
+		--crepe-color-error: var(--destructive);
+		--crepe-color-hover: var(--accent);
+		/* Text selection: --accent is nearly white in light mode. */
+		--crepe-color-selected: color-mix(in oklab, var(--foreground) 15%, transparent);
+		--crepe-color-inline-area: var(--muted);
+		/* Tailwind's shadow-md / shadow-lg, as used by the app's popovers. */
+		--crepe-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+		--crepe-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+	}
+
+	/* Code blocks sit on the muted surface, not the (white) popover one. */
+	.milkdown-editor-root :global(.milkdown .milkdown-code-block) {
+		--crepe-color-surface: var(--muted);
+	}
+
+	/* The line with the cursor: a faint tint in either mode — and none in
+	   the read-only view, where there is no cursor. */
+	.milkdown-editor-root :global(.milkdown :is(.cm-activeLine, .cm-activeLineGutter)) {
+		background: color-mix(in oklab, var(--foreground) 6%, transparent);
+	}
+	.milkdown-editor-root
+		:global(.ProseMirror[contenteditable='false'] :is(.cm-activeLine, .cm-activeLineGutter)) {
+		background: transparent;
+	}
+
+	/* Syntax colors used by $lib/code-highlight.ts (GitHub's light/dark). */
+	.milkdown-editor-root {
+		--code-keyword: #cf222e;
+		--code-string: #0a3069;
+		--code-comment: #6e7781;
+		--code-number: #0550ae;
+		--code-function: #8250df;
+		--code-type: #953800;
+		--code-property: #0550ae;
+		--code-definition: #953800;
+		--code-invalid: #82071e;
+	}
+	:global(.dark) .milkdown-editor-root {
+		--code-keyword: #ff7b72;
+		--code-string: #a5d6ff;
+		--code-comment: #8b949e;
+		--code-number: #79c0ff;
+		--code-function: #d2a8ff;
+		--code-type: #ffa657;
+		--code-property: #79c0ff;
+		--code-definition: #ffa657;
+		--code-invalid: #ffa198;
+	}
+
+	/* Popups: the app's UI font, corner radius and hairline border, like its
+	   own dropdowns and dialogs. */
+	.milkdown-editor-root
+		:global(
+			.milkdown
+				:is(
+					.milkdown-slash-menu,
+					.milkdown-toolbar,
+					.milkdown-link-preview,
+					.milkdown-link-edit,
+					.milkdown-latex-inline-edit,
+					.language-picker
+				)
+		) {
+		font-family: var(--font-sans);
+		border-radius: var(--radius);
+		border: 1px solid var(--border);
 	}
 
 	/* Crepe's default 60px/120px padding would shrink the text column below
