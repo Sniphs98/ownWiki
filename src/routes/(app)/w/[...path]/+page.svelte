@@ -70,7 +70,12 @@
 			updatedAt={data.page.updatedAt}
 			content={data.version.content}
 		>
-			<MarkdownEditor value={data.version.content} pageId={data.page.id} readonly />
+			<MarkdownEditor
+				value={data.version.content}
+				pageId={data.page.id}
+				tocPath={data.page.path}
+				readonly
+			/>
 		</PageBreakMarkers>
 	{/key}
 </div>

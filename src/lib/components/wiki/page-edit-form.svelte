@@ -90,6 +90,7 @@
 				bind:value={content}
 				{pageId}
 				toolbar={toolbarSetting.layout}
+				tocPath={path}
 				onupload={() => invalidateAll()}
 			/>
 		</PageBreakMarkers>

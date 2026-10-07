@@ -16,6 +16,7 @@
 	import type { ToolbarEntry, ToolbarItemKey } from '$lib/toolbar';
 	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
 	import EditorToolbar from './editor-toolbar.svelte';
+	import { collectHeadings, pageToc } from '$lib/page-toc.svelte';
 
 	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
 	const PAPERCLIP_ICON =
@@ -27,6 +28,7 @@
 		placeholder = 'Tippe "/" für Befehle …',
 		pageId,
 		toolbar,
+		tocPath,
 		onready,
 		onerror,
 		onupload
@@ -38,6 +40,8 @@
 		pageId?: string;
 		/** Shows this toolbar above the editor while it's editable. */
 		toolbar?: ToolbarEntry[];
+		/** Publishes this page's headings as the sidebar's table of contents. */
+		tocPath?: string;
 		/** Fires once the Crepe instance has finished mounting. */
 		onready?: () => void;
 		/** Fires if Crepe fails to load or mount. */
@@ -66,6 +70,19 @@
 			toolbarActive = next;
 			headingLevel = currentHeadingLevel(ctx);
 		});
+	}
+
+	let tocTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function publishToc() {
+		if (tocPath && container) pageToc.set(tocPath, collectHeadings(container));
+	}
+
+	// While typing, ProseMirror replaces heading elements; refresh shortly after.
+	function scheduleTocUpdate() {
+		if (!tocPath) return;
+		clearTimeout(tocTimer);
+		tocTimer = setTimeout(publishToc, 200);
 	}
 
 	function runToolbarItem(key: Exclude<ToolbarItemKey, 'heading'>) {
@@ -323,7 +340,10 @@
 					value = markdown;
 				});
 				listener.selectionUpdated(() => refreshToolbar());
-				listener.updated(() => refreshToolbar());
+				listener.updated(() => {
+					refreshToolbar();
+					scheduleTocUpdate();
+				});
 			});
 
 			instance.setReadonly(readonly);
@@ -337,6 +357,7 @@
 			crepe = instance;
 			getView = () => instance.editor.ctx.get(editorViewCtx);
 			refreshToolbar();
+			publishToc();
 			onready?.();
 		};
 
@@ -347,6 +368,8 @@
 
 		return () => {
 			destroyed = true;
+			clearTimeout(tocTimer);
+			if (tocPath) pageToc.clear(tocPath);
 			crepe?.destroy();
 		};
 	});
@@ -567,6 +590,12 @@
 		background-color: currentColor;
 		mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551'/%3E%3C/svg%3E")
 			center / contain no-repeat;
+	}
+
+	/* Jumping to a heading from the table of contents leaves room for the
+	   sticky editor toolbar above it. */
+	.milkdown-editor-root :global(.ProseMirror > :is(h1, h2, h3, h4)) {
+		scroll-margin-top: 4rem;
 	}
 
 	/* Keep some room to click into when editing an (almost) empty page. */
