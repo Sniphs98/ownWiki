@@ -8,6 +8,7 @@ import {
 	PageConflictError
 } from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
+import { slugifyPath } from '$lib/slug';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -15,6 +16,15 @@ export const load: PageServerLoad = async (event) => {
 
 	const path = event.params.path;
 	const existing = await getPageWithLatestVersion(path);
+
+	// New pages only get the canonical path the "Neue Seite" dialog and
+	// wiki links produce ("Personal/Kündigung" → "personal/kuendigung").
+	const slug = slugifyPath(path);
+	if (!existing && slug !== path) {
+		if (!slug) error(400, 'Ungültiger Seitenpfad');
+		const title = event.url.searchParams.get('title') ?? path.split('/').at(-1) ?? '';
+		redirect(303, `/w/${slug}/edit?title=${encodeURIComponent(title)}`);
+	}
 
 	return {
 		path,
@@ -45,6 +55,9 @@ export const actions: Actions = {
 
 		const authorId = event.locals.user?.id;
 		const existing = await getPageWithLatestVersion(path);
+		if (!existing && slugifyPath(path) !== path) {
+			return fail(400, { message: 'Ungültiger Seitenpfad.' });
+		}
 
 		try {
 			if (existing) {
