@@ -56,3 +56,20 @@ test('while editing, new headings show up right away', async ({ page }) => {
 
 	await expect(toc(page).getByRole('button').last()).toHaveText('Nachtrag');
 });
+
+test('wide windows also show the sections beside the text', async ({ page }) => {
+	const aside = page.getByRole('navigation', { name: 'Auf dieser Seite' });
+
+	await page.setViewportSize({ width: 1920, height: 1000 });
+	await page.goto(`/w/${PATH}`);
+	await expect(aside).toBeVisible();
+	await aside.getByRole('button', { name: 'Zuständigkeiten' }).click();
+	// Both tables of contents mark the same section.
+	await expect(aside.locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
+	await expect(toc(page).locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
+
+	// Too narrow for a panel next to the text (sidebar open): only the tree.
+	await page.setViewportSize({ width: 1400, height: 900 });
+	await expect(aside).toBeHidden();
+	await expect(toc(page)).toBeVisible();
+});

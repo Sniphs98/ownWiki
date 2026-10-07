@@ -20,7 +20,7 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 
 ### Inhaltsverzeichnis
 
-Unter der geöffneten Seite zeigt der Seitenbaum ihre Überschriften, nach Ebenen eingerückt. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Das Verzeichnis lässt sich über „Inhalt“ einklappen und aktualisiert sich beim Bearbeiten sofort mit.
+Unter der geöffneten Seite zeigt der Seitenbaum ihre Überschriften, nach Ebenen eingerückt. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Das Verzeichnis lässt sich über „Inhalt“ einklappen und aktualisiert sich beim Bearbeiten sofort mit. Auf breiten Bildschirmen stehen die Abschnitte zusätzlich als „Auf dieser Seite“ rechts neben dem Text und bleiben beim Scrollen sichtbar.
 
 ### Schreiben
 

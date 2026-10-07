@@ -9,17 +9,27 @@ export interface TocEntry {
 
 const EXPANDED_KEY = 'toc-expanded';
 
+/** How far below the top of the content area a heading counts as "current". */
+const ACTIVE_OFFSET = 96;
+
 /**
  * The table of contents of the page that's open: the editor showing it
- * (markdown-editor.svelte, given a `tocPath`) publishes its headings here,
- * the page tree in the sidebar shows them under that page (page-toc.svelte).
+ * (markdown-editor.svelte, given a `tocPath`) publishes its headings here;
+ * the page tree (page-toc.svelte) and the panel beside the text
+ * (page-toc-aside.svelte) show them, and share which one is current.
  */
 class PageToc {
 	/** Wiki path of the page the entries belong to, or null. */
 	path = $state<string | null>(null);
 	entries = $state.raw<TocEntry[]>([]);
-	/** Whether the table of contents is unfolded in the sidebar. Per browser. */
+	/** The heading whose section is in view, or -1 above the first one. */
+	activeIndex = $state(-1);
+	/** Whether the table of contents is unfolded in the page tree. Per browser. */
 	expanded = $state(true);
+
+	// The heading last jumped to. Near the end of a page it can't scroll up
+	// to the top, so the scroll position alone would point at an earlier one.
+	#jumpedTo = -1;
 
 	constructor() {
 		if (!browser) return;
@@ -40,6 +50,7 @@ class PageToc {
 		if (this.path !== path) return;
 		this.path = null;
 		this.entries = [];
+		this.activeIndex = -1;
 	}
 
 	toggle() {
@@ -49,6 +60,51 @@ class PageToc {
 		} catch {
 			// Not persisted; still applies until reload.
 		}
+	}
+
+	/** Scrolls to a heading and marks it current. */
+	jumpTo(index: number) {
+		const entry = this.entries[index];
+		if (!entry) return;
+		this.#jumpedTo = index;
+		this.activeIndex = index;
+		entry.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
+
+	/**
+	 * Keeps activeIndex in step with what's scrolled into view in
+	 * `scroller` (the app's content area). Returns a cleanup function.
+	 */
+	track(scroller: Element): () => void {
+		let frame = 0;
+		const update = () => {
+			frame = 0;
+			const bounds = scroller.getBoundingClientRect();
+			let index = -1;
+			this.entries.forEach((entry, i) => {
+				const { top } = entry.element.getBoundingClientRect();
+				if (entry.element.isConnected && top <= bounds.top + ACTIVE_OFFSET) index = i;
+			});
+			const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2;
+			const jumped = this.entries[this.#jumpedTo]?.element;
+			if (atBottom && jumped?.isConnected && jumped.getBoundingClientRect().top < bounds.bottom) {
+				index = this.#jumpedTo;
+			}
+			this.activeIndex = index;
+		};
+		const onScroll = () => (frame ||= requestAnimationFrame(update));
+		// Scrolling by hand ends what the last jump pinned.
+		const onUserScroll = () => (this.#jumpedTo = -1);
+		const userEvents = ['wheel', 'touchmove', 'keydown'] as const;
+
+		update();
+		scroller.addEventListener('scroll', onScroll, { passive: true });
+		for (const type of userEvents) scroller.addEventListener(type, onUserScroll, { passive: true });
+		return () => {
+			scroller.removeEventListener('scroll', onScroll);
+			for (const type of userEvents) scroller.removeEventListener(type, onUserScroll);
+			cancelAnimationFrame(frame);
+		};
 	}
 }
 

@@ -9,6 +9,8 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
+	import { pageToc } from '$lib/page-toc.svelte';
+	import PageTocAside from '$lib/components/wiki/page-toc-aside.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 
@@ -18,6 +20,15 @@
 
 	$effect(() => {
 		toolbarSetting.init(data.toolbar, !!data.user);
+	});
+
+	let contentArea: HTMLElement | undefined = $state();
+
+	// Track which section of the open page is in view, for both tables of
+	// contents (page tree and the panel beside the text).
+	$effect(() => {
+		if (!contentArea || pageToc.entries.length === 0) return;
+		return pageToc.track(contentArea);
 	});
 
 	const crumbs = $derived.by(() => {
@@ -102,8 +113,16 @@
 		</header>
 		<!-- overflow-x-hidden: page-break labels sit in the margin beside the
 			 text column and must not cause a horizontal scrollbar. -->
-		<main class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-			{@render children()}
+		<!-- @container: the "Auf dieser Seite" panel appears based on the width
+			 of this area, not the window (the sidebar may be open or not). -->
+		<main
+			bind:this={contentArea}
+			class="@container min-h-0 flex-1 overflow-x-hidden overflow-y-auto"
+		>
+			<div class="relative">
+				{@render children()}
+				<PageTocAside />
+			</div>
 		</main>
 	</Sidebar.Inset>
 </Sidebar.Provider>
