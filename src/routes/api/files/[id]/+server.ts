@@ -1,21 +1,13 @@
 import { error } from '@sveltejs/kit';
 import { deleteAttachment, getAttachment } from '$lib/server/repo/attachments';
+import { attachmentHeaders } from '$lib/server/attachment-headers';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async (event) => {
 	const file = await getAttachment(event.params.id);
 	if (!file) error(404, 'Datei nicht gefunden');
 
-	return new Response(new Uint8Array(file.data), {
-		headers: {
-			'content-type': file.mimeType,
-			'content-length': String(file.size),
-			// RFC 6266/5987: a plain filename="…" can't carry umlauts or spaces
-			// percent-encoded — browsers would save "Handbuch%20v2.pdf".
-			'content-disposition': `inline; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
-			'cache-control': 'private, max-age=31536000, immutable'
-		}
-	});
+	return new Response(new Uint8Array(file.data), { headers: attachmentHeaders(file) });
 };
 
 export const DELETE: RequestHandler = async (event) => {
