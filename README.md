@@ -1,42 +1,141 @@
-# sv
+# ownWiki
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit einem PDF-Export, der genau so aussieht wie die Seite im Browser.
 
-## Creating a project
+![Eine Wiki-Seite mit Seitenleiste, Checkliste und Tabelle](docs/screenshots/seite.png)
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Funktionen
+
+- **WYSIWYG-Editor auf Markdown-Basis** ([Milkdown Crepe](https://milkdown.dev)): Überschriften, Listen, Checklisten, Tabellen, Code mit Syntax-Hervorhebung, Formeln, Bilder.
+- **PDF-Export, der dem Bildschirm entspricht** – einzelne Seiten, ganze Bereiche mit Unterseiten oder das komplette Wiki.
+- **Seitenumbruch-Vorschau**: Schon beim Schreiben zeigt eine Linie, wo im PDF eine neue Seite beginnt.
+- **Diagramme direkt im Text**: Mermaid, BPMN (bpmn-js) und Excalidraw.
+- **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
+- **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
+- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
+- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
+- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki.
+- **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
+
+### Schreiben
+
+Formatiert wird über die Werkzeugleiste, über Markdown-Kürzel (`## `, `- `, `**fett**` …) oder über das **„/“-Menü**: In einer leeren Zeile `/` tippen.
+
+![Editor mit Werkzeugleiste und geöffnetem „/“-Menü](docs/screenshots/editor.png)
+
+Welche Werkzeuge in der Leiste stehen und in welcher Reihenfolge, stellt jede Person unter **Einstellungen** (Zahnrad oben rechts) selbst ein. Mit Konto wird das im Konto gespeichert, sonst im Browser.
+
+![Einstellungen der Werkzeugleiste](docs/screenshots/einstellungen.png)
+
+### PDF-Export
+
+„PDF“ auf einer Seite lädt sie als PDF herunter; „mit Unterseiten“ nimmt den ganzen Bereich mit, „Ganzes Wiki als PDF“ auf der Startseite alles inklusive Deckblatt. „Seitenweise“ zeigt dieselbe Aufteilung als Vorschau im Browser.
+
+Das PDF wird nicht nachgebaut, sondern aus der echten Seite erzeugt: dieselbe Textbreite (A4 mit Rändern), dieselben eingebetteten Schriften, derselbe Editor. Zeilen brechen deshalb an exakt denselben Stellen um. Tabellen und lange Codeblöcke werden zeilenweise auf mehrere Seiten verteilt, der Tabellenkopf wiederholt sich auf jeder Seite.
+
+<p align="center">
+  <img src="docs/screenshots/pdf-seite.png" alt="Erste Seite eines exportierten PDFs" width="420">
+</p>
+
+Damit man schon beim Schreiben sieht, wo eine Seite endet, markiert eine gestrichelte Linie jeden Seitenumbruch – auch mitten in einem Absatz, einer Tabelle oder einem Codeblock. Ein- und ausschalten lässt sie sich über „Seitenumbrüche“.
+
+![Gestrichelte Linie „Seite 2“ zwischen zwei Abschnitten](docs/screenshots/seitenumbrueche.png)
+
+### Diagramme
+
+Diagramme werden über das „/“-Menü (Gruppe „Diagramme“) oder die Werkzeugleiste eingefügt. Sie stehen als Codeblock im Markdown der Seite (` ```mermaid `, ` ```bpmn `, ` ```excalidraw `) – werden also mit der Seite versioniert und landen im PDF. Angezeigt wird die fertige Grafik:
+
+![Ein BPMN-Prozess und ein Mermaid-Sequenzdiagramm auf einer Seite](docs/screenshots/diagramme.png)
+
+„Bearbeiten“ an einem Diagramm öffnet den passenden Editor groß im Dialog: Mermaid-Code mit Live-Vorschau, den bpmn-js-Modeler oder die Excalidraw-Zeichenfläche.
+
+| BPMN                                                       | Excalidraw                                                             |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ![BPMN-Editor im Dialog](docs/screenshots/bpmn-editor.png) | ![Excalidraw-Zeichenfläche im Dialog](docs/screenshots/excalidraw.png) |
+
+Alle Diagramm-Bibliotheken – auch die Schriften von Excalidraw – liefert der eigene Server aus; es werden keine externen Dienste angefragt. Geladen werden sie erst, wenn eine Seite sie braucht.
+
+### Dateien
+
+„Datei“ im „/“-Menü oder in der Werkzeugleiste lädt eine oder mehrere Dateien hoch (je bis 10 MB) und fügt sie als Download-Link an der Cursor-Stelle ein. Bilder, die im Text erscheinen sollen, fügst du über „Bild“ ein. Dateien, die im Text nicht (mehr) verlinkt sind, listet die Bearbeiten-Ansicht auf – zum erneuten Einfügen oder endgültigen Löschen.
+
+### Versionsverlauf
+
+Jedes Speichern legt eine neue Version an, optional mit Änderungshinweis. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
+
+![Versionsverlauf mit zwei Versionen](docs/screenshots/verlauf.png)
+
+### Dunkelmodus
+
+Über das Symbol oben rechts wählst du hell, dunkel oder die Systemeinstellung. Diagramme bleiben auf weißem Grund, damit sie genauso aussehen wie im (immer hellen) PDF.
+
+![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
+
+## Schnellstart mit Docker
 
 ```sh
-# create a new project
-npx sv create my-app
+cp .env.example .env
+# In .env mindestens setzen:
+#   BETTER_AUTH_SECRET – zufälliger Wert, z. B. aus: openssl rand -base64 32
+#   ORIGIN            – die Adresse, unter der das Wiki erreichbar ist, z. B. http://localhost:3000
+docker compose up -d
 ```
 
-To recreate this project with the same configuration:
+Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volume `wikidata`; Migrationen laufen beim Start automatisch. Für PostgreSQL in `.env` `DATABASE_DIALECT=postgresql` und die passende `DATABASE_URL` setzen und mit `docker compose --profile postgresql up -d` starten.
+
+Das Image enthält Chromium für den PDF-Export.
+
+## Konfiguration
+
+| Variable             | Bedeutung                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                      |
+| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL               |
+| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet. |
+| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                   |
+| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                           |
+| `PORT`               | Port des Servers, Standard `3000`                                                          |
+
+**Zugriffsmodi (`AUTH_MODE`):**
+
+- `disabled` – ohne Anmeldung: alle dürfen lesen und schreiben.
+- `read-only` – alle dürfen lesen, Bearbeiten erfordert eine Anmeldung.
+- `full` – ohne Anmeldung kein Zugriff (privates Wiki).
+
+## Entwicklung
+
+Voraussetzung: Node.js 24.
 
 ```sh
-# recreate this project
-npx sv@0.17.0 create --template minimal --types ts --add eslint prettier vitest="usages:unit" playwright tailwindcss="plugins:typography,forms" --install npm .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install
+cp .env.example .env     # BETTER_AUTH_SECRET und ORIGIN=http://localhost:5173 setzen
+npm run db:push          # Datenbankschema anlegen bzw. aktualisieren
+npx playwright install chromium   # einmalig, für den PDF-Export
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+| Befehl                            | Zweck                                                                                                                  |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                     | Entwicklungsserver auf http://localhost:5173                                                                           |
+| `npm run check`                   | Typprüfung (svelte-check)                                                                                              |
+| `npm run lint` / `npm run format` | Prettier und ESLint                                                                                                    |
+| `npm run test:e2e`                | Ende-zu-Ende-Tests mit Playwright                                                                                      |
+| `npm run build`                   | Produktions-Build (`node build` startet ihn)                                                                           |
+| `npm run db:generate`             | Migration aus Schemaänderungen erzeugen (für SQLite und PostgreSQL jeweils mit passendem `DATABASE_DIALECT` ausführen) |
 
-To create a production version of your app:
+Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node build`), mit einer eigenen, jedes Mal neu befüllten Datenbank unter `.data/e2e/` – die Entwicklungsdatenbank bleibt unberührt. Sie prüfen unter anderem, dass Web-Ansicht und PDF an denselben Stellen umbrechen, dass keine leeren Seiten entstehen und dass die Seitenumbruch-Linien mit dem echten PDF übereinstimmen.
 
-```sh
-npm run build
-```
+### Aufbau
 
-You can preview the production build with `npm run preview`.
+- **SvelteKit** (Svelte 5) mit **shadcn-svelte** und Tailwind CSS
+- **Drizzle ORM** für SQLite und PostgreSQL (`src/lib/server/db`, Repositories in `src/lib/server/repo`)
+- **Better Auth** für Konten; die Zugriffsmodi setzt `src/hooks.server.ts` durch
+- **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
+- **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
+- Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Noch nicht umgesetzt
+
+- Volltextsuche
+- Automatisches Inhaltsverzeichnis aus den Überschriften
+- Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank
