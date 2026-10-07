@@ -163,8 +163,10 @@
 </div>
 
 <style>
+	/* fixed, not absolute: the pages laid out in here while measuring are
+	   many screens tall and would otherwise make the window scrollable. */
 	.page-break-measure {
-		position: absolute;
+		position: fixed;
 		top: 0;
 		left: -99999px;
 		visibility: hidden;

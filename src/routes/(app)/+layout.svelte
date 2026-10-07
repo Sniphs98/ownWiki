@@ -31,9 +31,11 @@
 	});
 </script>
 
-<Sidebar.Provider>
+<!-- h-svh: the window never scrolls — only <main> does, below the fixed
+	 header (and the editor toolbar sticks to the top of <main>). -->
+<Sidebar.Provider class="h-svh">
 	<PageSidebar pages={data.pages} {canEdit} />
-	<Sidebar.Inset>
+	<Sidebar.Inset class="min-h-0">
 		<header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
 			<Sidebar.Trigger />
 			<Sidebar.Separator orientation="vertical" class="mr-2 h-4" />
@@ -73,7 +75,7 @@
 		</header>
 		<!-- overflow-x-hidden: page-break labels sit in the margin beside the
 			 text column and must not cause a horizontal scrollbar. -->
-		<main class="flex-1 overflow-x-hidden overflow-y-auto">
+		<main class="min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
 			{@render children()}
 		</main>
 	</Sidebar.Inset>

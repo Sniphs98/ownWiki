@@ -54,7 +54,7 @@ async function renderBpmn(source: string): Promise<string> {
 	// bpmn-js measures labels while importing, so it needs a laid-out
 	// (if invisible) container.
 	const container = document.createElement('div');
-	container.style.cssText = 'position:absolute;left:-99999px;top:0;width:1200px;height:800px;';
+	container.style.cssText = 'position:fixed;left:-99999px;top:0;width:1200px;height:800px;';
 	document.body.append(container);
 	const viewer = new Viewer({ container });
 	try {
