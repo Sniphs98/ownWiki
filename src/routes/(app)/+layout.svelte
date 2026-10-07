@@ -38,45 +38,55 @@
 <Sidebar.Provider class="h-svh">
 	<PageSidebar pages={data.pages} {canEdit} />
 	<Sidebar.Inset class="min-h-0">
-		<header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-			<Sidebar.Trigger />
-			<Sidebar.Separator orientation="vertical" class="mr-2 h-4" />
-			{#if crumbs.length > 0}
-				<Breadcrumb.Root>
-					<Breadcrumb.List>
-						{#each crumbs as crumb, index (crumb.path)}
-							<Breadcrumb.Item>
-								{#if index === crumbs.length - 1}
-									<Breadcrumb.Page>{crumb.label}</Breadcrumb.Page>
-								{:else}
-									<Breadcrumb.Link href={resolve('/(app)/w/[...path]', { path: crumb.path })}>
-										{crumb.label}
-									</Breadcrumb.Link>
+		<!-- Three columns, the outer two equally wide, so the search sits in the
+			 middle: page location left, search centered, settings & account right. -->
+		<header class="grid h-14 shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-4 border-b px-4">
+			<div class="flex min-w-0 items-center gap-2">
+				<Sidebar.Trigger />
+				<Sidebar.Separator orientation="vertical" class="mr-2 h-4" />
+				{#if crumbs.length > 0}
+					<Breadcrumb.Root class="min-w-0">
+						<!-- One line; narrow windows cut the trail off with "…". -->
+						<Breadcrumb.List class="flex-nowrap overflow-hidden whitespace-nowrap">
+							{#each crumbs as crumb, index (crumb.path)}
+								<!-- The current page shrinks (and is cut off) first. -->
+								<Breadcrumb.Item class={index === crumbs.length - 1 ? 'min-w-0' : 'shrink-0'}>
+									{#if index === crumbs.length - 1}
+										<Breadcrumb.Page class="truncate">{crumb.label}</Breadcrumb.Page>
+									{:else}
+										<Breadcrumb.Link href={resolve('/(app)/w/[...path]', { path: crumb.path })}>
+											{crumb.label}
+										</Breadcrumb.Link>
+									{/if}
+								</Breadcrumb.Item>
+								{#if index < crumbs.length - 1}
+									<Breadcrumb.Separator />
 								{/if}
-							</Breadcrumb.Item>
-							{#if index < crumbs.length - 1}
-								<Breadcrumb.Separator />
-							{/if}
-						{/each}
-					</Breadcrumb.List>
-				</Breadcrumb.Root>
-			{/if}
-			<div class="ml-auto flex items-center gap-1">
-				<!-- On the search page itself, its own (bigger) field is enough. -->
-				{#if page.url.pathname !== '/suche'}
-					<form method="GET" action={resolve('/(app)/suche')} role="search" class="relative mr-1">
-						<SearchIcon
-							class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-						/>
-						<Input
-							type="search"
-							name="q"
-							placeholder="Suchen …"
-							aria-label="Wiki durchsuchen"
-							class="h-8 w-48 pl-8 lg:w-64"
-						/>
-					</form>
+							{/each}
+						</Breadcrumb.List>
+					</Breadcrumb.Root>
 				{/if}
+			</div>
+
+			<!-- On the search page itself, its own (bigger) field is enough. -->
+			{#if page.url.pathname !== '/suche'}
+				<form method="GET" action={resolve('/(app)/suche')} role="search" class="relative">
+					<SearchIcon
+						class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+					/>
+					<Input
+						type="search"
+						name="q"
+						placeholder="Wiki durchsuchen …"
+						aria-label="Wiki durchsuchen"
+						class="h-8 w-56 pl-8 lg:w-72 xl:w-96"
+					/>
+				</form>
+			{:else}
+				<div></div>
+			{/if}
+
+			<div class="flex items-center justify-end gap-1">
 				<Button
 					href={resolve('/(app)/settings')}
 					variant="ghost"
