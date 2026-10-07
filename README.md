@@ -14,9 +14,13 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
 - **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
-- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
+- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste – mit dem **Inhaltsverzeichnis** der geöffneten Seite direkt im Baum.
 - **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki.
 - **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
+
+### Inhaltsverzeichnis
+
+Unter der geöffneten Seite zeigt der Seitenbaum ihre Überschriften, nach Ebenen eingerückt. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Das Verzeichnis lässt sich über „Inhalt“ einklappen und aktualisiert sich beim Bearbeiten sofort mit.
 
 ### Schreiben
 
@@ -146,5 +150,4 @@ Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node 
 ## Noch nicht umgesetzt
 
 - Semantische Suche (KI/Vektor-Embeddings) – die Suche ist dafür als austauschbarer Baustein angelegt (`src/lib/server/search`)
-- Automatisches Inhaltsverzeichnis aus den Überschriften
 - Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank
