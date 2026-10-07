@@ -5,6 +5,11 @@
 	let { data, form } = $props();
 
 	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.path}/`)));
+	const conflictVersion = $derived(
+		form && 'conflictVersion' in form && typeof form.conflictVersion === 'number'
+			? form.conflictVersion
+			: undefined
+	);
 </script>
 
 <div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>
@@ -19,6 +24,7 @@
 			nextVersionNumber={(data.version?.versionNumber ?? 0) + 1}
 			attachments={data.attachments}
 			errorMessage={form?.message}
+			{conflictVersion}
 		/>
 	{/key}
 </div>

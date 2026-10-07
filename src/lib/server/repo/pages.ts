@@ -29,3 +29,4 @@ export async function deletePage(pageId: string): Promise<void> {
 }
 
 export type { PageSummary, CreatePageInput, AddVersionInput } from './pages.types';
+export { PageConflictError } from './pages.types';

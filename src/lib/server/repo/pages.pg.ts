@@ -3,7 +3,12 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '$lib/server/db';
 import { page, pageVersion } from '$lib/server/db/schema/pg';
 import type * as schema from '$lib/server/db/schema/pg';
-import type { CreatePageInput, AddVersionInput, PageSummary } from './pages.types';
+import {
+	PageConflictError,
+	type CreatePageInput,
+	type AddVersionInput,
+	type PageSummary
+} from './pages.types';
 
 const pg = db as PostgresJsDatabase<typeof schema>;
 
@@ -34,52 +39,78 @@ export async function listVersions(pageId: string) {
 	});
 }
 
+type Tx = Parameters<Parameters<typeof pg.transaction>[0]>[0];
+
+async function latestVersionNumber(tx: Tx, pageId: string): Promise<number> {
+	const [latest] = await tx
+		.select({ versionNumber: pageVersion.versionNumber })
+		.from(pageVersion)
+		.where(eq(pageVersion.pageId, pageId))
+		.orderBy(desc(pageVersion.versionNumber))
+		.limit(1);
+	return latest?.versionNumber ?? 0;
+}
+
 export async function createPage(input: CreatePageInput): Promise<string> {
 	const pageId = crypto.randomUUID();
 
-	await pg.insert(page).values({
-		id: pageId,
-		path: input.path,
-		title: input.title,
-		createdBy: input.authorId
-	});
-
-	await pg.insert(pageVersion).values({
-		id: crypto.randomUUID(),
-		pageId,
-		versionNumber: 1,
-		title: input.title,
-		content: input.content,
-		changeSummary: input.changeSummary,
-		authorId: input.authorId
-	});
+	try {
+		await pg.transaction(async (tx) => {
+			await tx.insert(page).values({
+				id: pageId,
+				path: input.path,
+				title: input.title,
+				createdBy: input.authorId
+			});
+			await tx.insert(pageVersion).values({
+				id: crypto.randomUUID(),
+				pageId,
+				versionNumber: 1,
+				title: input.title,
+				content: input.content,
+				changeSummary: input.changeSummary,
+				authorId: input.authorId
+			});
+		});
+	} catch (err) {
+		// unique_violation on page.path: created by someone else meanwhile.
+		// Drizzle wraps the driver's error, keeping it as `cause`.
+		const { code, cause } = err as { code?: string; cause?: { code?: string } };
+		if ((cause?.code ?? code) !== '23505') throw err;
+		const existing = await getPageWithLatestVersion(input.path);
+		throw new PageConflictError(existing?.version.versionNumber ?? 0);
+	}
 
 	return pageId;
 }
 
 export async function addPageVersion(input: AddVersionInput): Promise<number> {
-	const latest = await pg.query.pageVersion.findFirst({
-		where: eq(pageVersion.pageId, input.pageId),
-		orderBy: desc(pageVersion.versionNumber)
+	return pg.transaction(async (tx) => {
+		// Locks the page row, so concurrent saves of one page take turns.
+		await tx.select({ id: page.id }).from(page).where(eq(page.id, input.pageId)).for('update');
+
+		const latest = await latestVersionNumber(tx, input.pageId);
+		if (input.baseVersion !== undefined && input.baseVersion !== latest) {
+			throw new PageConflictError(latest);
+		}
+		const versionNumber = latest + 1;
+
+		await tx.insert(pageVersion).values({
+			id: crypto.randomUUID(),
+			pageId: input.pageId,
+			versionNumber,
+			title: input.title,
+			content: input.content,
+			changeSummary: input.changeSummary,
+			authorId: input.authorId
+		});
+		await tx
+			.update(page)
+			.set({ title: input.title, updatedAt: new Date() })
+			.where(eq(page.id, input.pageId));
+
+		return versionNumber;
 	});
-	const versionNumber = (latest?.versionNumber ?? 0) + 1;
-
-	await pg.insert(pageVersion).values({
-		id: crypto.randomUUID(),
-		pageId: input.pageId,
-		versionNumber,
-		title: input.title,
-		content: input.content,
-		changeSummary: input.changeSummary,
-		authorId: input.authorId
-	});
-
-	await pg
-		.update(page)
-		.set({ title: input.title, updatedAt: new Date() })
-		.where(eq(page.id, input.pageId));
-
-	return versionNumber;
 }
 
 // page_version and attachment both reference page.id with onDelete: 'cascade',
