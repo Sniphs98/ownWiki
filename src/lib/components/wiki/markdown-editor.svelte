@@ -478,8 +478,7 @@
 					.milkdown-toolbar,
 					.milkdown-link-preview,
 					.milkdown-link-edit,
-					.milkdown-latex-inline-edit,
-					.language-picker
+					.milkdown-latex-inline-edit
 				)
 		) {
 		font-family: var(--font-sans);
