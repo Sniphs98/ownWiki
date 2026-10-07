@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
+import { isSignupAllowed } from '$lib/server/signup';
 import type { Actions, PageServerLoad } from './$types';
 
 function redirectTarget(url: URL) {
@@ -8,11 +9,11 @@ function redirectTarget(url: URL) {
 	return redirectTo?.startsWith('/') ? redirectTo : '/';
 }
 
-export const load: PageServerLoad = (event) => {
+export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
 		redirect(303, redirectTarget(event.url));
 	}
-	return {};
+	return { signupAllowed: await isSignupAllowed() };
 };
 
 export const actions: Actions = {

@@ -103,6 +103,7 @@ Das Image enthält Chromium für den PDF-Export.
 | `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet. |
 | `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                   |
 | `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                           |
+| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                     |
 | `PORT`               | Port des Servers, Standard `3000`                                                          |
 
 **Zugriffsmodi (`AUTH_MODE`):**
@@ -110,6 +111,14 @@ Das Image enthält Chromium für den PDF-Export.
 - `disabled` – ohne Anmeldung: alle dürfen lesen und schreiben.
 - `read-only` – alle dürfen lesen, Bearbeiten erfordert eine Anmeldung.
 - `full` – ohne Anmeldung kein Zugriff (privates Wiki).
+
+**Registrierung (`ALLOW_SIGNUP`):**
+
+- nicht gesetzt (Standard) – nur das erste Konto kann sich registrieren, danach ist die Registrierung geschlossen.
+- `true` – alle dürfen sich registrieren.
+- `false` – niemand darf sich registrieren.
+
+Bei `AUTH_MODE=full` sollte die Registrierung geschlossen bleiben, sonst kann sich jede Person selbst Zugang zum privaten Wiki verschaffen.
 
 ## Entwicklung
 
