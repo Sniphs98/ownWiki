@@ -11,6 +11,7 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Seitenumbruch-Vorschau**: Schon beim Schreiben zeigt eine Linie, wo im PDF eine neue Seite beginnt.
 - **Diagramme direkt im Text**: Mermaid, BPMN (bpmn-js) und Excalidraw.
 - **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
+- **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
 - **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
 - **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
@@ -58,6 +59,14 @@ Alle Diagramm-Bibliotheken – auch die Schriften von Excalidraw – liefert der
 ### Dateien
 
 „Datei“ im „/“-Menü oder in der Werkzeugleiste lädt eine oder mehrere Dateien hoch (je bis 10 MB) und fügt sie als Download-Link an der Cursor-Stelle ein. Bilder, die im Text erscheinen sollen, fügst du über „Bild“ ein. Dateien, die im Text nicht (mehr) verlinkt sind, listet die Bearbeiten-Ansicht auf – zum erneuten Einfügen oder endgültigen Löschen.
+
+### Suche
+
+Das Suchfeld oben rechts durchsucht Titel, Pfade und Text aller Seiten (Diagramm-Quelltexte nicht). Treffer sind nach Relevanz sortiert – Treffer im Titel zählen mehr –, die gefundenen Wörter sind im Textausschnitt markiert. Es müssen alle Suchwörter vorkommen; andere Formen eines Wortes werden mitgefunden („Kündigungen“ findet „Kündigung“).
+
+![Suchergebnis mit markiertem Treffer](docs/screenshots/suche.png)
+
+Unter SQLite sucht ownWiki mit FTS5, unter PostgreSQL mit der deutschen Volltextsuche der Datenbank (mit echter Wortstamm-Erkennung). Der Suchindex wird bei jedem Speichern aktualisiert und beim ersten Start automatisch aufgebaut.
 
 ### Versionsverlauf
 
@@ -136,6 +145,6 @@ Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node 
 
 ## Noch nicht umgesetzt
 
-- Volltextsuche
+- Semantische Suche (KI/Vektor-Embeddings) – die Suche ist dafür als austauschbarer Baustein angelegt (`src/lib/server/search`)
 - Automatisches Inhaltsverzeichnis aus den Überschriften
 - Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank
