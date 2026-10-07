@@ -5,6 +5,8 @@
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import SearchIcon from '@lucide/svelte/icons/search';
+	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
 	import { resolve } from '$app/paths';
@@ -60,6 +62,21 @@
 				</Breadcrumb.Root>
 			{/if}
 			<div class="ml-auto flex items-center gap-1">
+				<!-- On the search page itself, its own (bigger) field is enough. -->
+				{#if page.url.pathname !== '/suche'}
+					<form method="GET" action={resolve('/(app)/suche')} role="search" class="relative mr-1">
+						<SearchIcon
+							class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+						/>
+						<Input
+							type="search"
+							name="q"
+							placeholder="Suchen …"
+							aria-label="Wiki durchsuchen"
+							class="h-8 w-48 pl-8 lg:w-64"
+						/>
+					</form>
+				{/if}
 				<Button
 					href={resolve('/(app)/settings')}
 					variant="ghost"

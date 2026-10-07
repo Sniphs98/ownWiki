@@ -12,6 +12,9 @@ export default defineConfig({
 	out: dialect === 'postgresql' ? './drizzle/postgresql' : './drizzle/sqlite',
 	dialect,
 	dbCredentials: { url: process.env.DATABASE_URL },
+	// The search index (and SQLite's FTS5 shadow tables) is managed by
+	// src/lib/server/search, not by Drizzle — don't let `db:push` drop it.
+	tablesFilter: ['!page_search*'],
 	verbose: true,
 	strict: true
 });
