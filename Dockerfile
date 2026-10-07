@@ -31,9 +31,12 @@ COPY --from=build /app/scripts ./scripts
 # Chromium for server-side PDF export (src/lib/server/pdf) — the biggest
 # single contributor to this image's size, but it's what lets a click on
 # "Als PDF exportieren" render an accurate, styled PDF entirely server-side.
+# Installed outside root's home, so the unprivileged user can run it.
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN node node_modules/playwright/cli.js install --with-deps chromium \
 	&& rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /app/data
+RUN mkdir -p /app/data && chown node:node /app/data
 VOLUME ["/app/data"]
 EXPOSE 3000
-CMD ["sh", "-c", "node scripts/migrate.js && node build"]
+# Drops to the "node" user, see the script.
+ENTRYPOINT ["scripts/docker-entrypoint.sh"]
