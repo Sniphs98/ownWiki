@@ -66,7 +66,13 @@
 					{/snippet}
 				</Collapsible.Trigger>
 			</div>
-			<Collapsible.Content>
+			{#if showToc}
+				<PageToc />
+			{/if}
+			<!-- Always mounted, hidden while closed: bits-ui's own presence
+				 handling left a folder that starts open (the open page's
+				 ancestors) marked open but still hidden after hydration. -->
+			<Collapsible.Content forceMount class="data-[state=closed]:hidden">
 				<Sidebar.MenuSub class="mr-0 pr-0">
 					{#each node.children as child (child.fullPath)}
 						<Self node={child} {canEdit} />
