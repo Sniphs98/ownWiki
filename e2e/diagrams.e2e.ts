@@ -1,6 +1,14 @@
 import { expect, test, type Page } from '@playwright/test';
 
 // Seeded by e2e/setup-db.js: one ```mermaid and one ```bpmn code block.
+
+/**
+ * Elements in the page's editor — not in the off-screen copy the
+ * page-break preview lays out now and then (page-break-markers.svelte).
+ */
+function onPage(page: Page, selector: string) {
+	return page.locator(`.milkdown-editor-root:not(.page-break-measure *) ${selector}`);
+}
 const PATH = 'e2e/diagrams';
 
 /** Fails the test if the page loads anything from outside the wiki. */
@@ -19,10 +27,10 @@ test('diagrams render in the page view and in the PDF layout', async ({ page, ba
 	const external = forbidExternalRequests(page, baseURL!);
 
 	await page.goto(`/w/${PATH}`);
-	await expect(page.locator('.wiki-diagram svg')).toHaveCount(2, { timeout: 30_000 });
-	await expect(page.locator('.wiki-diagram-error')).toHaveCount(0);
-	await expect(page.locator('.wiki-diagram[data-diagram="mermaid"]')).toContainText('Vollständig?');
-	await expect(page.locator('.wiki-diagram[data-diagram="bpmn"]')).toContainText('Antrag prüfen');
+	await expect(onPage(page, '.wiki-diagram svg')).toHaveCount(2, { timeout: 30_000 });
+	await expect(onPage(page, '.wiki-diagram-error')).toHaveCount(0);
+	await expect(onPage(page, '.wiki-diagram[data-diagram="mermaid"]')).toContainText('Vollständig?');
+	await expect(onPage(page, '.wiki-diagram[data-diagram="bpmn"]')).toContainText('Antrag prüfen');
 	// Readonly: no edit buttons, no source code.
 	await expect(page.locator('[data-diagram-edit]:visible')).toHaveCount(0);
 
@@ -36,7 +44,7 @@ test('diagrams render in the page view and in the PDF layout', async ({ page, ba
 
 test('a mermaid diagram can be edited in the dialog', async ({ page }) => {
 	await page.goto(`/w/${PATH}/edit`);
-	const mermaid = page.locator('.wiki-diagram[data-diagram="mermaid"]');
+	const mermaid = onPage(page, '.wiki-diagram[data-diagram="mermaid"]');
 	await expect(mermaid.locator('.wiki-diagram-canvas > svg')).toBeVisible({ timeout: 30_000 });
 
 	await mermaid.getByRole('button', { name: 'Bearbeiten' }).click();
@@ -66,13 +74,13 @@ test('an Excalidraw drawing can be inserted, drawn and saved', async ({ page, ba
 	await page.mouse.up();
 	await page.getByRole('button', { name: 'Übernehmen' }).click();
 
-	await expect(page.locator('.wiki-diagram[data-diagram="excalidraw"] svg')).toBeVisible({
+	await expect(onPage(page, '.wiki-diagram[data-diagram="excalidraw"] svg')).toBeVisible({
 		timeout: 30_000
 	});
 	await page.getByRole('button', { name: 'Speichern' }).click();
 	await page.waitForURL(`**/w/${path}`);
 
-	await expect(page.locator('.wiki-diagram[data-diagram="excalidraw"] svg')).toBeVisible({
+	await expect(onPage(page, '.wiki-diagram[data-diagram="excalidraw"] svg')).toBeVisible({
 		timeout: 30_000
 	});
 	expect(external).toEqual([]);
