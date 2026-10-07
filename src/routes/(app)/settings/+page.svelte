@@ -73,7 +73,7 @@
 	<title>Einstellungen · ownWiki</title>
 </svelte:head>
 
-<div class="mx-auto max-w-3xl p-8">
+<div class="mx-auto max-w-4xl p-8">
 	<h1 class="mb-6 text-2xl font-semibold">Einstellungen</h1>
 
 	<Card.Root>
