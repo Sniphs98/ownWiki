@@ -1,5 +1,6 @@
 import { getPageWithLatestVersion, listPages } from '$lib/server/repo/pages';
 import { getAttachment } from '$lib/server/repo/attachments';
+import { getCover } from '$lib/server/repo/covers';
 import { resolveWikiLinks } from '$lib/wiki-links';
 
 export interface PrintablePage {
@@ -13,6 +14,8 @@ export interface PrintablePage {
 export interface PrintableResult {
 	wikiTitle: string;
 	pages: PrintablePage[];
+	/** The page's own title page (markdown), replacing the generated cover. */
+	cover?: string;
 }
 
 const ATTACHMENT_MD_PATTERN = /\]\(\/api\/files\/([a-f0-9-]{36})\)/g;
@@ -54,7 +57,8 @@ async function inlineAttachmentImages(markdown: string): Promise<string> {
  */
 export async function resolvePrintablePages(
 	path: string,
-	scope: string | null
+	scope: string | null,
+	{ withCover = false }: { withCover?: boolean } = {}
 ): Promise<PrintableResult | null> {
 	const result = await getPageWithLatestVersion(path);
 	if (!result) return null;
@@ -81,7 +85,12 @@ export async function resolvePrintablePages(
 		});
 	}
 
-	return { pages, wikiTitle: result.page.title };
+	const cover = withCover ? await getCover(result.page.id) : null;
+	return {
+		pages,
+		wikiTitle: result.page.title,
+		cover: cover ? await inlineAttachmentImages(resolveWikiLinks(cover, allPages)) : undefined
+	};
 }
 
 /** Every page in the wiki, for the "export everything" PDF. */

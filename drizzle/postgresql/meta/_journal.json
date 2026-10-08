@@ -15,6 +15,13 @@
       "when": 1791318351435,
       "tag": "0001_user_preference",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791483250012,
+      "tag": "0002_pdf_cover",
+      "breakpoints": true
     }
   ]
 }

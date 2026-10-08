@@ -68,21 +68,22 @@ test('without the checkbox there is no cover or contents page', async ({ page })
 	await expect(page.locator('.wiki-cover')).toHaveCount(1); // the group's cover only
 });
 
-test('the checkbox decides what the export links ask for', async ({ page }) => {
+test('the export dialog remembers the contents page choice', async ({ page }) => {
 	await page.goto(`/w/${GROUP}`);
-	const checkbox = page.getByRole('checkbox', { name: 'Inhaltsverzeichnis' });
-	const pdfLink = page.getByRole('link', { name: 'PDF', exact: true });
+	const dialog = page.getByRole('dialog', { name: 'PDF exportieren' });
+	const checkbox = dialog.getByRole('checkbox', { name: 'Inhaltsverzeichnis' });
+	// Retried: a click before hydration does nothing.
+	const openDialog = () =>
+		expect(async () => {
+			await page.getByRole('button', { name: 'PDF', exact: true }).click();
+			await expect(dialog).toBeVisible({ timeout: 1000 });
+		}).toPass();
 
+	await openDialog();
 	await expect(checkbox).toBeChecked();
-	await expect(pdfLink).toHaveAttribute('href', `/api/pdf/${GROUP}?toc=1`);
-	await expect(page.getByRole('link', { name: 'mit Unterseiten' })).toHaveAttribute(
-		'href',
-		`/api/pdf/${GROUP}?scope=subtree&toc=1`
-	);
-
 	await checkbox.uncheck();
-	await expect(pdfLink).toHaveAttribute('href', `/api/pdf/${GROUP}?toc=0`);
 	await page.reload();
+	await openDialog();
 	await expect(checkbox).not.toBeChecked();
 });
 

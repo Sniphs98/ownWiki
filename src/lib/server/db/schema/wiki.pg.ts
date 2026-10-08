@@ -97,3 +97,15 @@ export const userPreference = pgTable('user_preference', {
 		.$onUpdate(() => new Date())
 		.notNull()
 });
+
+/** A page's own PDF title page (markdown), used instead of the generated cover. */
+export const pdfCover = pgTable('pdf_cover', {
+	pageId: text('page_id')
+		.primaryKey()
+		.references(() => page.id, { onDelete: 'cascade' }),
+	content: text('content').notNull(),
+	updatedAt: timestamp('updated_at')
+		.defaultNow()
+		.$onUpdate(() => new Date())
+		.notNull()
+});

@@ -244,6 +244,15 @@
 		view.focus();
 	}
 
+	/**
+	 * The current markdown, right now. `value` follows the editor with a
+	 * short delay (Milkdown debounces its updates) — use this when acting
+	 * on a click that may come right after typing.
+	 */
+	export function getMarkdown(): string {
+		return crepe?.getMarkdown() ?? value;
+	}
+
 	onMount(() => {
 		let destroyed = false;
 

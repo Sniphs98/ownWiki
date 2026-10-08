@@ -14,6 +14,7 @@ export const GET: RequestHandler = async (event) => {
 	const query = new URLSearchParams();
 	if (scope === 'subtree') query.set('scope', 'subtree');
 	if (wantsToc(event.url)) query.set('toc', '1');
+	if (event.url.searchParams.get('cover') === '1') query.set('cover', '1');
 	const printUrl = `/print/${path}${query.size > 0 ? `?${query}` : ''}`;
 	const pdf = await generatePdfOrFail(printUrl, event.url);
 	const filename = `${result.page.path.replace(/\//g, '-')}.pdf`;

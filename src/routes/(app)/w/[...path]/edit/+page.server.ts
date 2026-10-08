@@ -8,6 +8,7 @@ import {
 	PageConflictError
 } from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
+import { getCover } from '$lib/server/repo/covers';
 import { slugifyPath } from '$lib/slug';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -31,9 +32,18 @@ export const load: PageServerLoad = async (event) => {
 		page: existing?.page ?? null,
 		version: existing?.version ?? null,
 		prefillTitle: existing?.version.title ?? event.url.searchParams.get('title') ?? '',
-		attachments: existing ? await listAttachmentsForPage(existing.page.id) : []
+		// Files shown on the PDF title page aren't "unlinked" (unlinked-files.svelte).
+		attachments: existing ? await attachmentsOutsideCover(existing.page.id) : []
 	};
 };
+
+async function attachmentsOutsideCover(pageId: string) {
+	const [attachments, cover] = await Promise.all([
+		listAttachmentsForPage(pageId),
+		getCover(pageId)
+	]);
+	return attachments.filter((file) => !cover?.includes(`/api/files/${file.id}`));
+}
 
 export const actions: Actions = {
 	save: async (event) => {

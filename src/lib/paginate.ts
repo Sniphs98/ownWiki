@@ -25,8 +25,12 @@ const PRINT_CSS = `
 	.wiki-chapter { break-before: page; }
 	.wiki-chapter:first-child { break-before: avoid; }
 	.wiki-cover { text-align: center; padding-top: 30vh; break-after: page; }
-	.wiki-cover h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
+	.wiki-cover:not(.wiki-cover-custom) h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
 	.wiki-cover p { color: #4f4539; }
+	/* A title page of the user's own (pdf-export-dialog.svelte): laid out like
+	   any page text, only on a page of its own. */
+	.wiki-cover-custom { text-align: start; padding-top: 0; }
+	.wiki-cover-custom p { color: inherit; }
 
 	/* Contents page of multi-page exports, see print-toc.ts. */
 	.wiki-toc { break-after: page; font-family: 'Open Sans Variable', Arial, sans-serif; color: #1f1b16; }

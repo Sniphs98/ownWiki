@@ -12,7 +12,8 @@
 		wikiTitle,
 		pages,
 		linkOrigin,
-		toc
+		toc,
+		cover
 	}: {
 		wikiTitle: string;
 		pages: PrintablePage[];
@@ -20,11 +21,15 @@
 		linkOrigin: string;
 		/** Adds a contents page after the first page (the cover). */
 		toc: boolean;
+		/** The page's own title page (markdown), instead of the generated cover. */
+		cover?: string;
 	} = $props();
 
 	const isMulti = $derived(pages.length > 1);
 	// The contents page goes after the cover, so a single page gets one too.
-	const hasCover = $derived(isMulti || toc);
+	const hasCover = $derived(isMulti || toc || !!cover);
+	// Every editor (chapters, plus the title page) must have mounted.
+	const editorCount = $derived(pages.length + (cover ? 1 : 0));
 
 	// Paper is white: the preview and the PDF always use the light theme,
 	// whatever the viewer picked for the app (app.html applies .dark early).
@@ -81,7 +86,7 @@
 	// mounting — only then does the DOM actually contain the real,
 	// pixel-accurate rendering pagedjs needs to paginate.
 	$effect(() => {
-		if (readyCount < pages.length || paginated || !sourceEl || !targetEl) return;
+		if (readyCount < editorCount || paginated || !sourceEl || !targetEl) return;
 		paginated = true;
 
 		const paginate = async () => {
@@ -116,7 +121,11 @@
 
 {#if !hideSource}
 	<div bind:this={sourceEl} class="print-source" style:width={PRINT_TEXT_WIDTH}>
-		{#if hasCover}
+		{#if cover}
+			<div class="wiki-cover wiki-cover-custom">
+				<MarkdownEditor value={cover} readonly onready={onChapterReady} onerror={failPrint} />
+			</div>
+		{:else if hasCover}
 			<div class="wiki-cover">
 				<h1>{isMulti ? wikiTitle : pages[0].title}</h1>
 				<p>

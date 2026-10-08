@@ -22,8 +22,10 @@ function chapterTitle(chapter: Element): string {
 
 /** Nests each page's headings below its title, for the PDF bookmarks. */
 export function structureHeadings(root: HTMLElement) {
-	// The cover's wiki title isn't a section of its own.
-	root.querySelector('.wiki-cover h1')?.setAttribute('role', 'presentation');
+	// The cover's headings aren't sections of their own.
+	for (const heading of root.querySelectorAll('.wiki-cover :is(h1, h2, h3, h4, h5, h6)')) {
+		heading.setAttribute('role', 'presentation');
+	}
 
 	for (const chapter of root.querySelectorAll('.wiki-chapter')) {
 		const title = chapterTitle(chapter);

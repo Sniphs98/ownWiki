@@ -9,4 +9,5 @@
 	pages={data.pages}
 	linkOrigin={data.linkOrigin}
 	toc={data.toc}
+	cover={data.cover}
 />
