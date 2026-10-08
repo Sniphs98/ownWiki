@@ -1,6 +1,7 @@
 import { getPageWithLatestVersion, listPages } from '$lib/server/repo/pages';
 import { getAttachment } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
+import type { Cover } from '$lib/cover';
 import { resolveWikiLinks } from '$lib/wiki-links';
 
 export interface PrintablePage {
@@ -14,8 +15,8 @@ export interface PrintablePage {
 export interface PrintableResult {
 	wikiTitle: string;
 	pages: PrintablePage[];
-	/** The page's own title page (markdown), replacing the generated cover. */
-	cover?: string;
+	/** The page's own title page, replacing the generated cover. */
+	cover?: Cover;
 }
 
 const ATTACHMENT_MD_PATTERN = /\]\(\/api\/files\/([a-f0-9-]{36})\)/g;
@@ -89,7 +90,12 @@ export async function resolvePrintablePages(
 	return {
 		pages,
 		wikiTitle: result.page.title,
-		cover: cover ? await inlineAttachmentImages(resolveWikiLinks(cover, allPages)) : undefined
+		cover: cover
+			? {
+					...cover,
+					content: await inlineAttachmentImages(resolveWikiLinks(cover.content, allPages))
+				}
+			: undefined
 	};
 }
 

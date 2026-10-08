@@ -3,6 +3,7 @@
 	import MarkdownEditor from './markdown-editor.svelte';
 	import PageHeader from './page-header.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
+	import { COVER_HEIGHT, type Cover } from '$lib/cover';
 	import { toPrintableHtml } from '$lib/print-dom';
 	import { loadPrintFonts, paginate as paginateHtml } from '$lib/paginate';
 	import { whenDiagramsRendered } from '$lib/diagrams/render';
@@ -21,8 +22,8 @@
 		linkOrigin: string;
 		/** Adds a contents page after the first page (the cover). */
 		toc: boolean;
-		/** The page's own title page (markdown), instead of the generated cover. */
-		cover?: string;
+		/** The page's own title page, instead of the generated cover. */
+		cover?: Cover;
 	} = $props();
 
 	const isMulti = $derived(pages.length > 1);
@@ -122,8 +123,18 @@
 {#if !hideSource}
 	<div bind:this={sourceEl} class="print-source" style:width={PRINT_TEXT_WIDTH}>
 		{#if cover}
-			<div class="wiki-cover wiki-cover-custom">
-				<MarkdownEditor value={cover} readonly onready={onChapterReady} onerror={failPrint} />
+			<div
+				class="wiki-cover wiki-cover-custom wiki-cover-page"
+				style:height={COVER_HEIGHT}
+				data-align-x={cover.alignX}
+				data-align-y={cover.alignY}
+			>
+				<MarkdownEditor
+					value={cover.content}
+					readonly
+					onready={onChapterReady}
+					onerror={failPrint}
+				/>
 			</div>
 		{:else if hasCover}
 			<div class="wiki-cover">

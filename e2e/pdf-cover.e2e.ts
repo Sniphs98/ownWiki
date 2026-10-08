@@ -32,9 +32,28 @@ async function openPrintView(page: Page, query: string) {
 
 test.describe.configure({ mode: 'serial' });
 
+test('the title page is an A4 sheet, greyed out until switched on', async ({ page }) => {
+	await openExportDialog(page);
+	const sheet = dialog(page).locator('[data-cover-sheet]');
+	const box = (await sheet.boundingBox())!;
+	expect(box.height / box.width).toBeCloseTo(297 / 210, 2);
+
+	const area = dialog(page).getByLabel('Titelseite', { exact: true });
+	await expect(area).toHaveAttribute('inert');
+	await expect(area).toHaveCSS('opacity', '0.4');
+
+	await dialog(page).getByRole('switch', { name: 'Eigene Titelseite' }).check();
+	await expect(area).not.toHaveAttribute('inert');
+	await expect(area).toHaveCSS('opacity', '1');
+});
+
 test('the title page is written in the dialog, saved and exported as page 1', async ({ page }) => {
 	await openExportDialog(page);
 	await dialog(page).getByRole('switch', { name: 'Eigene Titelseite' }).check();
+	await dialog(page)
+		.getByRole('group', { name: 'Senkrecht' })
+		.getByRole('button', { name: 'Oben' })
+		.click();
 	await coverEditor(page).click();
 	await page.keyboard.type('# Betriebshandbuch');
 	await page.keyboard.press('Enter');
@@ -49,6 +68,9 @@ test('the title page is written in the dialog, saved and exported as page 1', as
 	await openExportDialog(page);
 	await expect(dialog(page).getByRole('switch', { name: 'Eigene Titelseite' })).toBeChecked();
 	await expect(coverEditor(page)).toContainText('Betriebshandbuch');
+	await expect(
+		dialog(page).getByRole('group', { name: 'Senkrecht' }).getByRole('button', { name: 'Oben' })
+	).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('the title page replaces the generated cover, before the contents page', async ({ page }) => {
@@ -56,6 +78,19 @@ test('the title page replaces the generated cover, before the contents page', as
 	const pages = page.locator('.pagedjs_page');
 	await expect(pages.nth(0).locator('.wiki-cover-custom h1')).toHaveText('Betriebshandbuch');
 	await expect(pages.nth(0)).toContainText('Abteilung IT');
+	// Aligned as chosen: at the top of the page, centred across it.
+	const cover = pages.nth(0).locator('.wiki-cover-page');
+	await expect(cover).toHaveAttribute('data-align-y', 'start');
+	const heading = (await cover.locator('h1').boundingBox())!;
+	const pageBox = (await pages.nth(0).boundingBox())!;
+	expect(heading.y - pageBox.y).toBeLessThan(pageBox.height * 0.2);
+	const text = await cover.locator('h1').evaluate((h1) => {
+		const range = document.createRange();
+		range.selectNodeContents(h1);
+		const rect = range.getBoundingClientRect();
+		return rect.left + rect.width / 2;
+	});
+	expect(Math.abs(text - (pageBox.x + pageBox.width / 2))).toBeLessThan(4);
 	await expect(page.locator('.wiki-cover')).toHaveCount(1);
 	// Its heading is no section: not in the contents.
 	await expect(pages.nth(1).locator('.wiki-toc .wiki-toc-text')).toHaveText([
@@ -76,8 +111,10 @@ test('images on the title page end up in the PDF and stay out of "unlinked files
 	await coverEditor(page).click();
 	await page.keyboard.press('Control+End');
 	await page.keyboard.press('Enter');
-	await page.keyboard.type('/');
-	await dialog(page).locator('.milkdown-slash-menu').getByText('Bild', { exact: true }).click();
+	await dialog(page)
+		.getByRole('toolbar')
+		.getByRole('button', { name: 'Bild', exact: true })
+		.click();
 	await dialog(page)
 		.locator('.milkdown-image-block input[type=file]')
 		.setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: PNG });

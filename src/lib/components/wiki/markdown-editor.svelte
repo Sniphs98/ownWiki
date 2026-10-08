@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import type { Crepe as CrepeType } from '@milkdown/crepe';
 	import type { Ctx } from '@milkdown/kit/ctx';
 	import type { Node as ProseNode } from '@milkdown/kit/prose/model';
@@ -31,7 +31,8 @@
 		tocPath,
 		onready,
 		onerror,
-		onupload
+		onupload,
+		frame
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -48,6 +49,11 @@
 		onerror?: (error: unknown) => void;
 		/** Fires after a file or image was uploaded to the page. */
 		onupload?: () => void;
+		/**
+		 * Wraps the text area (not the toolbar), e.g. in a page preview;
+		 * renders the given snippet where the text goes.
+		 */
+		frame?: Snippet<[text: Snippet]>;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -398,9 +404,17 @@
 	/>
 {/if}
 
-<!-- Delegates clicks on the diagram edit buttons inside; they're keyboard-reachable buttons themselves. -->
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-<div bind:this={container} class="milkdown-editor-root" onclick={onEditorClick}></div>
+{#snippet text()}
+	<!-- Delegates clicks on the diagram edit buttons inside; they're keyboard-reachable buttons themselves. -->
+	<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+	<div bind:this={container} class="milkdown-editor-root" onclick={onEditorClick}></div>
+{/snippet}
+
+{#if frame}
+	{@render frame(text)}
+{:else}
+	{@render text()}
+{/if}
 
 <input
 	bind:this={fileInput}

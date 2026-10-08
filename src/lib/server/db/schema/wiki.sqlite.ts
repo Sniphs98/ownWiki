@@ -93,6 +93,9 @@ export const pdfCover = sqliteTable('pdf_cover', {
 		.primaryKey()
 		.references(() => page.id, { onDelete: 'cascade' }),
 	content: text('content').notNull(),
+	/** Alignment on the page, see $lib/cover.ts. */
+	alignX: text('align_x').notNull().default('center'),
+	alignY: text('align_y').notNull().default('center'),
 	updatedAt: timestampMs('updated_at')
 		.$onUpdate(() => new Date())
 		.notNull()

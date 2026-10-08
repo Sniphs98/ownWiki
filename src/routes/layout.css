@@ -15,7 +15,9 @@
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 
-:root {
+/* .paper: always light, like the printed page (pdf-export-dialog.svelte). */
+:root,
+.paper {
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
@@ -136,4 +138,40 @@
 	html {
 		@apply font-sans;
 	}
+}
+
+/* A PDF title page's text area (src/lib/cover.ts): in the export dialog's
+   A4 preview and in the PDF alike, its content is aligned as chosen. */
+.wiki-cover-page {
+	display: flex;
+	flex-direction: column;
+}
+.wiki-cover-page :is(.milkdown-editor-root, .milkdown) {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+.wiki-cover-page .ProseMirror {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	text-align: center;
+}
+.wiki-cover-page[data-align-y='start'] .ProseMirror {
+	justify-content: flex-start;
+}
+.wiki-cover-page[data-align-y='end'] .ProseMirror {
+	justify-content: flex-end;
+}
+.wiki-cover-page[data-align-x='start'] .ProseMirror {
+	text-align: start;
+}
+/* Crepe's placeholder starts where the caret is; centered, that's mid-line. */
+.wiki-cover-page:not([data-align-x='start']) .crepe-placeholder {
+	position: relative;
+}
+.wiki-cover-page:not([data-align-x='start']) .crepe-placeholder::before {
+	left: 0;
+	right: 0;
 }

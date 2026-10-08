@@ -42,7 +42,7 @@ async function attachmentsOutsideCover(pageId: string) {
 		listAttachmentsForPage(pageId),
 		getCover(pageId)
 	]);
-	return attachments.filter((file) => !cover?.includes(`/api/files/${file.id}`));
+	return attachments.filter((file) => !cover?.content.includes(`/api/files/${file.id}`));
 }
 
 export const actions: Actions = {
