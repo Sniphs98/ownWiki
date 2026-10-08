@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import MarkdownEditor from './markdown-editor.svelte';
 	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
@@ -97,6 +98,17 @@
 	}
 </script>
 
+<!-- A checkbox with its label and a hint below. -->
+{#snippet option(label: string, hint: string, control: Snippet)}
+	<label class="flex cursor-pointer items-start gap-3 has-disabled:cursor-not-allowed">
+		<span class="pt-0.5">{@render control()}</span>
+		<span class="grid gap-0.5">
+			<span class="text-sm leading-none font-medium">{label}</span>
+			<span class="text-xs text-muted-foreground">{hint}</span>
+		</span>
+	</label>
+{/snippet}
+
 <!-- The editor's "/" menu and image popups live outside the dialog, so
 	 clicking them mustn't close it; Escape closes those popups first. -->
 <Dialog.Root bind:open>
@@ -110,31 +122,28 @@
 			<Dialog.Title>PDF exportieren</Dialog.Title>
 		</Dialog.Header>
 
-		<div class="flex flex-col gap-2 text-sm">
+		<div class="grid gap-4">
 			{#if hasChildren}
-				<label class="flex items-center gap-2">
-					<input type="checkbox" class="size-4 accent-primary" bind:checked={withSubpages} />
-					Mit Unterseiten
-				</label>
+				{#snippet subpages()}
+					<Checkbox bind:checked={withSubpages} />
+				{/snippet}
+				{@render option('Mit Unterseiten', 'Alle Seiten unterhalb dieser Seite.', subpages)}
 			{/if}
-			<label class="flex items-center gap-2">
-				<input
-					type="checkbox"
-					class="size-4 accent-primary"
+			{#snippet toc()}
+				<Checkbox
 					checked={pdfTocSetting.enabled}
-					onchange={(event) => pdfTocSetting.set(event.currentTarget.checked)}
+					onCheckedChange={(checked) => pdfTocSetting.set(checked)}
 				/>
-				Inhaltsverzeichnis
-			</label>
-			<label class="flex items-center gap-2">
-				<input
-					type="checkbox"
-					class="size-4 accent-primary"
-					bind:checked={withCover}
-					disabled={!canEdit && !savedCover}
-				/>
-				Eigene Titelseite
-			</label>
+			{/snippet}
+			{@render option('Inhaltsverzeichnis', 'Seite 2: alle Abschnitte mit Seitenzahlen.', toc)}
+			{#snippet ownCover()}
+				<Checkbox bind:checked={withCover} disabled={!canEdit && !savedCover} />
+			{/snippet}
+			{@render option(
+				'Eigene Titelseite',
+				'Seite 1 selbst gestalten – mit Text, Logo und Bildern.',
+				ownCover
+			)}
 		</div>
 
 		{#if withCover}

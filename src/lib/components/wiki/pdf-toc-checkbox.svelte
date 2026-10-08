@@ -1,16 +1,15 @@
 <script lang="ts">
+	import { Checkbox } from '$lib/components/ui/checkbox';
 	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
 </script>
 
 <label
-	class="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground select-none"
+	class="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground select-none"
 	title="Fügt dem PDF nach der ersten Seite ein Inhaltsverzeichnis mit Seitenzahlen hinzu"
 >
-	<input
-		type="checkbox"
-		class="size-3.5 accent-primary"
+	<Checkbox
 		checked={pdfTocSetting.enabled}
-		onchange={(event) => pdfTocSetting.set(event.currentTarget.checked)}
+		onCheckedChange={(checked) => pdfTocSetting.set(checked)}
 	/>
 	Inhaltsverzeichnis
 </label>
