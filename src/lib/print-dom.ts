@@ -1,4 +1,5 @@
 import { linearizeCodeBlocks, renderAllCodeLines } from '$lib/code-mirror-print';
+import { addTableOfContents, structureHeadings } from '$lib/print-toc';
 
 /**
  * Crepe renders interactive editor chrome next to the actual content even
@@ -105,6 +106,8 @@ export function copyForPrint(
 export function toPrintableHtml(source: HTMLElement, linkOrigin?: string): string {
 	const copy = copyForPrint(source);
 	stripEditorChrome(copy);
+	structureHeadings(copy);
+	addTableOfContents(copy);
 	if (linkOrigin) {
 		for (const link of copy.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
 			link.href = new URL(link.getAttribute('href')!, linkOrigin).href;

@@ -111,6 +111,10 @@ async function renderPdf(url: URL): Promise<Buffer> {
 		// own layered on top.
 		const pdf = await page.pdf({
 			printBackground: true,
+			// Bookmarks from the headings (structured in print-toc.ts); the
+			// outline is built from the tagged-PDF structure.
+			outline: true,
+			tagged: true,
 			preferCSSPageSize: true,
 			margin: { top: 0, right: 0, bottom: 0, left: 0 }
 		});

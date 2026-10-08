@@ -28,6 +28,19 @@ const PRINT_CSS = `
 	.wiki-cover h1 { font-family: 'Gelasio Variable', Georgia, 'Times New Roman', serif; font-size: 28pt; }
 	.wiki-cover p { color: #4f4539; }
 
+	/* Contents page of multi-page exports, see print-toc.ts. */
+	.wiki-toc { break-after: page; font-family: 'Open Sans Variable', Arial, sans-serif; color: #1f1b16; }
+	.wiki-toc-title { font-family: 'Gelasio Variable', Georgia, serif; font-size: 24pt; font-weight: 400; margin: 0 0 18pt; }
+	.wiki-toc ol { list-style: none; margin: 0; padding: 0; }
+	.wiki-toc li { break-inside: auto; }
+	.wiki-toc a { display: flex; align-items: baseline; padding: 2.5pt 0; color: inherit; text-decoration: none; break-inside: avoid; }
+	.wiki-toc a::after { content: target-counter(attr(href url), page); font-variant-numeric: tabular-nums; }
+	.wiki-toc-fill { flex: 1; min-width: 1.5em; margin: 0 0.4em; border-bottom: 1px dotted #b8aea4; }
+	.wiki-toc-chapter { margin-top: 8pt; }
+	.wiki-toc-chapter > a { font-weight: 600; }
+	.wiki-toc-level-1 > a { padding-left: 1.2em; }
+	.wiki-toc-level-2 > a { padding-left: 2.4em; color: #4f4539; font-size: 0.95em; }
+
 	img, .wiki-diagram { max-width: 100%; break-inside: avoid; }
 	/* prosemirror-tables clips tables (overflow: hidden) and wraps them
 	   in a horizontal scroll container — pagedjs can't split a clipped

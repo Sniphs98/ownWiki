@@ -12,6 +12,13 @@ if (!databaseUrl) throw new Error('DATABASE_URL is not set');
 rmSync(dirname(resolve(databaseUrl)), { recursive: true, force: true });
 await import('../scripts/migrate.js');
 
+/** Distinct sentences: long enough to run a chapter over several pages. */
+const sentences = (word, count) =>
+	Array.from(
+		{ length: count },
+		(_, i) => `${word} ${i + 1} wird hier ausführlich beschrieben.`
+	).join(' ');
+
 const fixtures = [
 	{
 		path: 'e2e/pdf-export',
@@ -42,6 +49,22 @@ const fixtures = [
 		path: 'e2e/files',
 		title: 'Dateien Prüfseite',
 		content: readFileSync(new URL('./fixtures/files.md', import.meta.url), 'utf8')
+	},
+	// A small page group, for exports with several pages (contents page).
+	{
+		path: 'e2e/handbuch',
+		title: 'Handbuch',
+		content: '# Handbuch\n\nÜberblick über die folgenden Seiten.\n\n## Aufbau\n\nZwei Kapitel.\n'
+	},
+	{
+		path: 'e2e/handbuch/einrichtung',
+		title: 'Einrichtung',
+		content: `## Voraussetzungen\n\n${sentences('Voraussetzung', 120)}\n\n## Installation\n\n${sentences('Installationsschritt', 120)}\n\n### Details\n\nNicht im gedruckten Verzeichnis.\n`
+	},
+	{
+		path: 'e2e/handbuch/betrieb',
+		title: 'Betrieb',
+		content: '## Sicherung\n\nTäglich um 2 Uhr.\n'
 	}
 ];
 
