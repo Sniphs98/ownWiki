@@ -39,6 +39,8 @@ Welche Werkzeuge in der Leiste stehen und in welcher Reihenfolge, stellt jede Pe
 
 Das PDF wird nicht nachgebaut, sondern aus der echten Seite erzeugt: dieselbe Textbreite (A4 mit Rändern), dieselben eingebetteten Schriften, derselbe Editor. Zeilen brechen deshalb an exakt denselben Stellen um. Tabellen und lange Codeblöcke werden zeilenweise auf mehrere Seiten verteilt, der Tabellenkopf wiederholt sich auf jeder Seite.
 
+Jedes PDF hat Lesezeichen für die Seitenleiste des PDF-Betrachters: jede Wiki-Seite mit ihren Abschnitten darunter. Exporte mit mehreren Seiten bekommen nach dem Deckblatt zusätzlich eine Inhaltsseite mit Seitenzahlen und anklickbaren Einträgen (Seiten und ihre Überschriften der ersten beiden Ebenen).
+
 <p align="center">
   <img src="docs/screenshots/pdf-seite.png" alt="Erste Seite eines exportierten PDFs" width="420">
 </p>
