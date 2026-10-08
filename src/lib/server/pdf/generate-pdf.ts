@@ -1,8 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { chromium } from 'playwright';
+import { chromium, type Browser } from 'playwright';
 import { env } from '$env/dynamic/private';
 import { dev } from '$app/environment';
 import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from './internal-token';
+import { createLimiter, QueueFullError } from './concurrency';
 
 /**
  * Both this generator and the SvelteKit HTTP server it navigates to run in
@@ -26,18 +27,52 @@ function internalOrigin(requestUrl: URL): string {
 const PRINT_TIMEOUT_MS = 60_000;
 
 /**
+ * Each export renders a whole page in Chromium, which costs a lot of memory
+ * and CPU — a handful of parallel requests (anyone can send them in
+ * AUTH_MODE=read-only) could otherwise take the server down.
+ */
+const limitExports = createLimiter(2, 10);
+
+/**
+ * One Chromium for all exports, started on first use: launching it takes
+ * longer than many exports. Each export gets its own context, so they share
+ * no cookies or storage. Relaunched if it crashes.
+ */
+let sharedBrowser: Promise<Browser> | null = null;
+
+function getBrowser(): Promise<Browser> {
+	if (!sharedBrowser) {
+		const launching = chromium.launch();
+		sharedBrowser = launching;
+		launching.then(
+			(browser) =>
+				browser.on('disconnected', () => {
+					if (sharedBrowser === launching) sharedBrowser = null;
+				}),
+			() => {
+				if (sharedBrowser === launching) sharedBrowser = null;
+			}
+		);
+	}
+	return sharedBrowser;
+}
+
+/**
  * Renders the given /print/... path — the same page a user can open
  * directly for a paginated preview — in a headless browser and exports it
  * to PDF. This is what makes the export pixel-accurate to the app: it's the
  * real Milkdown Crepe editor (readonly) laid out by pagedjs, not a
  * reimplementation of the markdown rendering.
  */
-export async function generatePdf(printPathAndQuery: string, requestUrl: URL): Promise<Buffer> {
+export function generatePdf(printPathAndQuery: string, requestUrl: URL): Promise<Buffer> {
 	const url = new URL(printPathAndQuery, internalOrigin(requestUrl));
+	return limitExports(() => renderPdf(url));
+}
 
-	const browser = await chromium.launch();
+async function renderPdf(url: URL): Promise<Buffer> {
+	const browser = await getBrowser();
+	const context = await browser.newContext();
 	try {
-		const context = await browser.newContext();
 		await context.setExtraHTTPHeaders({ [PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN });
 		const page = await context.newPage();
 
@@ -81,7 +116,7 @@ export async function generatePdf(printPathAndQuery: string, requestUrl: URL): P
 		});
 		return pdf;
 	} finally {
-		await browser.close();
+		await context.close();
 	}
 }
 
@@ -93,6 +128,9 @@ export async function generatePdfOrFail(printPathAndQuery: string, requestUrl: U
 	try {
 		return await generatePdf(printPathAndQuery, requestUrl);
 	} catch (cause) {
+		if (cause instanceof QueueFullError) {
+			error(503, 'Gerade laufen zu viele PDF-Exporte. Bitte versuche es gleich noch einmal.');
+		}
 		console.error('PDF export failed:', cause);
 		const reason = cause instanceof Error ? cause.message : String(cause);
 		error(500, `PDF-Export fehlgeschlagen: ${reason}`);

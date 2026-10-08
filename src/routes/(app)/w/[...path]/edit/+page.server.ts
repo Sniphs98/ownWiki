@@ -4,9 +4,11 @@ import {
 	addPageVersion,
 	createPage,
 	deletePage,
-	getPageWithLatestVersion
+	getPageWithLatestVersion,
+	PageConflictError
 } from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
+import { slugifyPath } from '$lib/slug';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -14,6 +16,15 @@ export const load: PageServerLoad = async (event) => {
 
 	const path = event.params.path;
 	const existing = await getPageWithLatestVersion(path);
+
+	// New pages only get the canonical path the "Neue Seite" dialog and
+	// wiki links produce ("Personal/Kündigung" → "personal/kuendigung").
+	const slug = slugifyPath(path);
+	if (!existing && slug !== path) {
+		if (!slug) error(400, 'Ungültiger Seitenpfad');
+		const title = event.url.searchParams.get('title') ?? path.split('/').at(-1) ?? '';
+		redirect(303, `/w/${slug}/edit?title=${encodeURIComponent(title)}`);
+	}
 
 	return {
 		path,
@@ -38,13 +49,37 @@ export const actions: Actions = {
 			return fail(400, { message: 'Titel darf nicht leer sein.' });
 		}
 
+		// The version the editor was opened on, 0 for a new page. The last
+		// value wins: "Trotzdem speichern" overrides the form's hidden field.
+		const baseVersion = Number(formData.getAll('baseVersion').at(-1) ?? 0);
+
 		const authorId = event.locals.user?.id;
 		const existing = await getPageWithLatestVersion(path);
+		if (!existing && slugifyPath(path) !== path) {
+			return fail(400, { message: 'Ungültiger Seitenpfad.' });
+		}
 
-		if (existing) {
-			await addPageVersion({ pageId: existing.page.id, title, content, changeSummary, authorId });
-		} else {
-			await createPage({ path, title, content, changeSummary, authorId });
+		try {
+			if (existing) {
+				await addPageVersion({
+					pageId: existing.page.id,
+					title,
+					content,
+					changeSummary,
+					authorId,
+					baseVersion
+				});
+			} else {
+				await createPage({ path, title, content, changeSummary, authorId });
+			}
+		} catch (err) {
+			if (!(err instanceof PageConflictError)) throw err;
+			return fail(409, {
+				message:
+					`Jemand anderes hat die Seite inzwischen gespeichert (jetzt Version ${err.latestVersion}). ` +
+					'Speichern würde diese Änderungen überschreiben.',
+				conflictVersion: err.latestVersion
+			});
 		}
 
 		redirect(303, `/w/${path}`);

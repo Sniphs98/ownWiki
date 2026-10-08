@@ -6,9 +6,9 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
-	import type { ActionData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { form }: { form: ActionData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let activeTab = $state('signIn');
 
@@ -28,13 +28,17 @@
 	<Card.Root class="w-full max-w-sm">
 		<Card.Header>
 			<Card.Title>Willkommen</Card.Title>
-			<Card.Description>Melde dich an oder erstelle ein Konto.</Card.Description>
+			<Card.Description>
+				{data.signupAllowed ? 'Melde dich an oder erstelle ein Konto.' : 'Melde dich an.'}
+			</Card.Description>
 		</Card.Header>
 		<Card.Content>
 			<Tabs.Root bind:value={activeTab}>
 				<Tabs.List class="w-full">
 					<Tabs.Trigger value="signIn">Anmelden</Tabs.Trigger>
-					<Tabs.Trigger value="signUp">Registrieren</Tabs.Trigger>
+					{#if data.signupAllowed}
+						<Tabs.Trigger value="signUp">Registrieren</Tabs.Trigger>
+					{/if}
 				</Tabs.List>
 
 				<Tabs.Content value="signIn">

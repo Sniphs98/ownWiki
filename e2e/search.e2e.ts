@@ -53,7 +53,7 @@ test('saved and deleted pages are found or gone right away', async ({ page, base
 	// A new version replaces the old text in the index.
 	await page.request.post(
 		`/w/${path}/edit?/save`,
-		form({ title: 'Neue Suchseite', content: 'Jetzt wohnt hier jemand anderes.' })
+		form({ title: 'Neue Suchseite', content: 'Jetzt wohnt hier jemand anderes.', baseVersion: '1' })
 	);
 	await expect(await search(page, 'Quokkaflüsterer')).toHaveCount(0);
 

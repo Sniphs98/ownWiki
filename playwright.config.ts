@@ -16,6 +16,7 @@ export default defineConfig({
 			// Separate, freshly seeded database — never the developer's wiki.
 			DATABASE_URL: './.data/e2e/wiki.db',
 			AUTH_MODE: 'disabled',
+			ALLOW_SIGNUP: 'true',
 			BETTER_AUTH_SECRET: 'e2e-only-secret-0000000000000000000000'
 		}
 	},

@@ -107,13 +107,23 @@ Das Image enthält Chromium für den PDF-Export.
 | `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet. |
 | `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                   |
 | `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                           |
+| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                     |
 | `PORT`               | Port des Servers, Standard `3000`                                                          |
+| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`       |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
 - `disabled` – ohne Anmeldung: alle dürfen lesen und schreiben.
 - `read-only` – alle dürfen lesen, Bearbeiten erfordert eine Anmeldung.
 - `full` – ohne Anmeldung kein Zugriff (privates Wiki).
+
+**Registrierung (`ALLOW_SIGNUP`):**
+
+- nicht gesetzt (Standard) – nur das erste Konto kann sich registrieren, danach ist die Registrierung geschlossen.
+- `true` – alle dürfen sich registrieren.
+- `false` – niemand darf sich registrieren.
+
+Bei `AUTH_MODE=full` sollte die Registrierung geschlossen bleiben, sonst kann sich jede Person selbst Zugang zum privaten Wiki verschaffen.
 
 ## Entwicklung
 
@@ -132,11 +142,14 @@ npm run dev
 | `npm run dev`                     | Entwicklungsserver auf http://localhost:5173                                                                           |
 | `npm run check`                   | Typprüfung (svelte-check)                                                                                              |
 | `npm run lint` / `npm run format` | Prettier und ESLint                                                                                                    |
+| `npm run test:unit`               | Unit-Tests mit Vitest                                                                                                  |
 | `npm run test:e2e`                | Ende-zu-Ende-Tests mit Playwright                                                                                      |
 | `npm run build`                   | Produktions-Build (`node build` startet ihn)                                                                           |
 | `npm run db:generate`             | Migration aus Schemaänderungen erzeugen (für SQLite und PostgreSQL jeweils mit passendem `DATABASE_DIALECT` ausführen) |
 
 Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node build`), mit einer eigenen, jedes Mal neu befüllten Datenbank unter `.data/e2e/` – die Entwicklungsdatenbank bleibt unberührt. Sie prüfen unter anderem, dass Web-Ansicht und PDF an denselben Stellen umbrechen, dass keine leeren Seiten entstehen und dass die Seitenumbruch-Linien mit dem echten PDF übereinstimmen.
+
+Bei jedem Pull Request und jedem Push auf `main` laufen Lint, Typprüfung, Unit- und Ende-zu-Ende-Tests sowie der Docker-Build in GitHub Actions (`.github/workflows/ci.yml`).
 
 ### Aufbau
 

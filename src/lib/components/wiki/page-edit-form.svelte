@@ -23,7 +23,8 @@
 		existingContent,
 		nextVersionNumber,
 		attachments,
-		errorMessage
+		errorMessage,
+		conflictVersion
 	}: {
 		path: string;
 		pageId?: string;
@@ -35,6 +36,8 @@
 		nextVersionNumber: number;
 		attachments: AttachmentMeta[];
 		errorMessage?: string;
+		/** Set when someone else saved meanwhile: the version that would be overwritten. */
+		conflictVersion?: number;
 	} = $props();
 
 	let title = $state(existingTitle);
@@ -78,6 +81,8 @@
 	</Field.FieldGroup>
 
 	<input type="hidden" name="content" value={content} />
+	<!-- The version this edit is based on; the save is refused if the page has moved on. -->
+	<input type="hidden" name="baseVersion" value={nextVersionNumber - 1} />
 
 	<div class="mt-4 flex justify-end">
 		<PageBreakToggle />
@@ -149,6 +154,18 @@
 				Abbrechen
 			</Button>
 			<Button type="submit" disabled={saving}>{saving ? 'Speichert …' : 'Speichern'}</Button>
+			{#if conflictVersion !== undefined}
+				<!-- Overrides the hidden baseVersion: a submit button's value wins as it comes last. -->
+				<Button
+					type="submit"
+					name="baseVersion"
+					value={String(conflictVersion)}
+					variant="destructive"
+					disabled={saving}
+				>
+					Trotzdem speichern
+				</Button>
+			{/if}
 		</div>
 	</div>
 </form>
