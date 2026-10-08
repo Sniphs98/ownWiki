@@ -11,15 +11,20 @@
 	let {
 		wikiTitle,
 		pages,
-		linkOrigin
+		linkOrigin,
+		toc
 	}: {
 		wikiTitle: string;
 		pages: PrintablePage[];
 		/** The wiki's public origin, to make links in the PDF absolute. */
 		linkOrigin: string;
+		/** Adds a contents page after the first page (the cover). */
+		toc: boolean;
 	} = $props();
 
 	const isMulti = $derived(pages.length > 1);
+	// The contents page goes after the cover, so a single page gets one too.
+	const hasCover = $derived(isMulti || toc);
 
 	// Paper is white: the preview and the PDF always use the light theme,
 	// whatever the viewer picked for the app (app.html applies .dark early).
@@ -88,7 +93,7 @@
 			// real content off to the source's off-screen position — pass a
 			// plain string, matching pagedjs's documented usage, so it parses
 			// fresh content instead.
-			await paginateHtml(toPrintableHtml(sourceEl!, linkOrigin), targetEl!);
+			await paginateHtml(toPrintableHtml(sourceEl!, { linkOrigin, toc }), targetEl!);
 			// The source has been cloned into targetEl's paginated layout by
 			// now; hiding it (the {#if !hideSource} below) is no longer just
 			// cosmetic — its huge negative offset (needed so Crepe still gets a
@@ -111,10 +116,13 @@
 
 {#if !hideSource}
 	<div bind:this={sourceEl} class="print-source" style:width={PRINT_TEXT_WIDTH}>
-		{#if isMulti}
+		{#if hasCover}
 			<div class="wiki-cover">
-				<h1>{wikiTitle}</h1>
-				<p>Exportiert am {new Date().toLocaleString('de-DE')}</p>
+				<h1>{isMulti ? wikiTitle : pages[0].title}</h1>
+				<p>
+					{#if !isMulti}{wikiTitle} ·
+					{/if}Exportiert am {new Date().toLocaleString('de-DE')}
+				</p>
 			</div>
 		{/if}
 		{#each pages as p (p.path)}

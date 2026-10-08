@@ -6,8 +6,9 @@
  *   skipping role="presentation". structureHeadings() sets those so each
  *   page's title is a top-level bookmark with its sections nested below —
  *   without changing how anything looks.
- * - A printed contents page after the cover of multi-page exports, with
- *   page numbers filled in by pagedjs (target-counter, see paginate.ts).
+ * - A printed contents page after the cover, when asked for (the
+ *   "Inhaltsverzeichnis" checkbox), with page numbers filled in by pagedjs
+ *   (target-counter, see paginate.ts).
  *
  * Both work on the copy that gets paginated (print-dom.ts), never on the
  * live editors.
@@ -58,12 +59,11 @@ function entry(text: string, targetId: string, className: string): HTMLLIElement
 
 /**
  * Inserts a contents page after the cover: every page, with its first two
- * levels of headings, linked and with page numbers. Only for exports of
- * more than one page.
+ * levels of headings, linked and with page numbers.
  */
 export function addTableOfContents(root: HTMLElement) {
 	const chapters = [...root.querySelectorAll<HTMLElement>(':scope > .wiki-chapter')];
-	if (chapters.length < 2) return;
+	if (chapters.length === 0) return;
 
 	const list = document.createElement('ol');
 	chapters.forEach((chapter, c) => {

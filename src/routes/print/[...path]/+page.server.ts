@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { resolvePrintablePages } from '$lib/server/pdf/printable-pages';
+import { wantsToc } from '$lib/pdf-toc-setting.svelte';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -7,5 +8,5 @@ export const load: PageServerLoad = async (event) => {
 	const result = await resolvePrintablePages(event.params.path, scope);
 	if (!result) error(404, 'Seite nicht gefunden');
 	// adapter-node derives the URL from ORIGIN, so this is the public origin.
-	return { ...result, linkOrigin: event.url.origin };
+	return { ...result, linkOrigin: event.url.origin, toc: wantsToc(event.url) };
 };

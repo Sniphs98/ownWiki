@@ -8,6 +8,8 @@
 	import PageHeader from '$lib/components/wiki/page-header.svelte';
 	import PageBreakMarkers from '$lib/components/wiki/page-break-markers.svelte';
 	import PageBreakToggle from '$lib/components/wiki/page-break-toggle.svelte';
+	import PdfTocCheckbox from '$lib/components/wiki/pdf-toc-checkbox.svelte';
+	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
 
@@ -24,7 +26,7 @@
 <div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>
 	<div class="mb-2 flex flex-wrap items-start justify-end gap-2">
 		<div class="flex flex-col items-end">
-			<Button href="/api/pdf/{data.page.path}" variant="ghost">
+			<Button href={pdfTocSetting.href(`/api/pdf/${data.page.path}`)} variant="ghost">
 				<FileDownIcon data-icon="inline-start" />
 				PDF
 			</Button>
@@ -33,16 +35,17 @@
 					for a raw query-string suffix like this. -->
 				<!-- eslint-disable svelte/no-navigation-without-resolve -->
 				<a
-					href="/api/pdf/{data.page.path}?scope=subtree"
+					href={pdfTocSetting.href(`/api/pdf/${data.page.path}?scope=subtree`)}
 					class="text-xs text-muted-foreground hover:underline"
 				>
 					mit Unterseiten
 				</a>
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			{/if}
+			<PdfTocCheckbox />
 		</div>
 		<PageBreakToggle />
-		<Button href="/print/{data.page.path}" target="_blank" variant="ghost">
+		<Button href={pdfTocSetting.href(`/print/${data.page.path}`)} target="_blank" variant="ghost">
 			<BookOpenIcon data-icon="inline-start" />
 			Seitenweise
 		</Button>

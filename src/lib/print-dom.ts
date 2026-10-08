@@ -99,15 +99,19 @@ export function copyForPrint(
 }
 
 /**
- * Returns the HTML of `source` with all editor-only chrome removed. With
- * `linkOrigin`, links within the wiki (/w/…, /api/files/…) become absolute
- * — in a PDF there's no page URL to resolve them against.
+ * Returns the HTML of `source` with all editor-only chrome removed and the
+ * headings structured for the PDF bookmarks. With `linkOrigin`, links within
+ * the wiki (/w/…, /api/files/…) become absolute — in a PDF there's no page
+ * URL to resolve them against. With `toc`, a contents page follows the cover.
  */
-export function toPrintableHtml(source: HTMLElement, linkOrigin?: string): string {
+export function toPrintableHtml(
+	source: HTMLElement,
+	{ linkOrigin, toc = false }: { linkOrigin?: string; toc?: boolean } = {}
+): string {
 	const copy = copyForPrint(source);
 	stripEditorChrome(copy);
 	structureHeadings(copy);
-	addTableOfContents(copy);
+	if (toc) addTableOfContents(copy);
 	if (linkOrigin) {
 		for (const link of copy.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
 			link.href = new URL(link.getAttribute('href')!, linkOrigin).href;
