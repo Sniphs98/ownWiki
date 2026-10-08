@@ -1,15 +1,9 @@
 <script lang="ts">
-	import PencilIcon from '@lucide/svelte/icons/pencil';
-	import HistoryIcon from '@lucide/svelte/icons/history';
-	import FileDownIcon from '@lucide/svelte/icons/file-down';
-	import BookOpenIcon from '@lucide/svelte/icons/book-open';
-	import { Button } from '$lib/components/ui/button';
 	import MarkdownEditor from '$lib/components/wiki/markdown-editor.svelte';
 	import PageHeader from '$lib/components/wiki/page-header.svelte';
 	import PageBreakMarkers from '$lib/components/wiki/page-break-markers.svelte';
-	import PageBreakToggle from '$lib/components/wiki/page-break-toggle.svelte';
-	import PdfTocCheckbox from '$lib/components/wiki/pdf-toc-checkbox.svelte';
-	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
+	import PageActions from '$lib/components/wiki/page-actions.svelte';
+	import { pageAside } from '$lib/page-aside.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
 
@@ -17,48 +11,28 @@
 
 	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
 	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.page.path}/`)));
+
+	$effect(() => {
+		pageAside.actions = asideActions;
+		return () => {
+			if (pageAside.actions === asideActions) pageAside.actions = null;
+		};
+	});
 </script>
+
+{#snippet asideActions()}
+	<PageActions path={data.page.path} {hasChildren} {canEdit} column />
+{/snippet}
 
 <svelte:head>
 	<title>{data.version.title} · ownWiki</title>
 </svelte:head>
 
 <div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>
-	<div class="mb-2 flex flex-wrap items-start justify-end gap-2">
-		<div class="flex flex-col items-end">
-			<Button href={pdfTocSetting.href(`/api/pdf/${data.page.path}`)} variant="ghost">
-				<FileDownIcon data-icon="inline-start" />
-				PDF
-			</Button>
-			{#if hasChildren}
-				<!-- File download, not an SPA navigation; resolve() has no route
-					for a raw query-string suffix like this. -->
-				<!-- eslint-disable svelte/no-navigation-without-resolve -->
-				<a
-					href={pdfTocSetting.href(`/api/pdf/${data.page.path}?scope=subtree`)}
-					class="text-xs text-muted-foreground hover:underline"
-				>
-					mit Unterseiten
-				</a>
-				<!-- eslint-enable svelte/no-navigation-without-resolve -->
-			{/if}
-			<PdfTocCheckbox />
-		</div>
-		<PageBreakToggle />
-		<Button href={pdfTocSetting.href(`/print/${data.page.path}`)} target="_blank" variant="ghost">
-			<BookOpenIcon data-icon="inline-start" />
-			Seitenweise
-		</Button>
-		<Button href={resolve('/(app)/w/[...path]/history', { path: data.page.path })} variant="ghost">
-			<HistoryIcon data-icon="inline-start" />
-			Verlauf
-		</Button>
-		{#if canEdit}
-			<Button href={resolve('/(app)/w/[...path]/edit', { path: data.page.path })} variant="outline">
-				<PencilIcon data-icon="inline-start" />
-				Bearbeiten
-			</Button>
-		{/if}
+	<!-- Beside the text when there's room (the layout's side panel, see
+		 pageAside below), otherwise above it. -->
+	<div class="mb-2 flex justify-end @min-[1360px]:hidden">
+		<PageActions path={data.page.path} {hasChildren} {canEdit} />
 	</div>
 	<PageHeader
 		title={data.version.title}

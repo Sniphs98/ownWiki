@@ -54,3 +54,24 @@ test('the sections only show where they fit beside the text', async ({ page }) =
 	// And no table of contents in the page tree any more.
 	await expect(page.locator('[data-sidebar="content"]')).not.toContainText('Zuständigkeiten');
 });
+
+test('the page actions sit above the sections when there is room, else above the text', async ({
+	page
+}) => {
+	const pdfLink = page.getByRole('link', { name: 'PDF', exact: true });
+	const text = page.locator('.milkdown .ProseMirror').first();
+
+	await page.setViewportSize({ width: 1920, height: 1000 });
+	await page.goto(`/w/${PATH}`);
+	await expect(aside(page)).toBeVisible();
+	const link = (await pdfLink.boundingBox())!;
+	expect(link.x).toBeGreaterThan((await text.boundingBox())!.x + 600);
+	expect(link.y).toBeLessThan((await aside(page).boundingBox())!.y);
+
+	await page.setViewportSize({ width: 1300, height: 900 });
+	await expect(aside(page)).toBeHidden();
+	await expect(pdfLink).toBeVisible();
+	expect((await pdfLink.boundingBox())!.y).toBeLessThan((await text.boundingBox())!.y);
+	// No paginated preview button any more.
+	await expect(page.getByRole('link', { name: 'Seitenweise' })).toHaveCount(0);
+});
