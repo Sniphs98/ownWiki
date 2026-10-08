@@ -47,6 +47,31 @@ test('the title page is an A4 sheet, greyed out until switched on', async ({ pag
 	await expect(area).toHaveCSS('opacity', '1');
 });
 
+test('on the scaled-down sheet, the cursor is where you type', async ({ page }) => {
+	await openExportDialog(page);
+	await dialog(page).getByRole('switch', { name: 'Eigene Titelseite' }).check();
+	const zoom = await dialog(page)
+		.locator('[data-cover-sheet]')
+		.evaluate((sheet) => Number(getComputedStyle(sheet).zoom));
+	expect(zoom).toBeLessThan(1);
+
+	await coverEditor(page).click();
+	await page.keyboard.type('Cursor-Test');
+	// The browser's own caret, not one Crepe draws (and misplaces when scaled).
+	await expect(dialog(page).locator('.prosemirror-virtual-cursor')).toHaveCount(0);
+	await expect(coverEditor(page)).not.toHaveCSS('caret-color', 'rgba(0, 0, 0, 0)');
+	const [caret, textEnd] = await coverEditor(page).evaluate((editor) => {
+		const caret = getSelection()!.getRangeAt(0).getBoundingClientRect();
+		const text = [...editor.querySelectorAll('p')].find((p) => p.textContent === 'Cursor-Test')!;
+		const range = document.createRange();
+		range.selectNodeContents(text);
+		const end = range.getBoundingClientRect();
+		return [caret, { x: end.right, y: end.top }];
+	});
+	expect(Math.abs(caret.x - textEnd.x)).toBeLessThan(3);
+	expect(Math.abs(caret.y - textEnd.y)).toBeLessThan(3);
+});
+
 test('the title page is written in the dialog, saved and exported as page 1', async ({ page }) => {
 	await openExportDialog(page);
 	await dialog(page).getByRole('switch', { name: 'Eigene Titelseite' }).check();

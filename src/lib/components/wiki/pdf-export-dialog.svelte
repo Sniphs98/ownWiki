@@ -233,7 +233,7 @@
 		</Dialog.Header>
 
 		<div class="grid min-h-0 flex-1 grid-cols-[17rem_1fr] gap-6">
-			<div class="flex flex-col gap-5 overflow-y-auto">
+			<div class="flex min-w-0 flex-col gap-5 overflow-x-hidden overflow-y-auto">
 				{#if hasChildren}
 					{#snippet subpages()}
 						<Switch bind:checked={withSubpages} />
@@ -304,6 +304,7 @@
 					toolbar={canEdit ? toolbarSetting.layout : undefined}
 					placeholder="Titel, Logo, Untertitel … („/“ für Befehle)"
 					frame={sheet}
+					virtualCursor={false}
 				/>
 				<div class="flex items-center justify-between gap-4 text-xs">
 					<span class={cn(overflowing ? 'text-destructive' : 'text-muted-foreground')}>

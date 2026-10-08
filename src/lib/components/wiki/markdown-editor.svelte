@@ -32,7 +32,8 @@
 		onready,
 		onerror,
 		onupload,
-		frame
+		frame,
+		virtualCursor = true
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -54,6 +55,12 @@
 		 * renders the given snippet where the text goes.
 		 */
 		frame?: Snippet<[text: Snippet]>;
+		/**
+		 * Crepe draws its own text cursor. Turn it off where the text is
+		 * scaled (CSS zoom): it's positioned unscaled and lands off the text;
+		 * the browser's own cursor then shows instead.
+		 */
+		virtualCursor?: boolean;
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -283,6 +290,7 @@
 				defaultValue: value,
 				featureConfigs: {
 					[Crepe.Feature.Placeholder]: { text: placeholder },
+					[Crepe.Feature.Cursor]: { virtual: virtualCursor },
 					[Crepe.Feature.ImageBlock]: {
 						onUpload: uploadImage
 					},
