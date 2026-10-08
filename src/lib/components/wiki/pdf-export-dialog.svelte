@@ -3,7 +3,7 @@
 	import FileDownIcon from '@lucide/svelte/icons/file-down';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import { Button } from '$lib/components/ui/button';
-	import { Checkbox } from '$lib/components/ui/checkbox';
+	import { Switch } from '$lib/components/ui/switch';
 	import MarkdownEditor from './markdown-editor.svelte';
 	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
@@ -98,14 +98,16 @@
 	}
 </script>
 
-<!-- A checkbox with its label and a hint below. -->
+<!-- A setting: label and hint on the left, its switch on the right. -->
 {#snippet option(label: string, hint: string, control: Snippet)}
-	<label class="flex cursor-pointer items-start gap-3 has-disabled:cursor-not-allowed">
-		<span class="pt-0.5">{@render control()}</span>
+	<label
+		class="flex cursor-pointer items-center justify-between gap-6 has-disabled:cursor-not-allowed"
+	>
 		<span class="grid gap-0.5">
 			<span class="text-sm leading-none font-medium">{label}</span>
 			<span class="text-xs text-muted-foreground">{hint}</span>
 		</span>
+		{@render control()}
 	</label>
 {/snippet}
 
@@ -125,19 +127,19 @@
 		<div class="grid gap-4">
 			{#if hasChildren}
 				{#snippet subpages()}
-					<Checkbox bind:checked={withSubpages} />
+					<Switch bind:checked={withSubpages} />
 				{/snippet}
 				{@render option('Mit Unterseiten', 'Alle Seiten unterhalb dieser Seite.', subpages)}
 			{/if}
 			{#snippet toc()}
-				<Checkbox
+				<Switch
 					checked={pdfTocSetting.enabled}
 					onCheckedChange={(checked) => pdfTocSetting.set(checked)}
 				/>
 			{/snippet}
 			{@render option('Inhaltsverzeichnis', 'Seite 2: alle Abschnitte mit Seitenzahlen.', toc)}
 			{#snippet ownCover()}
-				<Checkbox bind:checked={withCover} disabled={!canEdit && !savedCover} />
+				<Switch bind:checked={withCover} disabled={!canEdit && !savedCover} />
 			{/snippet}
 			{@render option(
 				'Eigene Titelseite',

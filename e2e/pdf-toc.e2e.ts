@@ -59,7 +59,7 @@ test('a single page gets a cover, then the contents page', async ({ page }) => {
 	expect(await wrongPageNumbers(page)).toEqual([]);
 });
 
-test('without the checkbox there is no cover or contents page', async ({ page }) => {
+test('without the switch there is no cover or contents page', async ({ page }) => {
 	for (const query of [`${LONG_PAGE}?toc=0`, `${GROUP}?scope=subtree&toc=0`]) {
 		await openPrintView(page, query);
 		await expect(page.locator('.pagedjs_page').first()).toBeAttached();
@@ -71,7 +71,7 @@ test('without the checkbox there is no cover or contents page', async ({ page })
 test('the export dialog remembers the contents page choice', async ({ page }) => {
 	await page.goto(`/w/${GROUP}`);
 	const dialog = page.getByRole('dialog', { name: 'PDF exportieren' });
-	const checkbox = dialog.getByRole('checkbox', { name: 'Inhaltsverzeichnis' });
+	const toggle = dialog.getByRole('switch', { name: 'Inhaltsverzeichnis' });
 	// Retried: a click before hydration does nothing.
 	const openDialog = () =>
 		expect(async () => {
@@ -80,11 +80,11 @@ test('the export dialog remembers the contents page choice', async ({ page }) =>
 		}).toPass();
 
 	await openDialog();
-	await expect(checkbox).toBeChecked();
-	await checkbox.uncheck();
+	await expect(toggle).toBeChecked();
+	await toggle.uncheck();
 	await page.reload();
 	await openDialog();
-	await expect(checkbox).not.toBeChecked();
+	await expect(toggle).not.toBeChecked();
 });
 
 test('the PDF has the contents page and bookmarks, bookmarks also without it', async ({ page }) => {

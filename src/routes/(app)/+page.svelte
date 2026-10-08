@@ -5,7 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { resolve } from '$app/paths';
 	import { buildPageTree } from '$lib/page-tree';
-	import PdfTocCheckbox from '$lib/components/wiki/pdf-toc-checkbox.svelte';
+	import PdfTocSwitch from '$lib/components/wiki/pdf-toc-switch.svelte';
 	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
 
 	let { data } = $props();
@@ -39,7 +39,7 @@
 		<div class="mb-4 flex items-center justify-between">
 			<h1 class="text-2xl font-semibold">Seiten</h1>
 			<div class="flex items-center gap-2">
-				<PdfTocCheckbox />
+				<PdfTocSwitch />
 				<Button href={pdfTocSetting.href('/api/pdf')} variant="outline" size="sm">
 					<FileDownIcon data-icon="inline-start" />
 					Ganzes Wiki als PDF

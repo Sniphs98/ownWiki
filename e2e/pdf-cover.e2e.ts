@@ -34,7 +34,7 @@ test.describe.configure({ mode: 'serial' });
 
 test('the title page is written in the dialog, saved and exported as page 1', async ({ page }) => {
 	await openExportDialog(page);
-	await dialog(page).getByLabel('Eigene Titelseite').check();
+	await dialog(page).getByRole('switch', { name: 'Eigene Titelseite' }).check();
 	await coverEditor(page).click();
 	await page.keyboard.type('# Betriebshandbuch');
 	await page.keyboard.press('Enter');
@@ -47,7 +47,7 @@ test('the title page is written in the dialog, saved and exported as page 1', as
 
 	// Saved with the page: the dialog brings it back.
 	await openExportDialog(page);
-	await expect(dialog(page).getByLabel('Eigene Titelseite')).toBeChecked();
+	await expect(dialog(page).getByRole('switch', { name: 'Eigene Titelseite' })).toBeChecked();
 	await expect(coverEditor(page)).toContainText('Betriebshandbuch');
 });
 
@@ -99,8 +99,8 @@ test('images on the title page end up in the PDF and stay out of "unlinked files
 test('the dialog exports subpages and the contents page as chosen', async ({ page }) => {
 	await page.goto('/w/e2e/handbuch');
 	await clickPdf(page);
-	await dialog(page).getByLabel('Mit Unterseiten').check();
-	await dialog(page).getByLabel('Inhaltsverzeichnis').uncheck();
+	await dialog(page).getByRole('switch', { name: 'Mit Unterseiten' }).check();
+	await dialog(page).getByRole('switch', { name: 'Inhaltsverzeichnis' }).uncheck();
 
 	const request = page.waitForRequest((r) => r.url().includes('/api/pdf/'));
 	await dialog(page).getByRole('button', { name: 'PDF herunterladen' }).click();

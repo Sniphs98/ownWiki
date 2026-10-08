@@ -7,7 +7,7 @@
  *   page's title is a top-level bookmark with its sections nested below —
  *   without changing how anything looks.
  * - A printed contents page after the cover, when asked for (the
- *   "Inhaltsverzeichnis" checkbox), with page numbers filled in by pagedjs
+ *   "Inhaltsverzeichnis" switch), with page numbers filled in by pagedjs
  *   (target-counter, see paginate.ts).
  *
  * Both work on the copy that gets paginated (print-dom.ts), never on the
