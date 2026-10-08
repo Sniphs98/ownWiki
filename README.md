@@ -35,11 +35,13 @@ Welche Werkzeuge in der Leiste stehen und in welcher Reihenfolge, stellt jede Pe
 
 ### PDF-Export
 
-„PDF“ auf einer Seite lädt sie als PDF herunter; „mit Unterseiten“ nimmt den ganzen Bereich mit, „Ganzes Wiki als PDF“ auf der Startseite alles inklusive Deckblatt. Die Knöpfe dafür stehen rechts neben dem Text über „Auf dieser Seite“, in schmalen Fenstern über dem Text.
+„PDF“ auf einer Seite öffnet die Export-Einstellungen: mit Unterseiten (der ganze Bereich), mit Inhaltsverzeichnis und mit eigener Titelseite. „Ganzes Wiki als PDF“ auf der Startseite exportiert alles inklusive Deckblatt. Die Knöpfe einer Seite (PDF, Seitenumbrüche, Verlauf, Bearbeiten) stehen links neben dem Text, in schmalen Fenstern über dem Text.
+
+Die **Titelseite** schreibst du direkt im Export-Fenster mit dem normalen Editor – Überschrift, Text, Logo oder andere Bilder („/“ → Bild), alles wie auf einer Wiki-Seite. Sie wird beim Export mit der Seite gespeichert und ist beim nächsten Mal wieder da; im PDF ersetzt sie das automatische Deckblatt als Seite 1.
 
 Das PDF wird nicht nachgebaut, sondern aus der echten Seite erzeugt: dieselbe Textbreite (A4 mit Rändern), dieselben eingebetteten Schriften, derselbe Editor. Zeilen brechen deshalb an exakt denselben Stellen um. Tabellen und lange Codeblöcke werden zeilenweise auf mehrere Seiten verteilt, der Tabellenkopf wiederholt sich auf jeder Seite.
 
-Jedes PDF hat Lesezeichen für die Seitenleiste des PDF-Betrachters: jede Wiki-Seite mit ihren Abschnitten darunter. Mit dem Haken „Inhaltsverzeichnis“ (unter dem PDF-Knopf bzw. auf der Startseite) folgt auf das Deckblatt außerdem eine gedruckte Inhaltsseite mit Seitenzahlen – Seiten und ihre Überschriften der ersten beiden Ebenen, im PDF anklickbar. Einzelne Seiten bekommen dafür ebenfalls ein Deckblatt, sodass das Verzeichnis immer auf Seite 2 steht. Der Browser merkt sich die Einstellung.
+Jedes PDF hat Lesezeichen für die Seitenleiste des PDF-Betrachters: jede Wiki-Seite mit ihren Abschnitten darunter. Mit dem Haken „Inhaltsverzeichnis“ (im Export-Fenster bzw. auf der Startseite) folgt auf das Deckblatt bzw. die Titelseite außerdem eine gedruckte Inhaltsseite mit Seitenzahlen – Seiten und ihre Überschriften der ersten beiden Ebenen, im PDF anklickbar. Einzelne Seiten bekommen dafür ebenfalls ein Deckblatt, sodass das Verzeichnis immer auf Seite 2 steht. Der Browser merkt sich die Einstellung.
 
 <p align="center">
   <img src="docs/screenshots/pdf-seite.png" alt="Erste Seite eines exportierten PDFs" width="420">
