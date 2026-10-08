@@ -7,8 +7,7 @@
 	 * the text, staying in view while scrolling. Rendered by the app layout
 	 * over the full height of the content; only shown when the content area
 	 * is wide enough (≥ 1360px) to fit it beside the text column and the
-	 * page-break labels in its margin. Narrower, the page tree's table of
-	 * contents (page-toc.svelte) remains.
+	 * page-break labels in its margin.
 	 */
 	const entries = $derived(pageToc.entries);
 	const topLevel = $derived(Math.min(...entries.map((entry) => entry.level)));

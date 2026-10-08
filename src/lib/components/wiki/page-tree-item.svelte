@@ -7,8 +7,6 @@
 	import * as Collapsible from '$lib/components/ui/collapsible';
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import NewPageDialog from './new-page-dialog.svelte';
-	import PageToc from './page-toc.svelte';
-	import { pageToc } from '$lib/page-toc.svelte';
 	import { resolve } from '$app/paths';
 	import { page as currentPage } from '$app/state';
 	import type { PageTreeNode } from '$lib/page-tree';
@@ -20,8 +18,6 @@
 	const isAncestorOfActive = $derived(currentPage.url.pathname.startsWith(href + '/'));
 
 	let open = $state(isAncestorOfActive);
-	// The open page (viewed or edited) shows its table of contents.
-	const showToc = $derived(!!node.page && pageToc.path === node.fullPath);
 	let addOpen = $state(false);
 </script>
 
@@ -70,9 +66,6 @@
 					{/snippet}
 				</Collapsible.Trigger>
 			</div>
-			{#if showToc}
-				<PageToc />
-			{/if}
 			<!-- Always mounted, hidden while closed: bits-ui's own presence
 				 handling left a folder that starts open (the open page's
 				 ancestors) marked open but still hidden after hydration. -->
@@ -107,9 +100,6 @@
 				</Sidebar.MenuAction>
 			{/if}
 		</div>
-		{#if showToc}
-			<PageToc />
-		{/if}
 	</Sidebar.MenuItem>
 {/if}
 

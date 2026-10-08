@@ -24,8 +24,8 @@
 
 	let contentArea: HTMLElement | undefined = $state();
 
-	// Track which section of the open page is in view, for both tables of
-	// contents (page tree and the panel beside the text).
+	// Track which section of the open page is in view, for the "Auf dieser
+	// Seite" panel beside the text.
 	$effect(() => {
 		if (!contentArea || pageToc.entries.length === 0) return;
 		return pageToc.track(contentArea);

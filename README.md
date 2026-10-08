@@ -14,13 +14,14 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
 - **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
-- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste – mit dem **Inhaltsverzeichnis** der geöffneten Seite direkt im Baum.
+- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
+- **Inhaltsverzeichnis** der geöffneten Seite rechts neben dem Text.
 - **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki.
 - **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
 
 ### Inhaltsverzeichnis
 
-Unter der geöffneten Seite zeigt der Seitenbaum ihre Überschriften, nach Ebenen eingerückt. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Das Verzeichnis lässt sich über „Inhalt“ einklappen und aktualisiert sich beim Bearbeiten sofort mit. Auf breiten Bildschirmen stehen die Abschnitte zusätzlich als „Auf dieser Seite“ rechts neben dem Text und bleiben beim Scrollen sichtbar.
+Rechts neben dem Text listet „Auf dieser Seite“ die Überschriften der geöffneten Seite, nach Ebenen eingerückt, und bleibt beim Scrollen sichtbar. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Beim Bearbeiten aktualisiert sich das Verzeichnis sofort mit. Es erscheint, sobald neben der Textspalte genug Platz ist (Inhaltsbereich ab 1360 px, z. B. Full HD mit geöffneter Seitenleiste).
 
 ### Schreiben
 

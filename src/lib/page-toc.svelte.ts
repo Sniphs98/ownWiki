@@ -1,5 +1,3 @@
-import { browser } from '$app/environment';
-
 export interface TocEntry {
 	/** 1–4, from the heading's tag. */
 	level: number;
@@ -7,16 +5,13 @@ export interface TocEntry {
 	element: HTMLElement;
 }
 
-const EXPANDED_KEY = 'toc-expanded';
-
 /** How far below the top of the content area a heading counts as "current". */
 const ACTIVE_OFFSET = 96;
 
 /**
  * The table of contents of the page that's open: the editor showing it
  * (markdown-editor.svelte, given a `tocPath`) publishes its headings here;
- * the page tree (page-toc.svelte) and the panel beside the text
- * (page-toc-aside.svelte) show them, and share which one is current.
+ * the panel beside the text (page-toc-aside.svelte) shows them.
  */
 class PageToc {
 	/** Wiki path of the page the entries belong to, or null. */
@@ -24,21 +19,10 @@ class PageToc {
 	entries = $state.raw<TocEntry[]>([]);
 	/** The heading whose section is in view, or -1 above the first one. */
 	activeIndex = $state(-1);
-	/** Whether the table of contents is unfolded in the page tree. Per browser. */
-	expanded = $state(true);
 
 	// The heading last jumped to. Near the end of a page it can't scroll up
 	// to the top, so the scroll position alone would point at an earlier one.
 	#jumpedTo = -1;
-
-	constructor() {
-		if (!browser) return;
-		try {
-			this.expanded = localStorage.getItem(EXPANDED_KEY) !== 'false';
-		} catch {
-			// Storage blocked — keep the default.
-		}
-	}
 
 	set(path: string, entries: TocEntry[]) {
 		this.path = path;
@@ -51,15 +35,6 @@ class PageToc {
 		this.path = null;
 		this.entries = [];
 		this.activeIndex = -1;
-	}
-
-	toggle() {
-		this.expanded = !this.expanded;
-		try {
-			localStorage.setItem(EXPANDED_KEY, String(this.expanded));
-		} catch {
-			// Not persisted; still applies until reload.
-		}
 	}
 
 	/** Scrolls to a heading and marks it current. */

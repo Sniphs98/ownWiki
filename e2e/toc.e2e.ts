@@ -4,18 +4,20 @@ import { expect, test, type Page } from '@playwright/test';
 // Zuständigkeiten, Checkliste, Abschluss.
 const PATH = 'e2e/pdf-export';
 
-const toc = (page: Page) => page.getByRole('list', { name: 'Inhaltsverzeichnis' });
+const aside = (page: Page) => page.getByRole('navigation', { name: 'Auf dieser Seite' });
 
-test('the open page lists its headings in the page tree and jumps to them', async ({ page }) => {
-	await page.setViewportSize({ width: 1400, height: 900 });
+test('the open page shows in the page tree, inside its opened folder', async ({ page }) => {
 	await page.goto(`/w/${PATH}`);
-
-	// The page itself shows in the tree, inside its (opened) folder.
 	await expect(
 		page.locator('[data-sidebar="menu-button"]', { hasText: 'PDF-Export Prüfseite' })
 	).toBeVisible();
+});
 
-	await expect(toc(page).getByRole('button')).toHaveText([
+test('the sections beside the text list the headings and jump to them', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1000 });
+	await page.goto(`/w/${PATH}`);
+
+	await expect(aside(page).getByRole('button')).toHaveText([
 		'Einleitung',
 		'Konfiguration',
 		'Zuständigkeiten',
@@ -23,53 +25,32 @@ test('the open page lists its headings in the page tree and jumps to them', asyn
 		'Abschluss'
 	]);
 
-	await toc(page).getByRole('button', { name: 'Zuständigkeiten' }).click();
+	await aside(page).getByRole('button', { name: 'Zuständigkeiten' }).click();
 	const heading = page.locator('.ProseMirror h2', { hasText: 'Zuständigkeiten' });
 	await expect
 		.poll(() => heading.evaluate((el) => Math.round(el.getBoundingClientRect().top)))
 		.toBeLessThan(200);
-	await expect(toc(page).locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
-});
-
-test('the table of contents folds away and stays folded', async ({ page }) => {
-	await page.goto(`/w/${PATH}`);
-	await expect(toc(page)).toBeVisible();
-
-	const toggle = page.locator('[data-page-toc] > button');
-	await toggle.click();
-	await expect(toc(page)).toHaveCount(0);
-	await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-
-	await page.reload();
-	await expect(page.locator('[data-page-toc] > button')).toBeVisible();
-	await expect(toc(page)).toHaveCount(0);
+	await expect(aside(page).locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
 });
 
 test('while editing, new headings show up right away', async ({ page }) => {
+	await page.setViewportSize({ width: 1920, height: 1000 });
 	await page.goto(`/w/${PATH}/edit`);
-	await expect(toc(page)).toBeVisible({ timeout: 15_000 });
+	await expect(aside(page)).toBeVisible({ timeout: 15_000 });
 
 	await page.locator('.ProseMirror h2', { hasText: 'Abschluss' }).click();
 	await page.keyboard.press('End');
 	await page.keyboard.press('Enter');
 	await page.keyboard.type('## Nachtrag');
 
-	await expect(toc(page).getByRole('button').last()).toHaveText('Nachtrag');
+	await expect(aside(page).getByRole('button').last()).toHaveText('Nachtrag');
 });
 
-test('wide windows also show the sections beside the text', async ({ page }) => {
-	const aside = page.getByRole('navigation', { name: 'Auf dieser Seite' });
-
-	await page.setViewportSize({ width: 1920, height: 1000 });
-	await page.goto(`/w/${PATH}`);
-	await expect(aside).toBeVisible();
-	await aside.getByRole('button', { name: 'Zuständigkeiten' }).click();
-	// Both tables of contents mark the same section.
-	await expect(aside.locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
-	await expect(toc(page).locator('[aria-current="location"]')).toHaveText('Zuständigkeiten');
-
-	// Too narrow for a panel next to the text (sidebar open): only the tree.
+test('the sections only show where they fit beside the text', async ({ page }) => {
 	await page.setViewportSize({ width: 1400, height: 900 });
-	await expect(aside).toBeHidden();
-	await expect(toc(page)).toBeVisible();
+	await page.goto(`/w/${PATH}`);
+	await expect(page.locator('.ProseMirror h2').first()).toBeVisible();
+	await expect(aside(page)).toBeHidden();
+	// And no table of contents in the page tree any more.
+	await expect(page.locator('[data-sidebar="content"]')).not.toContainText('Zuständigkeiten');
 });
