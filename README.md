@@ -35,7 +35,7 @@ Welche Werkzeuge in der Leiste stehen und in welcher Reihenfolge, stellt jede Pe
 
 ### PDF-Export
 
-„PDF“ auf einer Seite lädt sie als PDF herunter; „mit Unterseiten“ nimmt den ganzen Bereich mit, „Ganzes Wiki als PDF“ auf der Startseite alles inklusive Deckblatt. „Seitenweise“ zeigt dieselbe Aufteilung als Vorschau im Browser.
+„PDF“ auf einer Seite lädt sie als PDF herunter; „mit Unterseiten“ nimmt den ganzen Bereich mit, „Ganzes Wiki als PDF“ auf der Startseite alles inklusive Deckblatt. Die Knöpfe dafür stehen rechts neben dem Text über „Auf dieser Seite“, in schmalen Fenstern über dem Text.
 
 Das PDF wird nicht nachgebaut, sondern aus der echten Seite erzeugt: dieselbe Textbreite (A4 mit Rändern), dieselben eingebetteten Schriften, derselbe Editor. Zeilen brechen deshalb an exakt denselben Stellen um. Tabellen und lange Codeblöcke werden zeilenweise auf mehrere Seiten verteilt, der Tabellenkopf wiederholt sich auf jeder Seite.
 
