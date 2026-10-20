@@ -47,6 +47,7 @@
 
 <script lang="ts">
 	import ChevronDownIcon from '@lucide/svelte/icons/chevron-down';
+	import { mergeProps } from 'bits-ui';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
 	import { Button } from '$lib/components/ui/button';
 	import { TOOLBAR_ITEMS, toolbarGroups, type ToolbarEntry } from '$lib/toolbar';
@@ -99,13 +100,13 @@
 				<DropdownMenu.Root>
 					<DropdownMenu.Trigger>
 						{#snippet child({ props })}
+							<!-- Merged, not replaced: the menu opens in bits-ui's own pointerdown handler. -->
 							<Button
-								{...props}
+								{...mergeProps(props, { onpointerdown: keepEditorFocus })}
 								variant="ghost"
 								size="sm"
 								class="w-28 justify-between"
 								title={TOOLBAR_ITEMS.heading}
-								onpointerdown={keepEditorFocus}
 							>
 								{headingLabel}
 								<ChevronDownIcon />
