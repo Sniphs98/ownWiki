@@ -39,22 +39,61 @@ Nach Risiko geordnet — oben, was am meisten Schaden anrichten kann.
 4. **Suche**: Wortformen, Treffer-Markierung, keine Diagrammquellen, kein Markdown-Rest im Snippet.
 5. **PDF-Export**: Seitenumbrüche, Titelseite, Inhaltsverzeichnis, Schriften (bestehende Tests).
 6. **Navigation**: Seitenbaum zeigt die geöffnete Seite, auch nach Navigation über einen Link.
+7. **Editor** (`e2e/editor.e2e.ts`) — die Hauptaufgabe der App, deshalb am breitesten getestet:
+   - Schreiben: Sonderzeichen und Markdown-Zeichen kommen gespeichert genau so wieder heraus;
+     Speichern direkt nach dem Tippen; Absatz teilen/verbinden; Rückgängig/Wiederholen; Strg+B/I.
+   - Markdown-Kürzel: `#`–`###`, `-`, `1.`, `- [ ]`, `>`, `---`, ` ``` `, `**`/`*`/`` ` ``/`~~`,
+     `![Bild](…)`, `[Text](…)`, getippte Webadressen.
+   - Listen: Tab/Shift+Tab, Enter beendet die Liste, Nummerierung und Checklisten laufen weiter.
+   - Navigieren: Pfeiltasten zwischen Absätzen, Pos1/Ende, Strg+Pos1/Ende, in Codeblöcke hinein
+     und heraus, Codeblock/Tabelle/Trennlinie am Seitenende verlassen, Tab in Tabellen.
+   - „/“-Menü: Filtern, Escape, jeder Eintrag fügt das Richtige ein, Pfeiltasten mit ruhender
+     Maus über dem Menü, Auswahl per Maus.
+   - Werkzeugleiste: jede Schaltfläche, Absatzformat-Menü.
+   - Verlinken: Wiki-Links tippen und folgen, Link auf Überschrift, Link auf fehlende Seite legt
+     sie an, Markdown-Links und Webadressen, Link über die Werkzeugleiste, Webadresse einfügen
+     (auch über markierten Text), Strg+Klick im Editor öffnet einen neuen Tab.
+
+### Eingaben im Editor-Test
+
+Die Tests tippen im Tempo eines schnellen Menschen (`type`/`press` in `e2e/helpers.ts`), nicht
+so schnell wie Playwright kann. Grund: Der Browser meldet Cursorbewegungen asynchron, und
+ProseMirror übernimmt kurz nach einem Klick (50 ms) oder Fokus (20 ms) bewusst seine eigene
+Cursorposition. Ohne Pausen „findet“ ein Test Fehler, die kein Mensch auslösen kann — z. B.
+Enter trennt einen Absatz eine Stelle zu früh. Mit realistischem Tempo verhalten sich Tests
+und Menschen gleich.
 
 ## Ergebnisse der Prüfrunde
 
-| #   | Fehler                                                                                                                                                                                                        | Schwere | Test                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------ |
-| 1   | Der PDF-Export schickte sein internes Token an **jeden** Server, von dem eine Seite etwas lädt (z. B. ein eingebundenes Bild). Mit dem Token kam man an `AUTH_MODE=read-only`/`full` vorbei, auch schreibend. | hoch    | `e2e/regressions.e2e.ts` – „sends its internal token to no other server“ |
-| 2   | Uploads über 512 KB scheiterten im Produktionsserver/Docker mit 413, obwohl 10 MB erlaubt sind (`BODY_SIZE_LIMIT` von adapter-node nicht gesetzt).                                                            | hoch    | `e2e/regressions.e2e.ts`, `attachment-limits.spec.ts`                    |
-| 3   | Wiki-Link-Syntax in Code wurde zu Links: `if [[ -f "$datei" ]]` in einem Shell-Block wurde verfälscht (Seite, Verlauf, PDF).                                                                                  | mittel  | `wiki-links.spec.ts`, `e2e/regressions.e2e.ts`                           |
-| 4   | `[[Seite\|Text]]` in einer Tabellenzelle (Milkdown schreibt `\|`) führte zu einer nicht existierenden Seite „Seite\\“.                                                                                        | mittel  | `wiki-links.spec.ts`                                                     |
-| 5   | `[[Seite#Abschnitt]]` legte eine neue Seite „seite-abschnitt“ an statt zum Abschnitt zu springen.                                                                                                             | mittel  | `wiki-links.spec.ts`                                                     |
-| 6   | Seitenbaum: Nach Navigation über einen Link in einen zugeklappten Ordner blieb die geöffnete Seite unsichtbar.                                                                                                | niedrig | `e2e/regressions.e2e.ts` – „page tree reveals a page“                    |
-| 7   | Suchtext/Snippets behielten Backslashes escapter Zeichen (`snake\case`).                                                                                                                                      | niedrig | `search/text.spec.ts`                                                    |
-| 8   | `Content-Disposition` enthielt `'()*` unkodiert (RFC 5987).                                                                                                                                                   | niedrig | `attachment-headers.spec.ts`                                             |
+| #   | Fehler                                                                                                                                                                                                                                                        | Schwere | Test                                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------ |
+| 1   | Der PDF-Export schickte sein internes Token an **jeden** Server, von dem eine Seite etwas lädt (z. B. ein eingebundenes Bild). Mit dem Token kam man an `AUTH_MODE=read-only`/`full` vorbei, auch schreibend.                                                 | hoch    | `e2e/regressions.e2e.ts` – „sends its internal token to no other server“ |
+| 2   | Uploads über 512 KB scheiterten im Produktionsserver/Docker mit 413, obwohl 10 MB erlaubt sind (`BODY_SIZE_LIMIT` von adapter-node nicht gesetzt).                                                                                                            | hoch    | `e2e/regressions.e2e.ts`, `attachment-limits.spec.ts`                    |
+| 3   | Wiki-Link-Syntax in Code wurde zu Links: `if [[ -f "$datei" ]]` in einem Shell-Block wurde verfälscht (Seite, Verlauf, PDF).                                                                                                                                  | mittel  | `wiki-links.spec.ts`, `e2e/regressions.e2e.ts`                           |
+| 4   | `[[Seite\|Text]]` in einer Tabellenzelle (Milkdown schreibt `\|`) führte zu einer nicht existierenden Seite „Seite\\“.                                                                                                                                        | mittel  | `wiki-links.spec.ts`                                                     |
+| 5   | `[[Seite#Abschnitt]]` legte eine neue Seite „seite-abschnitt“ an statt zum Abschnitt zu springen.                                                                                                                                                             | mittel  | `wiki-links.spec.ts`                                                     |
+| 6   | Seitenbaum: Nach Navigation über einen Link in einen zugeklappten Ordner blieb die geöffnete Seite unsichtbar.                                                                                                                                                | niedrig | `e2e/regressions.e2e.ts` – „page tree reveals a page“                    |
+| 7   | Suchtext/Snippets behielten Backslashes escapter Zeichen (`snake\case`).                                                                                                                                                                                      | niedrig | `search/text.spec.ts`                                                    |
+| 8   | `Content-Disposition` enthielt `'()*` unkodiert (RFC 5987).                                                                                                                                                                                                   | niedrig | `attachment-headers.spec.ts`                                             |
+| 9   | **„/“-Menü:** Ruht die Maus dort, wo das Menü aufgeht, sprang die Hervorhebung beim Pfeilen (Einträge übersprungen, zurück), und Enter fügte etwas anderes ein als hervorgehoben — die Liste scrollt unter der Maus, der Browser meldet den Eintrag darunter. | mittel  | `e2e/editor.e2e.ts` – „arrow keys move the highlight …“                  |
+| 10  | **Datenverlust:** Wer innerhalb von ~150 ms nach dem letzten Tastendruck auf „Speichern“ klickte, verlor die letzten Zeichen (der Formularwert folgt dem Editor erst nach 200 ms).                                                                            | hoch    | `e2e/editor.e2e.ts` – „typed right before saving“                        |
+| 11  | Das Absatzformat-Menü („Text ▾“) in der Werkzeugleiste ging per Maus gar nicht auf.                                                                                                                                                                           | mittel  | `e2e/editor.e2e.ts` – „paragraph format“                                 |
+| 12  | Getippte Links `[Text](https://…)`, Bilder `![Alt](…)` und Webadressen blieben Text, nur eingefügte Adressen wurden zu Links. Eine Adresse über markierten Text eingefügt ersetzte den Text statt ihn zu verlinken.                                           | mittel  | `link-syntax.spec.ts`, `e2e/editor.e2e.ts` (Kürzel, Verlinken)           |
 
 Neue Regressionstests ohne gefundenen Fehler: `e2e/auth-modes.e2e.ts` (Zugriffsregeln
-in `read-only` und `full`, PDF-Export mit Login in `full`).
+in `read-only` und `full`, PDF-Export mit Login in `full`) und der Großteil von
+`e2e/editor.e2e.ts`.
+
+Geprüft, aber nicht behoben:
+
+- Bei extrem schnellem Tippen (unter ~30 ms pro Taste, 1 von 80 Versuchen bei 10 ms) landet
+  der erste Buchstabe nach `- ` am Ende des neuen Listenpunkts. Ein Rennen in Crepes
+  Listen-Darstellung; ab 30 ms nie aufgetreten.
+- Markiert man Text in der ersten Zeile, legt sich Crepes schwebende Formatierungsleiste über
+  den linken Teil der festen Werkzeugleiste. Das ist normales Popup-Verhalten, die Leiste hat
+  dieselben Knöpfe. Popups unter die Werkzeugleiste zu legen wäre schlechter: Das „/“-Menü
+  klappt bei wenig Platz nach oben auf und würde dann von ihr zerschnitten.
+- Ein Wiederholungslauf (`--repeat-each=3`) der Editor- und Regressionstests lief ohne Ausfälle.
 
 ## Offen / nicht abgedeckt
 
@@ -62,6 +101,10 @@ in `read-only` und `full`, PDF-Export mit Login in `full`).
   durch Typprüfung abgesichert. Ein CI-Job mit Postgres-Service wäre der nächste Schritt.
 - `POST /api/files` meldet jeden Datenbankfehler als „Seite nicht gefunden“.
 - Mobile Ansicht und Dunkelmodus werden nicht automatisiert geprüft.
+- Kein Hinweis beim Verlassen des Editors mit ungespeicherten Änderungen (Seitenbaum,
+  „Abbrechen“, Tab schließen) — die Änderungen sind dann still weg.
+- Zwischenablage wird im Test per `paste`-Ereignis nachgestellt, nicht über das echte
+  Strg+V des Betriebssystems.
 
 ## Ausführen
 
