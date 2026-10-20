@@ -54,7 +54,9 @@
 <form
 	method="post"
 	action="?/save"
-	use:enhance={() => {
+	use:enhance={({ formData }) => {
+		// `content` follows the editor with a delay: take what's typed right now.
+		if (editor) formData.set('content', editor.getMarkdown());
 		saving = true;
 		return async ({ update }) => {
 			await update();
