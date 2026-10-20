@@ -274,15 +274,21 @@
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
 			installEagerCodeBlocks();
-			const [{ Crepe }, { editorViewCtx }, editorCommands, { codeHighlighting }] =
-				await Promise.all([
-					import('@milkdown/crepe'),
-					import('@milkdown/kit/core'),
-					import('$lib/editor-commands'),
-					import('$lib/code-highlight'),
-					import('@milkdown/crepe/theme/common/style.css'),
-					import('@milkdown/crepe/theme/classic.css')
-				]);
+			const [
+				{ Crepe },
+				{ editorViewCtx },
+				editorCommands,
+				{ codeHighlighting },
+				{ editorInputRules }
+			] = await Promise.all([
+				import('@milkdown/crepe'),
+				import('@milkdown/kit/core'),
+				import('$lib/editor-commands'),
+				import('$lib/code-highlight'),
+				import('$lib/editor-input-rules'),
+				import('@milkdown/crepe/theme/common/style.css'),
+				import('@milkdown/crepe/theme/classic.css')
+			]);
 
 			if (destroyed) return;
 			commands = editorCommands;
@@ -371,6 +377,7 @@
 				});
 			});
 
+			instance.editor.use(editorInputRules);
 			instance.setReadonly(readonly);
 			await instance.create();
 
