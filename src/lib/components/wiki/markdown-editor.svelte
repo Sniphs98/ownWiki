@@ -17,6 +17,7 @@
 	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
 	import EditorToolbar from './editor-toolbar.svelte';
 	import { collectHeadings, pageToc } from '$lib/page-toc.svelte';
+	import { guardSlashMenuHover } from '$lib/slash-menu-hover';
 
 	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
 	const PAPERCLIP_ICON =
@@ -268,6 +269,7 @@
 
 	onMount(() => {
 		let destroyed = false;
+		const unguardSlashMenu = guardSlashMenuHover(container);
 
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
@@ -391,6 +393,7 @@
 
 		return () => {
 			destroyed = true;
+			unguardSlashMenu();
 			clearTimeout(tocTimer);
 			if (tocPath) pageToc.clear(tocPath);
 			crepe?.destroy();
