@@ -24,6 +24,14 @@ export function isInlineType(mimeType: string): boolean {
 	return INLINE_TYPES.has(type) || type.startsWith('audio/') || type.startsWith('video/');
 }
 
+/** encodeURIComponent leaves ' ( ) * as they are, but RFC 5987 values can't contain them. */
+function encodeRfc5987(value: string): string {
+	return encodeURIComponent(value).replace(
+		/['()*]/g,
+		(char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+	);
+}
+
 /** Response headers for serving an uploaded file. */
 export function attachmentHeaders(file: {
 	filename: string;
@@ -39,7 +47,7 @@ export function attachmentHeaders(file: {
 		'content-length': String(file.size),
 		// RFC 6266/5987: a plain filename="…" can't carry umlauts or spaces
 		// percent-encoded — browsers would save "Handbuch%20v2.pdf".
-		'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeURIComponent(file.filename)}`,
+		'content-disposition': `${inline ? 'inline' : 'attachment'}; filename*=UTF-8''${encodeRfc5987(file.filename)}`,
 		'x-content-type-options': 'nosniff',
 		'cache-control': 'private, max-age=31536000, immutable'
 	};
