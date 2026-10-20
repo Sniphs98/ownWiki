@@ -6,6 +6,9 @@ const PATH = 'e2e/pdf-export';
 
 const aside = (page: Page) => page.getByRole('navigation', { name: 'Auf dieser Seite' });
 
+/** In the editor — not the copy the page-break preview measures, which comes and goes. */
+const headings = (page: Page) => page.locator('.ProseMirror:not(.page-break-measure *) h2');
+
 test('the open page shows in the page tree, inside its opened folder', async ({ page }) => {
 	await page.goto(`/w/${PATH}`);
 	await expect(
@@ -26,7 +29,7 @@ test('the sections beside the text list the headings and jump to them', async ({
 	]);
 
 	await aside(page).getByRole('button', { name: 'Zuständigkeiten' }).click();
-	const heading = page.locator('.ProseMirror h2', { hasText: 'Zuständigkeiten' });
+	const heading = headings(page).filter({ hasText: 'Zuständigkeiten' });
 	await expect
 		.poll(() => heading.evaluate((el) => Math.round(el.getBoundingClientRect().top)))
 		.toBeLessThan(200);
@@ -38,7 +41,7 @@ test('while editing, new headings show up right away', async ({ page }) => {
 	await page.goto(`/w/${PATH}/edit`);
 	await expect(aside(page)).toBeVisible({ timeout: 15_000 });
 
-	await page.locator('.ProseMirror h2', { hasText: 'Abschluss' }).click();
+	await headings(page).filter({ hasText: 'Abschluss' }).click();
 	await page.keyboard.press('End');
 	await page.keyboard.press('Enter');
 	await page.keyboard.type('## Nachtrag');
@@ -49,7 +52,7 @@ test('while editing, new headings show up right away', async ({ page }) => {
 test('the sections only show where they fit beside the text', async ({ page }) => {
 	await page.setViewportSize({ width: 1400, height: 900 });
 	await page.goto(`/w/${PATH}`);
-	await expect(page.locator('.ProseMirror h2').first()).toBeVisible();
+	await expect(headings(page).first()).toBeVisible();
 	await expect(aside(page)).toBeHidden();
 	// And no table of contents in the page tree any more.
 	await expect(page.locator('[data-sidebar="content"]')).not.toContainText('Zuständigkeiten');
