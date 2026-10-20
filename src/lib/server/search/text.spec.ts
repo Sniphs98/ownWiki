@@ -40,6 +40,16 @@ describe('markdownToSearchText', () => {
 		].join('\n');
 		expect(markdownToSearchText(markdown)).toBe('Vorher ping intranet Nachher');
 	});
+
+	it('keeps escaped characters without their backslash', () => {
+		expect(markdownToSearchText('snake\\_case, 2 \\* 3 und \\[Klammer\\]')).toBe(
+			'snake_case, 2 * 3 und [Klammer]'
+		);
+	});
+
+	it('reads wiki links with the escaped separator Milkdown writes in tables', () => {
+		expect(markdownToSearchText('| \\[\\[Onboarding\\|Einstieg]] |')).toBe('Einstieg');
+	});
 });
 
 describe('toSnippet', () => {
