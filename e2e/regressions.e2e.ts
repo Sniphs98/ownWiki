@@ -1,26 +1,7 @@
 import { createServer, type IncomingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { expect, test, type Page } from '@playwright/test';
-
-/**
- * Creates a page through the edit form, as the editor does, and returns
- * its path — a new one each time, so the tests can run again on the same
- * database (retries, --repeat-each).
- */
-async function createPage(page: Page, baseURL: string, name: string, content: string) {
-	const path = `e2e/${name}-${Date.now().toString(36)}`;
-	const response = await page.request.post(`${baseURL}/w/${path}/edit?/save`, {
-		form: { title: name, content },
-		headers: { origin: baseURL, accept: 'text/html' },
-		maxRedirects: 0
-	});
-	expect(response.status()).toBe(303);
-	return path;
-}
-
-/** The editor itself, not the hidden copy the page-break preview measures. */
-const onPage = (page: Page, selector: string) =>
-	page.locator(`.ProseMirror:not(.page-break-measure *) ${selector}`);
+import { expect, test } from '@playwright/test';
+import { createPage, onPage } from './helpers';
 
 test('the PDF export sends its internal token to no other server', async ({ page, baseURL }) => {
 	// A server outside the wiki, e.g. the host of an image a page shows.
