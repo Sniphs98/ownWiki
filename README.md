@@ -103,6 +103,8 @@ Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volum
 
 Das Image enthält Chromium für den PDF-Export.
 
+Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container Registry nehmen – dafür in `compose.yaml` `build: .` durch `image: ghcr.io/sniphs98/ownwiki:latest` (oder eine feste Version wie `:1.2.0`) ersetzen.
+
 ## Konfiguration
 
 | Variable             | Bedeutung                                                                                  |
@@ -155,6 +157,17 @@ npm run dev
 Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node build`), mit einer eigenen, jedes Mal neu befüllten Datenbank unter `.data/e2e/` – die Entwicklungsdatenbank bleibt unberührt. Sie prüfen unter anderem, dass Web-Ansicht und PDF an denselben Stellen umbrechen, dass keine leeren Seiten entstehen und dass die Seitenumbruch-Linien mit dem echten PDF übereinstimmen.
 
 Bei jedem Pull Request und jedem Push auf `main` laufen Lint, Typprüfung, Unit- und Ende-zu-Ende-Tests sowie der Docker-Build in GitHub Actions (`.github/workflows/ci.yml`).
+
+### Release erstellen
+
+Ein Versions-Tag löst den Release aus (`.github/workflows/release.yml`):
+
+```sh
+git tag v1.2.0
+git push origin v1.2.0
+```
+
+Der Workflow lässt erst die komplette CI laufen, baut dann das Docker-Image und legt es als `ghcr.io/sniphs98/ownwiki` mit den Tags `1.2.0`, `1.2` und `latest` ab. Zum Schluss legt er einen GitHub-Release mit automatisch erzeugten Release-Notes an. Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und verschieben `latest` nicht.
 
 ### Aufbau
 
