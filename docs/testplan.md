@@ -54,6 +54,12 @@ Nach Risiko geordnet — oben, was am meisten Schaden anrichten kann.
      sie an, Markdown-Links und Webadressen, Link über die Werkzeugleiste, Webadresse einfügen
      (auch über markierten Text), Strg+Klick im Editor öffnet einen neuen Tab.
 
+8. **Verlassen mit ungespeicherten Änderungen** (`e2e/unsaved-changes.e2e.ts`): Seitenbaum,
+   „Abbrechen“ und Zurück-Taste fragen per Dialog, Tab schließen/neu laden über die Abfrage des
+   Browsers. Nicht gefragt wird ohne Änderungen (auch auf Seiten mit Tabellen, Code, Diagrammen,
+   Dateien), nach dem Rückgängigmachen aller Änderungen, beim Speichern und beim Löschen. Nach
+   einem abgelehnten Speichern (Konflikt) wird weiter gefragt.
+
 ### Eingaben im Editor-Test
 
 Die Tests tippen im Tempo eines schnellen Menschen (`type`/`press` in `e2e/helpers.ts`), nicht
@@ -101,8 +107,6 @@ Geprüft, aber nicht behoben:
   durch Typprüfung abgesichert. Ein CI-Job mit Postgres-Service wäre der nächste Schritt.
 - `POST /api/files` meldet jeden Datenbankfehler als „Seite nicht gefunden“.
 - Mobile Ansicht und Dunkelmodus werden nicht automatisiert geprüft.
-- Kein Hinweis beim Verlassen des Editors mit ungespeicherten Änderungen (Seitenbaum,
-  „Abbrechen“, Tab schließen) — die Änderungen sind dann still weg.
 - Zwischenablage wird im Test per `paste`-Ereignis nachgestellt, nicht über das echte
   Strg+V des Betriebssystems.
 
