@@ -302,16 +302,19 @@ test.describe('„/“-Menü', () => {
 			await press(page, 'ArrowUp');
 			await expect.poll(index).toBe(String(i));
 		}
-		// The list did scroll under the mouse, the case this is about.
-		expect(
-			await menu(page)
-				.locator('.menu-groups')
-				.evaluate((el) => el.scrollTop)
-		).toBeGreaterThan(0);
+		// The list does scroll under the mouse, the case this is about —
+		// smoothly, so it may take a moment to start.
+		await expect
+			.poll(() =>
+				menu(page)
+					.locator('.menu-groups')
+					.evaluate((el) => el.scrollTop)
+			)
+			.toBeGreaterThan(0);
 
 		await expect(highlighted(page)).toHaveText('Checkliste');
-		// A moment for anything that would still move the highlight.
-		await page.waitForTimeout(300);
+		// Time for the scrolling to end and anything it would do to the highlight.
+		await page.waitForTimeout(500);
 		await expect(highlighted(page)).toHaveText('Checkliste');
 		await press(page, 'Enter');
 		await expectMarkdown(page, '\n* [ ] ');
@@ -440,6 +443,8 @@ test.describe('Verlinken', () => {
 			.getByRole('toolbar', { name: 'Formatierung' })
 			.getByRole('button', { name: 'Link' })
 			.click();
+		// Crepe focuses its address field a frame later; type once it's there.
+		await expect(page.locator('.milkdown-link-edit input')).toBeFocused();
 		await type(page, 'https://example.org/');
 		await press(page, 'Enter');
 		await expectMarkdown(page, '\n[Linktext](https://example.org/)\n');
