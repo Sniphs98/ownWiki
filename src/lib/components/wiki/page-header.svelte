@@ -22,7 +22,7 @@
 	} = $props();
 </script>
 
-<div class="wiki-page-header mb-6">
+<div class="wiki-page-header mb-6" data-title={title}>
 	{#if !startsWithTitle(content, title)}
 		<h1 class="text-3xl font-bold">{title}</h1>
 	{/if}

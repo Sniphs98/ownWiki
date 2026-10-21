@@ -417,6 +417,7 @@ test.describe('Verlinken', () => {
 		await page.waitForURL(/\/edit\?title=/);
 		await expect(onPage(page, 'h1')).toHaveText(name);
 		await page.getByRole('button', { name: 'Speichern', exact: true }).click();
+		await page.waitForURL((url) => !url.pathname.endsWith('/edit'));
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText(name);
 
 		// Back on the first page, the link now leads to the new page itself.

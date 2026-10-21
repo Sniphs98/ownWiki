@@ -71,9 +71,8 @@ export async function openEditor(page: Page, path: string) {
 
 /** Replaces the editor's first line — the heading that is the page's title. */
 export async function retitle(page: Page, title: string) {
-	await liveEditor(page).focus();
+	await onPage(page, 'h1').first().selectText();
 	await afterFocus(page);
-	await press(page, 'Control+Home', 'Shift+End');
 	await type(page, title);
 }
 
