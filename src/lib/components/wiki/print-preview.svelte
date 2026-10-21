@@ -147,7 +147,12 @@
 		{/if}
 		{#each pages as p (p.path)}
 			<div class="wiki-chapter">
-				<PageHeader title={p.title} versionNumber={p.versionNumber} updatedAt={p.updatedAt} />
+				<PageHeader
+					title={p.title}
+					content={p.content}
+					versionNumber={p.versionNumber}
+					updatedAt={p.updatedAt}
+				/>
 				<MarkdownEditor value={p.content} readonly onready={onChapterReady} onerror={failPrint} />
 			</div>
 		{/each}

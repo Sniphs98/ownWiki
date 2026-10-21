@@ -39,6 +39,7 @@
 	</div>
 	<PageHeader
 		title={data.version.title}
+		content={data.version.content}
 		versionNumber={data.version.versionNumber}
 		updatedAt={data.page.updatedAt}
 		historyHref={resolve('/(app)/w/[...path]/history', { path: data.page.path })}

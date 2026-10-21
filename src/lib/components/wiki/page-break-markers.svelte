@@ -157,7 +157,7 @@
 	 measured) but never visible or focusable. -->
 <div class="page-break-measure" aria-hidden="true" inert>
 	<div bind:this={headerHost} style:width={PRINT_TEXT_WIDTH}>
-		<PageHeader {title} {versionNumber} {updatedAt} />
+		<PageHeader {title} {content} {versionNumber} {updatedAt} />
 	</div>
 	<div bind:this={target}></div>
 </div>

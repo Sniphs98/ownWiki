@@ -69,6 +69,14 @@ export async function openEditor(page: Page, path: string) {
 	await press(page, 'Control+End');
 }
 
+/** Replaces the editor's first line — the heading that is the page's title. */
+export async function retitle(page: Page, title: string) {
+	await liveEditor(page).focus();
+	await afterFocus(page);
+	await press(page, 'Control+Home', 'Shift+End');
+	await type(page, title);
+}
+
 /** Creates a page with `content` and opens its editor, cursor at the end. */
 export async function startEditing(page: Page, baseURL: string, content: string, name = 'editor') {
 	const path = await createPage(page, baseURL, name, content);

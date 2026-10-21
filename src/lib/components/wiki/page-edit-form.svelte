@@ -4,14 +4,14 @@
 	import { resolve } from '$app/paths';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
-	import * as Field from '$lib/components/ui/field';
+	import * as Alert from '$lib/components/ui/alert';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import MarkdownEditor from './markdown-editor.svelte';
 	import PageBreakMarkers from './page-break-markers.svelte';
 	import PageBreakToggle from './page-break-toggle.svelte';
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
 	import UnlinkedFiles from './unlinked-files.svelte';
+	import { titleFromMarkdown } from '$lib/page-title';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
 	let {
@@ -40,9 +40,15 @@
 		conflictVersion?: number;
 	} = $props();
 
-	let title = $state(existingTitle);
-	let content = $state(existingContent);
-	let changeSummary = $state('');
+	/** The title is the heading on the first line: a new page starts with it. */
+	function initialContent() {
+		if (pageExists || existingContent || !existingTitle) return existingContent;
+		return `# ${existingTitle}\n`;
+	}
+
+	let content = $state(initialContent());
+	/** Without a heading on top, the page keeps the title it has. */
+	const title = $derived(titleFromMarkdown(content) || existingTitle);
 	let saving = $state(false);
 	let deleting = $state(false);
 	let editor: MarkdownEditor | undefined = $state();
@@ -55,7 +61,6 @@
 	let initialMarkdown: string | undefined;
 
 	function hasChanges() {
-		if (title !== existingTitle || changeSummary.trim()) return true;
 		return initialMarkdown !== undefined && editor?.getMarkdown() !== initialMarkdown;
 	}
 
@@ -100,30 +105,17 @@
 		};
 	}}
 >
-	<Field.FieldGroup>
-		<Field.Field data-invalid={!!errorMessage}>
-			<Field.FieldLabel for="edit-title">Titel</Field.FieldLabel>
-			<Input id="edit-title" name="title" bind:value={title} required />
-			{#if errorMessage}
-				<Field.FieldError>{errorMessage}</Field.FieldError>
-			{/if}
-		</Field.Field>
-		<Field.Field>
-			<Field.FieldLabel for="edit-change-summary">Änderungshinweis (optional)</Field.FieldLabel>
-			<Input
-				id="edit-change-summary"
-				name="changeSummary"
-				placeholder="z. B. Tippfehler korrigiert"
-				bind:value={changeSummary}
-			/>
-		</Field.Field>
-	</Field.FieldGroup>
+	{#if errorMessage}
+		<Alert.Root variant="destructive" class="mb-4">
+			<Alert.Description>{errorMessage}</Alert.Description>
+		</Alert.Root>
+	{/if}
 
 	<input type="hidden" name="content" value={content} />
 	<!-- The version this edit is based on; the save is refused if the page has moved on. -->
 	<input type="hidden" name="baseVersion" value={nextVersionNumber - 1} />
 
-	<div class="mt-4 flex justify-end">
+	<div class="flex justify-end">
 		<PageBreakToggle />
 	</div>
 
@@ -154,7 +146,7 @@
 				</AlertDialog.Trigger>
 				<AlertDialog.Content>
 					<AlertDialog.Header>
-						<AlertDialog.Title>Seite "{title}" löschen?</AlertDialog.Title>
+						<AlertDialog.Title>Seite "{existingTitle}" löschen?</AlertDialog.Title>
 						<AlertDialog.Description>
 							Das kann nicht rückgängig gemacht werden. Alle Versionen und Anhänge dieser Seite
 							werden ebenfalls gelöscht.
