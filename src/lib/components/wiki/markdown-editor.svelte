@@ -17,6 +17,7 @@
 	import DiagramEditorDialog from './diagrams/diagram-editor-dialog.svelte';
 	import EditorToolbar from './editor-toolbar.svelte';
 	import { collectHeadings, pageToc } from '$lib/page-toc.svelte';
+	import { guardSlashMenuHover } from '$lib/slash-menu-hover';
 
 	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
 	const PAPERCLIP_ICON =
@@ -268,19 +269,26 @@
 
 	onMount(() => {
 		let destroyed = false;
+		const unguardSlashMenu = guardSlashMenuHover(container);
 
 		const mount = async () => {
 			// Before Crepe creates its code-block observer, see eager-code-blocks.ts.
 			installEagerCodeBlocks();
-			const [{ Crepe }, { editorViewCtx }, editorCommands, { codeHighlighting }] =
-				await Promise.all([
-					import('@milkdown/crepe'),
-					import('@milkdown/kit/core'),
-					import('$lib/editor-commands'),
-					import('$lib/code-highlight'),
-					import('@milkdown/crepe/theme/common/style.css'),
-					import('@milkdown/crepe/theme/classic.css')
-				]);
+			const [
+				{ Crepe },
+				{ editorViewCtx },
+				editorCommands,
+				{ codeHighlighting },
+				{ editorInputRules }
+			] = await Promise.all([
+				import('@milkdown/crepe'),
+				import('@milkdown/kit/core'),
+				import('$lib/editor-commands'),
+				import('$lib/code-highlight'),
+				import('$lib/editor-input-rules'),
+				import('@milkdown/crepe/theme/common/style.css'),
+				import('@milkdown/crepe/theme/classic.css')
+			]);
 
 			if (destroyed) return;
 			commands = editorCommands;
@@ -369,6 +377,7 @@
 				});
 			});
 
+			instance.editor.use(editorInputRules);
 			instance.setReadonly(readonly);
 			await instance.create();
 
@@ -391,6 +400,7 @@
 
 		return () => {
 			destroyed = true;
+			unguardSlashMenu();
 			clearTimeout(tocTimer);
 			if (tocPath) pageToc.clear(tocPath);
 			crepe?.destroy();

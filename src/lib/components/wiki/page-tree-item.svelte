@@ -10,6 +10,7 @@
 	import { resolve } from '$app/paths';
 	import { page as currentPage } from '$app/state';
 	import type { PageTreeNode } from '$lib/page-tree';
+	import { untrack } from 'svelte';
 
 	let { node, canEdit = false }: { node: PageTreeNode; canEdit?: boolean } = $props();
 
@@ -17,7 +18,11 @@
 	const isActive = $derived(currentPage.url.pathname === href);
 	const isAncestorOfActive = $derived(currentPage.url.pathname.startsWith(href + '/'));
 
-	let open = $state(isAncestorOfActive);
+	// Opened for the open page — also when it's reached by a link later on.
+	let open = $state(untrack(() => isAncestorOfActive));
+	$effect.pre(() => {
+		if (isAncestorOfActive) open = true;
+	});
 	let addOpen = $state(false);
 </script>
 

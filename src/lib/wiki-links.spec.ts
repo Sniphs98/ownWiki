@@ -31,4 +31,32 @@ describe('resolveWikiLinks', () => {
 	it('leaves only the label when the name has no usable characters', () => {
 		expect(resolveWikiLinks('[[!!!|Text]]', pages)).toBe('Text');
 	});
+
+	it('leaves code blocks and inline code as written', () => {
+		const shell = '```bash\nif [[ -f "$file" ]]; then\n  echo [[Kündigung]]\nfi\n```';
+		expect(resolveWikiLinks(shell, pages)).toBe(shell);
+		expect(resolveWikiLinks('Schreibe `[[Kündigung]]` für [[Kündigung]].', pages)).toBe(
+			'Schreibe `[[Kündigung]]` für [Kündigung](/w/personal/kuendigung).'
+		);
+		expect(resolveWikiLinks('~~~~\n```\n[[Kündigung]]\n```\n~~~~\n[[Onboarding]]', pages)).toBe(
+			'~~~~\n```\n[[Kündigung]]\n```\n~~~~\n[Onboarding](/w/personal/onboarding)'
+		);
+	});
+
+	it('understands the escaped label separator Milkdown writes in tables', () => {
+		expect(resolveWikiLinks('| \\[\\[Onboarding\\|Start]] |', pages)).toBe(
+			'| [Start](/w/personal/onboarding) |'
+		);
+	});
+
+	it('links to a heading on a page', () => {
+		expect(resolveWikiLinks('[[Kündigung#Fristen und Termine|Fristen]]', pages)).toBe(
+			'[Fristen](/w/personal/kuendigung#fristen-und-termine)'
+		);
+		expect(resolveWikiLinks('[[#Übersicht]]', pages)).toBe('[#Übersicht](#%C3%BCbersicht)');
+		// A missing page is created without the heading in its name.
+		expect(resolveWikiLinks('[[Neu#Teil]]', pages)).toBe(
+			'[Neu#Teil](/w/neu/edit?title=Neu "Seite existiert noch nicht – klicken zum Erstellen")'
+		);
+	});
 });

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
+	import { beforeNavigate, goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button';
@@ -42,9 +42,45 @@
 
 	let title = $state(existingTitle);
 	let content = $state(existingContent);
+	let changeSummary = $state('');
 	let saving = $state(false);
 	let deleting = $state(false);
 	let editor: MarkdownEditor | undefined = $state();
+
+	/**
+	 * The text as the editor first showed it. Compared with what it shows
+	 * now rather than with the stored markdown, which the editor writes a
+	 * little differently even when nothing was changed.
+	 */
+	let initialMarkdown: string | undefined;
+
+	function hasChanges() {
+		if (title !== existingTitle || changeSummary.trim()) return true;
+		return initialMarkdown !== undefined && editor?.getMarkdown() !== initialMarkdown;
+	}
+
+	/** Where to go once the changes may be discarded. */
+	let leaveTo = $state<{ url: URL; delta?: number } | null>(null);
+	let discarded = false;
+
+	beforeNavigate(({ cancel, to, type, delta }) => {
+		if (saving || deleting || discarded || !hasChanges()) return;
+		cancel();
+		// Closing or reloading the tab: cancelling makes the browser ask.
+		if (type === 'leave' || !to) return;
+		leaveTo = { url: to.url, delta: type === 'popstate' ? delta : undefined };
+	});
+
+	function discardAndLeave() {
+		if (!leaveTo) return;
+		const { url, delta } = leaveTo;
+		leaveTo = null;
+		discarded = true;
+		if (delta) history.go(delta);
+		else if (url.origin !== location.origin) location.href = url.href;
+		// eslint-disable-next-line svelte/no-navigation-without-resolve -- where SvelteKit was about to go
+		else goto(url);
+	}
 </script>
 
 <svelte:head>
@@ -54,7 +90,9 @@
 <form
 	method="post"
 	action="?/save"
-	use:enhance={() => {
+	use:enhance={({ formData }) => {
+		// `content` follows the editor with a delay: take what's typed right now.
+		if (editor) formData.set('content', editor.getMarkdown());
 		saving = true;
 		return async ({ update }) => {
 			await update();
@@ -76,6 +114,7 @@
 				id="edit-change-summary"
 				name="changeSummary"
 				placeholder="z. B. Tippfehler korrigiert"
+				bind:value={changeSummary}
 			/>
 		</Field.Field>
 	</Field.FieldGroup>
@@ -96,6 +135,7 @@
 				{pageId}
 				toolbar={toolbarSetting.layout}
 				tocPath={path}
+				onready={() => (initialMarkdown = editor?.getMarkdown())}
 				onupload={() => invalidateAll()}
 			/>
 		</PageBreakMarkers>
@@ -183,3 +223,26 @@
 		Speichere die Seite einmal, um Bilder oder Dateien einzufügen.
 	</p>
 {/if}
+
+<AlertDialog.Root
+	open={leaveTo !== null}
+	onOpenChange={(open) => {
+		if (!open) leaveTo = null;
+	}}
+>
+	<AlertDialog.Content>
+		<AlertDialog.Header>
+			<AlertDialog.Title>Änderungen verwerfen?</AlertDialog.Title>
+			<AlertDialog.Description>
+				Deine Änderungen an dieser Seite sind noch nicht gespeichert. Wenn du sie jetzt verlässt,
+				gehen sie verloren.
+			</AlertDialog.Description>
+		</AlertDialog.Header>
+		<AlertDialog.Footer>
+			<AlertDialog.Cancel>Weiter bearbeiten</AlertDialog.Cancel>
+			<AlertDialog.Action variant="destructive" onclick={discardAndLeave}>
+				Verwerfen
+			</AlertDialog.Action>
+		</AlertDialog.Footer>
+	</AlertDialog.Content>
+</AlertDialog.Root>

@@ -73,7 +73,13 @@ async function renderPdf(url: URL): Promise<Buffer> {
 	const browser = await getBrowser();
 	const context = await browser.newContext();
 	try {
-		await context.setExtraHTTPHeaders({ [PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN });
+		// Only for requests to the wiki itself: a page can show images from
+		// anywhere, and whoever has the token gets past the AUTH_MODE gate.
+		await context.route(`${url.origin}/**`, (route) =>
+			route.continue({
+				headers: { ...route.request().headers(), [PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN }
+			})
+		);
 		const page = await context.newPage();
 
 		const response = await page.goto(url.toString(), { waitUntil: 'load' });

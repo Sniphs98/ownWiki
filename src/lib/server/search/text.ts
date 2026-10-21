@@ -1,4 +1,5 @@
 import { isDiagramKind } from '$lib/diagrams/kinds';
+import { closesFence, fenceOpening } from '$lib/markdown-code';
 import { MATCH_END, MATCH_START, type SnippetPart } from './types';
 
 /**
@@ -11,14 +12,14 @@ export function markdownToSearchText(markdown: string): string {
 	let fence: { marker: string; skip: boolean } | null = null;
 
 	for (const line of markdown.split('\n')) {
-		const fenceMatch = line.match(/^\s*(`{3,}|~{3,})\s*([\w-]*)/);
 		if (fence) {
-			if (fenceMatch && fenceMatch[1].startsWith(fence.marker)) fence = null;
+			if (closesFence(line, fence.marker)) fence = null;
 			else if (!fence.skip) lines.push(line);
 			continue;
 		}
-		if (fenceMatch) {
-			fence = { marker: fenceMatch[1], skip: isDiagramKind(fenceMatch[2] ?? '') };
+		const opening = fenceOpening(line);
+		if (opening) {
+			fence = { marker: opening.marker, skip: isDiagramKind(opening.info.split(/\s/)[0]) };
 			continue;
 		}
 		lines.push(line);
@@ -30,12 +31,16 @@ export function markdownToSearchText(markdown: string): string {
 			// The sentinel characters snippets use for highlighting.
 			.replaceAll(MATCH_START, '')
 			.replaceAll(MATCH_END, '')
-			.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // images → alt text
 			// Wiki links, also in the escaped form Milkdown stores: \[\[Name|Label]]
+			// (\[\[Name\|Label]] in a table).
 			.replace(
-				/\\?\[\\?\[([^\]|]+?)(?:\|([^\]]+?))?\\?\]\\?\]/g,
+				/\\?\[\\?\[([^\]|]+?)(?:\\?\|([^\]]+?))?\\?\]\\?\]/g,
 				(_, target, label) => label ?? target
 			)
+			// Escaped characters are text: set aside, so the markup rules
+			// below don't strip them (or leave their backslash behind).
+			.replace(MARKDOWN_ESCAPE, (_, char: string) => escaped(char))
+			.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1') // images → alt text
 			.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1') // links → their text
 			.replace(/<[^>]+>/g, ' ') // inline HTML
 			.replace(/^\s{0,3}#{1,6}\s+/gm, '') // headings
@@ -44,11 +49,18 @@ export function markdownToSearchText(markdown: string): string {
 			.replace(/^\s*\|?\s*:?-{3,}.*$/gm, '') // table separator rows
 			.replace(/\|/g, ' ') // table cells
 			.replace(/(\*\*|__|~~|[*_`])/g, '') // emphasis, inline code
-			.replace(/\\([\\`*_{}[\]()#+\-.!|>~])/g, '$1') // markdown escapes
+			.replace(ESCAPED, (char) => unescaped(char))
 			.replace(/\s+/g, ' ')
 			.trim()
 	);
 }
+
+const MARKDOWN_ESCAPE = /\\([\\`*_{}[\]()#+\-.!|>~])/g;
+// Private-use characters stand in for escaped ones while the markup is removed.
+const ESCAPE_BASE = 0xf000;
+const ESCAPED = /[\uf000-\uf07f]/g;
+const escaped = (char: string) => String.fromCharCode(ESCAPE_BASE + char.charCodeAt(0));
+const unescaped = (char: string) => String.fromCharCode(char.charCodeAt(0) - ESCAPE_BASE);
 
 /** Splits a database snippet with MATCH_START/MATCH_END marks into parts. */
 export function toSnippet(raw: string): SnippetPart[] {

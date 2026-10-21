@@ -23,6 +23,9 @@ RUN npm prune --omit=dev
 FROM base AS runtime
 ENV NODE_ENV=production
 ENV PORT=3000
+# adapter-node refuses request bodies over 512 KB by default — uploads may
+# be up to 10 MB (MAX_ATTACHMENT_SIZE), plus a little form overhead.
+ENV BODY_SIZE_LIMIT=11M
 COPY --from=build /app/build ./build
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json

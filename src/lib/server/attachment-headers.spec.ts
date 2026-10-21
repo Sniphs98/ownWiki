@@ -50,4 +50,15 @@ describe('attachmentHeaders', () => {
 		expect(headers['content-disposition']).toMatch(/^inline;/);
 		expect(headers['content-security-policy']).toBeUndefined();
 	});
+
+	it('encodes the characters RFC 5987 does not allow unencoded in the file name', () => {
+		const headers = attachmentHeaders({
+			filename: "Bob's (1)*.pdf",
+			mimeType: 'application/pdf',
+			size: 1
+		});
+		expect(headers['content-disposition']).toBe(
+			"inline; filename*=UTF-8''Bob%27s%20%281%29%2A.pdf"
+		);
+	});
 });

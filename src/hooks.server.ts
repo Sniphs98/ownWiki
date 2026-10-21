@@ -36,8 +36,9 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 		// The PDF generator (generate-pdf.ts) navigates here from a loopback
 		// Playwright browser to render /print/... for screenshotting — it has
 		// no real session, so it authenticates with this process-local secret
-		// instead.
+		// instead. It only ever reads.
 		const hasInternalToken =
+			!WRITE_METHODS.has(event.request.method) &&
 			event.request.headers.get(PDF_INTERNAL_TOKEN_HEADER) === PDF_INTERNAL_TOKEN;
 
 		if (requiresAuth && !session && !hasInternalToken) {

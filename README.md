@@ -107,16 +107,17 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable             | Bedeutung                                                                                  |
-| -------------------- | ------------------------------------------------------------------------------------------ |
-| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                      |
-| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL               |
-| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet. |
-| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                   |
-| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                           |
-| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                     |
-| `PORT`               | Port des Servers, Standard `3000`                                                          |
-| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`       |
+| Variable             | Bedeutung                                                                                    |
+| -------------------- | -------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                        |
+| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                 |
+| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet.   |
+| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                     |
+| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                             |
+| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                       |
+| `PORT`               | Port des Servers, Standard `3000`                                                            |
+| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`         |
+| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
