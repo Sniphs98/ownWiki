@@ -17,7 +17,7 @@
 const CONTENT_HEADINGS = '.ProseMirror > :is(h1, h2, h3, h4, h5, h6)';
 
 function chapterTitle(chapter: Element): string {
-	return chapter.querySelector('.wiki-page-header h1')?.textContent?.trim() ?? '';
+	return chapter.querySelector<HTMLElement>('.wiki-page-header')?.dataset.title?.trim() ?? '';
 }
 
 /** Nests each page's headings below its title, for the PDF bookmarks. */
@@ -29,10 +29,13 @@ export function structureHeadings(root: HTMLElement) {
 
 	for (const chapter of root.querySelectorAll('.wiki-chapter')) {
 		const title = chapterTitle(chapter);
+		// The header shows no title of its own when the text starts with it.
+		const headerTitle = chapter.querySelector('.wiki-page-header h1');
 		for (const heading of chapter.querySelectorAll(CONTENT_HEADINGS)) {
 			// Pages often start with their title again as a heading.
 			if (heading.textContent?.trim() === title) {
-				heading.setAttribute('role', 'presentation');
+				if (headerTitle) heading.setAttribute('role', 'presentation');
+				else heading.setAttribute('aria-level', '1');
 				continue;
 			}
 			heading.setAttribute('aria-level', String(Number(heading.tagName[1]) + 1));

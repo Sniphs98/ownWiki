@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { onPage, retitle } from './helpers';
 
 const PATH = 'e2e/konflikt';
 
@@ -7,7 +8,7 @@ test('saving over someone else’s newer version asks first', async ({ browser, 
 	await (
 		await browser.newPage()
 	).request.post(`${baseURL}/w/${PATH}/edit?/save`, {
-		form: { title: 'Konflikt', content: 'Ursprung' },
+		form: { title: 'Konflikt', content: '# Konflikt\n\nUrsprung' },
 		headers: { origin: baseURL! },
 		maxRedirects: 0
 	});
@@ -19,16 +20,16 @@ test('saving over someone else’s newer version asks first', async ({ browser, 
 		await page.goto(`/w/${PATH}/edit`, { waitUntil: 'networkidle' });
 	}
 
-	await alice.getByLabel('Titel').fill('Konflikt von Alice');
+	await retitle(alice, 'Konflikt von Alice');
 	await alice.getByRole('button', { name: 'Speichern', exact: true }).click();
 	await alice.waitForURL(`**/w/${PATH}`);
 
 	// Bob saves on top of version 1 — refused, his edit stays in the form.
-	await bob.getByLabel('Titel').fill('Konflikt von Bob');
+	await retitle(bob, 'Konflikt von Bob');
 	await bob.getByRole('button', { name: 'Speichern', exact: true }).click();
 	await expect(bob.getByText('inzwischen gespeichert (jetzt Version 2)')).toBeVisible();
 	await expect(bob).toHaveURL(new RegExp(`/w/${PATH}/edit$`));
-	await expect(bob.getByLabel('Titel')).toHaveValue('Konflikt von Bob');
+	await expect(onPage(bob, 'h1')).toHaveText('Konflikt von Bob');
 
 	// He decides to overwrite anyway.
 	await bob.getByRole('button', { name: 'Trotzdem speichern' }).click();

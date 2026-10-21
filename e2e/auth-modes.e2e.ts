@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from '@playwright/test';
 import { FULL_PORT, READ_ONLY_PORT } from '../playwright.config';
+import { retitle } from './helpers';
 
 // Pages seeded by e2e/setup-db.js — each server has its own database.
 const PAGE = 'e2e/handbuch';
@@ -70,7 +71,7 @@ test.describe('AUTH_MODE=read-only', () => {
 		await signUp(page.request, baseURL);
 		await page.goto(`/w/${PAGE}/edit`, { waitUntil: 'networkidle' });
 		await expect(page).toHaveURL(`/w/${PAGE}/edit`);
-		await page.getByLabel('Titel').fill('Handbuch (bearbeitet)');
+		await retitle(page, 'Handbuch (bearbeitet)');
 		await page.getByRole('button', { name: 'Speichern', exact: true }).click();
 		await page.waitForURL(`**/w/${PAGE}`);
 		await expect(page.getByRole('heading', { level: 1 })).toHaveText('Handbuch (bearbeitet)');

@@ -7,6 +7,7 @@ import {
 	onPage,
 	openEditor,
 	press,
+	retitle,
 	startEditing,
 	type
 } from './helpers';
@@ -53,14 +54,14 @@ test('with changed text, leaving asks; staying keeps the text, leaving discards 
 });
 
 test('a changed title counts too, until it is changed back', async ({ page, baseURL }) => {
-	const path = await createPage(page, baseURL!, 'titel', 'Text.');
+	const path = await createPage(page, baseURL!, 'titel', '# titel\n\nText.');
 	await openEditor(page, path);
-	await page.getByLabel('Titel').fill('Anderer Titel');
+	await retitle(page, 'Anderer Titel');
 	await page.getByRole('link', { name: 'Abbrechen' }).click();
 	await expect(dialog(page)).toBeVisible();
 	await dialog(page).getByRole('button', { name: 'Weiter bearbeiten' }).click();
 
-	await page.getByLabel('Titel').fill('titel');
+	await retitle(page, 'titel');
 	await page.getByRole('link', { name: 'Abbrechen' }).click();
 	await page.waitForURL(`**/w/${path}`);
 });

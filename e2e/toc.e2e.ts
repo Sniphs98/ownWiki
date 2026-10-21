@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Seeded by e2e/setup-db.js; headings: Einleitung, Konfiguration,
-// Zuständigkeiten, Checkliste, Abschluss.
+// Seeded by e2e/setup-db.js; headings: the title, then Einleitung,
+// Konfiguration, Zuständigkeiten, Checkliste, Abschluss.
 const PATH = 'e2e/pdf-export';
 
 const aside = (page: Page) => page.getByRole('navigation', { name: 'Auf dieser Seite' });
@@ -21,6 +21,7 @@ test('the sections beside the text list the headings and jump to them', async ({
 	await page.goto(`/w/${PATH}`);
 
 	await expect(aside(page).getByRole('button')).toHaveText([
+		'PDF-Export Prüfseite',
 		'Einleitung',
 		'Konfiguration',
 		'Zuständigkeiten',

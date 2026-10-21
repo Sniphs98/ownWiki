@@ -1,11 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { onPage } from './helpers';
 
 test('a new page opened under a raw name moves to its canonical path', async ({ page }) => {
 	await page.goto('/w/Personal/Neue Kündigung/edit');
 	await expect(page).toHaveURL(
 		/\/w\/personal\/neue-kuendigung\/edit\?title=Neue%20K%C3%BCndigung$/
 	);
-	await expect(page.getByLabel('Titel')).toHaveValue('Neue Kündigung');
+	await expect(onPage(page, 'h1')).toHaveText('Neue Kündigung');
 });
 
 test('saving a page under a non-canonical path is refused', async ({ page, baseURL }) => {

@@ -60,7 +60,10 @@ test('an Excalidraw drawing can be inserted, drawn and saved', async ({ page, ba
 	// A new page of its own, so the other tests' page stays as seeded.
 	const path = 'e2e/neue-zeichnung';
 	await page.goto(`/w/${path}/edit?title=Neue%20Zeichnung`);
+	// Below the heading the page starts with.
 	await page.locator('.milkdown .ProseMirror').click();
+	await page.keyboard.press('Control+End');
+	await page.keyboard.press('Enter');
 	await page.keyboard.type('/');
 	await page.getByText('Excalidraw-Zeichnung').click();
 

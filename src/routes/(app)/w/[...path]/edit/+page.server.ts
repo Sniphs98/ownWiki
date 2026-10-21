@@ -10,6 +10,7 @@ import {
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
 import { slugifyPath } from '$lib/slug';
+import { titleFromMarkdown } from '$lib/page-title';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -51,12 +52,17 @@ export const actions: Actions = {
 
 		const path = event.params.path;
 		const formData = await event.request.formData();
-		const title = formData.get('title')?.toString().trim() ?? '';
 		const content = formData.get('content')?.toString() ?? '';
-		const changeSummary = formData.get('changeSummary')?.toString().trim() || undefined;
+		// The editor has no title field: the heading on the text's first line
+		// is the title; without one the page keeps its title.
+		const existing = await getPageWithLatestVersion(path);
+		const title =
+			formData.get('title')?.toString().trim() ||
+			titleFromMarkdown(content).slice(0, 200) ||
+			existing?.version.title;
 
 		if (!title) {
-			return fail(400, { message: 'Titel darf nicht leer sein.' });
+			return fail(400, { message: 'Beginne die Seite mit einer Überschrift – sie ist ihr Titel.' });
 		}
 
 		// The version the editor was opened on, 0 for a new page. The last
@@ -64,7 +70,6 @@ export const actions: Actions = {
 		const baseVersion = Number(formData.getAll('baseVersion').at(-1) ?? 0);
 
 		const authorId = event.locals.user?.id;
-		const existing = await getPageWithLatestVersion(path);
 		if (!existing && slugifyPath(path) !== path) {
 			return fail(400, { message: 'Ungültiger Seitenpfad.' });
 		}
@@ -75,12 +80,11 @@ export const actions: Actions = {
 					pageId: existing.page.id,
 					title,
 					content,
-					changeSummary,
 					authorId,
 					baseVersion
 				});
 			} else {
-				await createPage({ path, title, content, changeSummary, authorId });
+				await createPage({ path, title, content, authorId });
 			}
 		} catch (err) {
 			if (!(err instanceof PageConflictError)) throw err;

@@ -7,6 +7,7 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 ## Funktionen
 
 - **WYSIWYG-Editor auf Markdown-Basis** ([Milkdown Crepe](https://milkdown.dev)): Überschriften, Listen, Checklisten, Tabellen, Code mit Syntax-Hervorhebung, Formeln, Bilder.
+- **Titel aus der ersten Zeile**: Die Überschrift in der ersten Zeile einer Seite ist ihr Titel – ein eigenes Titelfeld gibt es nicht. Seiten ohne Überschrift oben behalten ihren bisherigen Titel.
 - **PDF-Export, der dem Bildschirm entspricht** – einzelne Seiten, ganze Bereiche mit Unterseiten oder das komplette Wiki.
 - **Seitenumbruch-Vorschau**: Schon beim Schreiben zeigt eine Linie, wo im PDF eine neue Seite beginnt.
 - **Diagramme direkt im Text**: Mermaid, BPMN (bpmn-js) und Excalidraw.
@@ -79,7 +80,7 @@ Unter SQLite sucht ownWiki mit FTS5, unter PostgreSQL mit der deutschen Volltext
 
 ### Versionsverlauf
 
-Jedes Speichern legt eine neue Version an, optional mit Änderungshinweis. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
+Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
 
 ![Versionsverlauf mit zwei Versionen](docs/screenshots/verlauf.png)
 
