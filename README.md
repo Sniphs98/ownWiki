@@ -161,14 +161,25 @@ Bei jedem Pull Request und jedem Push auf `main` laufen Lint, Typprüfung, Unit-
 
 ### Release erstellen
 
-Ein Versions-Tag löst den Release aus (`.github/workflows/release.yml`):
+Jeder Merge nach `main` wird automatisch veröffentlicht (`.github/workflows/auto-release.yml`). Das Label am Pull Request bestimmt, wie die Version gegenüber dem letzten Tag steigt:
+
+| Label am PR    | Version                                      |
+| -------------- | -------------------------------------------- |
+| _keins_        | Patch: `1.2.3` → `1.2.4`                     |
+| `feature`      | Minor: `1.2.3` → `1.3.0`                     |
+| `breaking`     | Major: `1.2.3` → `2.0.0`                     |
+| `kein-release` | kein Release (z. B. nur Doku, Tests oder CI) |
+
+Der Release lässt erst die komplette CI laufen, baut dann das Docker-Image und legt es als `ghcr.io/sniphs98/ownwiki` mit den Tags `1.2.0`, `1.2` und `latest` ab. Zum Schluss legt er den Versions-Tag und einen GitHub-Release mit automatisch erzeugten Release-Notes an.
+
+Von Hand geht es weiterhin mit einem Versions-Tag (`.github/workflows/release.yml`):
 
 ```sh
 git tag v1.2.0
 git push origin v1.2.0
 ```
 
-Der Workflow lässt erst die komplette CI laufen, baut dann das Docker-Image und legt es als `ghcr.io/sniphs98/ownwiki` mit den Tags `1.2.0`, `1.2` und `latest` ab. Zum Schluss legt er einen GitHub-Release mit automatisch erzeugten Release-Notes an. Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und verschieben `latest` nicht.
+Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und verschieben `latest` nicht.
 
 ### Aufbau
 
