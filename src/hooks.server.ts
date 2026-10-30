@@ -3,14 +3,16 @@ import { error, redirect } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { authMode } from '$lib/server/auth-mode';
+import { isCrossSiteForm } from '$lib/server/csrf';
 import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from '$lib/server/pdf/internal-token';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
 // log in on a `full` (private) wiki.
-// /mcp checks its own token (MCP_TOKEN) instead of a session.
+// /mcp checks the AI assistant's access token instead of a session, and
+// /.well-known/ tells assistants where to get one.
 const PUBLIC_PATHS = new Set(['/login', '/mcp']);
-const PUBLIC_PATH_PREFIXES = ['/api/auth/', '/mcp/'];
+const PUBLIC_PATH_PREFIXES = ['/api/auth/', '/.well-known/'];
 
 function isPublicPath(pathname: string) {
 	return (
@@ -21,6 +23,10 @@ function isPublicPath(pathname: string) {
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const handleAuth: Handle = async ({ event, resolve }) => {
+	if (isCrossSiteForm(event.request, event.url)) {
+		error(403, `Cross-site ${event.request.method} form submissions are forbidden`);
+	}
+
 	const session = await auth.api.getSession({ headers: event.request.headers });
 
 	if (session) {

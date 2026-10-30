@@ -6,9 +6,6 @@ const PORT = 4173;
 export const READ_ONLY_PORT = 4174;
 export const FULL_PORT = 4175;
 
-/** Lets e2e/mcp.e2e.ts in through the MCP endpoint. */
-export const MCP_TOKEN = 'e2e-mcp-token';
-
 const serverEnv = (port: number, authMode: string) => ({
 	PORT: String(port),
 	ORIGIN: `http://localhost:${port}`,
@@ -20,8 +17,7 @@ const serverEnv = (port: number, authMode: string) => ({
 	BETTER_AUTH_SECRET: 'e2e-only-secret-0000000000000000000000',
 	// As in the Dockerfile: adapter-node's default of 512 KB would refuse
 	// most uploads below MAX_ATTACHMENT_SIZE.
-	BODY_SIZE_LIMIT: '11M',
-	MCP_TOKEN
+	BODY_SIZE_LIMIT: '11M'
 });
 
 export default defineConfig({
