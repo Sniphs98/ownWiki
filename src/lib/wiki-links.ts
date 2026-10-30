@@ -68,28 +68,53 @@ export function resolveWikiLinks(markdown: string, pages: WikiLinkTarget[]): str
 const PAGE_LINK_PATTERN = /\]\(\/w\/([^)\s#?]+)/g;
 
 /**
- * The paths of the existing pages `markdown` links to — through
- * `[[wiki links]]` (resolved as in resolveWikiLinks) or plain markdown
- * links to /w/… — each once, in order of appearance. Links in code don't
- * count, nor do links to pages that don't exist.
+ * What `markdown` links to, as written and before resolving: the lowercased
+ * name of each `[[wiki link]]` (without `#heading`), and `/` plus the
+ * lowercased path of each markdown link to /w/…. Each once, in order of
+ * appearance; links in code don't count. Stored per page (page_link), so
+ * backlinks are found without reading every page.
  */
-export function linkedPagePaths(markdown: string, pages: WikiLinkTarget[]): string[] {
-	const byPath = new Map(pages.map((p) => [p.path.toLowerCase(), p]));
-	const byTitle = new Map(pages.map((p) => [p.title.toLowerCase(), p]));
+export function linkTargets(markdown: string): string[] {
 	const found = new Set<string>();
-
 	transformOutsideCode(markdown, (text) => {
-		for (const [, rawTarget] of text.matchAll(WIKI_LINK_PATTERN)) {
-			const name = rawTarget.split('#')[0].trim().toLowerCase();
-			const page = byPath.get(name) ?? byTitle.get(name);
-			if (page) found.add(page.path);
-		}
-		for (const [, rawPath] of text.matchAll(PAGE_LINK_PATTERN)) {
-			const page = byPath.get(decodeURIComponent(rawPath).toLowerCase());
-			if (page) found.add(page.path);
-		}
+		const links = [
+			...[...text.matchAll(WIKI_LINK_PATTERN)].map((match) => ({
+				at: match.index,
+				target: match[1].split('#')[0].trim().toLowerCase()
+			})),
+			...[...text.matchAll(PAGE_LINK_PATTERN)].map((match) => ({
+				at: match.index,
+				target: `/${decodeURIComponent(match[1]).toLowerCase()}`
+			}))
+		];
+		for (const { target } of links.sort((a, b) => a.at - b.at)) if (target) found.add(target);
 		return text;
 	});
-
 	return [...found];
+}
+
+/**
+ * Finds the page a link target (see linkTargets) leads to, as
+ * resolveWikiLinks does: a wiki link by path, else by title; a /w/ link by
+ * path only.
+ */
+export function linkTargetResolver(pages: WikiLinkTarget[]) {
+	const byPath = new Map(pages.map((p) => [p.path.toLowerCase(), p]));
+	const byTitle = new Map(pages.map((p) => [p.title.toLowerCase(), p]));
+	return (target: string): string | undefined =>
+		target.startsWith('/')
+			? byPath.get(target.slice(1))?.path
+			: (byPath.get(target) ?? byTitle.get(target))?.path;
+}
+
+/**
+ * The paths of the existing pages `markdown` links to — through
+ * `[[wiki links]]` or plain markdown links to /w/… — each once, in order of
+ * appearance. Links in code don't count, nor do links to pages that don't
+ * exist.
+ */
+export function linkedPagePaths(markdown: string, pages: WikiLinkTarget[]): string[] {
+	const resolve = linkTargetResolver(pages);
+	const paths = linkTargets(markdown).map(resolve);
+	return [...new Set(paths.filter((path) => path !== undefined))];
 }

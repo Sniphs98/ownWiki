@@ -12,6 +12,7 @@ import {
 import { accessFor } from '$lib/server/access';
 import { getUserRole } from '$lib/server/repo/access';
 import { startSemanticIndex } from '$lib/server/search';
+import { rebuildLinks } from '$lib/server/backlinks';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
@@ -77,7 +78,9 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 
 export const handle: Handle = handleAuth;
 
-// Embeds pages saved before semantic search was set up, in the background.
-export const init: ServerInit = () => {
-	if (!building) void startSemanticIndex();
+export const init: ServerInit = async () => {
+	if (building) return;
+	await rebuildLinks();
+	// Embeds pages saved before semantic search was set up, in the background.
+	void startSemanticIndex();
 };

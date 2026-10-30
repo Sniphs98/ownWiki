@@ -7,6 +7,7 @@
 	import { pageAside } from '$lib/page-aside.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
+	import LinkIcon from '@lucide/svelte/icons/link';
 
 	let { data } = $props();
 
@@ -59,6 +60,27 @@
 			/>
 		</PageBreakMarkers>
 	{/key}
+
+	{#if data.backlinks.length > 0}
+		<section class="mt-12 border-t pt-4" aria-labelledby="backlinks-heading">
+			<h2 id="backlinks-heading" class="mb-2 text-sm font-medium text-muted-foreground">
+				Verlinkt von
+			</h2>
+			<ul class="flex flex-wrap gap-2">
+				{#each data.backlinks as link (link.path)}
+					<li>
+						<a
+							href={resolve('/(app)/w/[...path]', { path: link.path })}
+							class="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm transition-colors hover:bg-accent"
+						>
+							<LinkIcon class="size-3.5 text-muted-foreground" />
+							{link.title}
+						</a>
+					</li>
+				{/each}
+			</ul>
+		</section>
+	{/if}
 </div>
 
 <PdfExportDialog

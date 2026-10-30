@@ -1,5 +1,7 @@
 import { dbDialect } from '$lib/server/db';
 import { indexPage, removePageFromIndex } from '$lib/server/search';
+import { linkTargets } from '$lib/wiki-links';
+import { setLinks } from './links';
 import type { AddVersionInput, CreatePageInput } from './pages.types';
 
 const impl =
@@ -10,16 +12,18 @@ export const getPageWithLatestVersion = impl.getPageWithLatestVersion;
 export const getPagePath = impl.getPagePath;
 export const listVersions = impl.listVersions;
 
-// Writes keep the search index in step with the pages.
+// Writes keep the search index and the links (backlinks.ts) in step with the pages.
 
 export async function createPage(input: CreatePageInput): Promise<string> {
 	const pageId = await impl.createPage(input);
+	await setLinks(pageId, linkTargets(input.content));
 	await indexPage(pageId);
 	return pageId;
 }
 
 export async function addPageVersion(input: AddVersionInput): Promise<number> {
 	const versionNumber = await impl.addPageVersion(input);
+	await setLinks(input.pageId, linkTargets(input.content));
 	await indexPage(input.pageId);
 	return versionNumber;
 }

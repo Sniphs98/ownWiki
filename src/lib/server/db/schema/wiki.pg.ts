@@ -163,3 +163,22 @@ export const accessRule = pgTable(
 		uniqueIndex('access_rule_subject_uidx').on(table.path, table.subjectType, table.subjectId)
 	]
 );
+
+/**
+ * What each page's latest version links to, as written (see linkTargets in
+ * $lib/wiki-links.ts) — resolved to pages only when asked, so a link to a
+ * page created later counts once it exists. Kept in step on every save.
+ */
+export const pageLink = pgTable(
+	'page_link',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		target: text('target').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.target] }),
+		index('page_link_target_idx').on(table.target)
+	]
+);
