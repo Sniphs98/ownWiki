@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveWikiLinks } from './wiki-links';
+import { linkedPagePaths, resolveWikiLinks } from './wiki-links';
 
 const pages = [
 	{ title: 'Kündigung', path: 'personal/kuendigung' },
@@ -58,5 +58,23 @@ describe('resolveWikiLinks', () => {
 		expect(resolveWikiLinks('[[Neu#Teil]]', pages)).toBe(
 			'[Neu#Teil](/w/neu/edit?title=Neu "Seite existiert noch nicht – klicken zum Erstellen")'
 		);
+	});
+});
+
+describe('linkedPagePaths', () => {
+	it('finds pages linked by wiki link or by /w/ link, each once', () => {
+		const markdown = [
+			'Siehe \\[\\[Kündigung#Fristen]] und [[personal/onboarding|Start]].',
+			'Nochmal [Onboarding](/w/personal/onboarding#ablauf) und [[Kündigung]].'
+		].join('\n');
+		expect(linkedPagePaths(markdown, pages)).toEqual([
+			'personal/kuendigung',
+			'personal/onboarding'
+		]);
+	});
+
+	it('ignores missing pages and links in code', () => {
+		const markdown = '[[Neue Seite]] `[[Kündigung]]`\n\n```\n[x](/w/personal/onboarding)\n```\n';
+		expect(linkedPagePaths(markdown, pages)).toEqual([]);
 	});
 });

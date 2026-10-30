@@ -1,0 +1,1 @@
+ALTER TABLE "page_version" ADD COLUMN "via" text;

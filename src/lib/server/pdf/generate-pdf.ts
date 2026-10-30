@@ -1,27 +1,8 @@
 import { error } from '@sveltejs/kit';
 import { chromium, type Browser } from 'playwright';
-import { env } from '$env/dynamic/private';
-import { dev } from '$app/environment';
+import { internalOrigin } from '$lib/server/internal-origin';
 import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from './internal-token';
 import { createLimiter, QueueFullError } from './concurrency';
-
-/**
- * Both this generator and the SvelteKit HTTP server it navigates to run in
- * the same process/container, so a loopback URL is always reachable — unlike
- * the app's public origin, which may be unset, or sit behind a proxy/DNS
- * name this container can't resolve to itself.
- */
-function internalOrigin(requestUrl: URL): string {
-	// The Vite dev server picks its own port (5173, or the next free one) and
-	// doesn't expose it via PORT — but in dev the request URL is the dev
-	// server itself, reachable from this machine.
-	if (dev) return requestUrl.origin;
-
-	// adapter-node listens on PORT, defaulting to 3000. Not 127.0.0.1: some
-	// setups bind only the IPv6 loopback (::1), which refuses IPv4
-	// connections outright; "localhost" resolves correctly either way.
-	return `http://localhost:${env.PORT || '3000'}`;
-}
 
 /** How long the print view may take to render and paginate. */
 const PRINT_TIMEOUT_MS = 60_000;

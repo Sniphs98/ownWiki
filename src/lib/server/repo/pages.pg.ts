@@ -35,7 +35,8 @@ export async function getPageWithLatestVersion(path: string) {
 export async function listVersions(pageId: string) {
 	return pg.query.pageVersion.findMany({
 		where: eq(pageVersion.pageId, pageId),
-		orderBy: desc(pageVersion.versionNumber)
+		orderBy: desc(pageVersion.versionNumber),
+		with: { author: { columns: { name: true } } }
 	});
 }
 
@@ -69,7 +70,8 @@ export async function createPage(input: CreatePageInput): Promise<string> {
 				title: input.title,
 				content: input.content,
 				changeSummary: input.changeSummary,
-				authorId: input.authorId
+				authorId: input.authorId,
+				via: input.via
 			});
 		});
 	} catch (err) {
@@ -102,7 +104,8 @@ export async function addPageVersion(input: AddVersionInput): Promise<number> {
 			title: input.title,
 			content: input.content,
 			changeSummary: input.changeSummary,
-			authorId: input.authorId
+			authorId: input.authorId,
+			via: input.via
 		});
 		await tx
 			.update(page)

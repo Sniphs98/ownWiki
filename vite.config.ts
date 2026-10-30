@@ -13,6 +13,9 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 			adapter: adapter(),
+			// Checked in hooks.server.ts instead (src/lib/server/csrf.ts), which
+			// can let AI assistants' servers reach the OAuth token endpoint.
+			csrf: { trustedOrigins: ['*'] },
 			typescript: {
 				config: (config) => {
 					config.include.push('../drizzle.config.ts');

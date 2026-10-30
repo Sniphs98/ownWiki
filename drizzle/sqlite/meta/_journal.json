@@ -29,6 +29,20 @@
       "when": 1791485537559,
       "tag": "0003_pdf_cover_alignment",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1793381544108,
+      "tag": "0004_oauth_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1793383317138,
+      "tag": "0005_version_via",
+      "breakpoints": true
     }
   ]
 }

@@ -3,11 +3,16 @@ import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
 import { isSignupAllowed } from '$lib/server/signup';
 import { safeRedirectPath } from '$lib/safe-redirect';
+import { oauthContinuation } from '$lib/server/oauth-flow';
 import { createRateLimiter } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
 
-function redirectTarget(url: URL) {
-	return safeRedirectPath(url.searchParams.get('redirectTo'), url.origin);
+/** Where to go after logging in: back into an AI assistant's authorization, or redirectTo. */
+async function redirectTarget(url: URL) {
+	return (
+		(await oauthContinuation(url)) ??
+		safeRedirectPath(url.searchParams.get('redirectTo'), url.origin)
+	);
 }
 
 // Better Auth limits its own HTTP endpoints, but these actions call
@@ -30,7 +35,7 @@ const TOO_MANY = 'Zu viele Versuche. Bitte warte eine Minute.';
 
 export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
-		redirect(303, redirectTarget(event.url));
+		redirect(303, await redirectTarget(event.url));
 	}
 	return { signupAllowed: await isSignupAllowed() };
 };
@@ -61,7 +66,7 @@ export const actions: Actions = {
 			return fail(500, { mode: 'signIn' as const, email, message: 'Unerwarteter Fehler' });
 		}
 
-		redirect(303, redirectTarget(event.url));
+		redirect(303, await redirectTarget(event.url));
 	},
 
 	signUp: async (event) => {
@@ -91,6 +96,6 @@ export const actions: Actions = {
 			return fail(500, { mode: 'signUp' as const, email, name, message: 'Unerwarteter Fehler' });
 		}
 
-		redirect(303, redirectTarget(event.url));
+		redirect(303, await redirectTarget(event.url));
 	}
 };

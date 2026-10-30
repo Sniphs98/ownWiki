@@ -36,6 +36,9 @@ export const pageVersion = sqliteTable(
 		content: text('content').notNull(),
 		changeSummary: text('change_summary'),
 		authorId: text('author_id').references(() => user.id, { onDelete: 'set null' }),
+		// The AI assistant that wrote this version on its author's behalf
+		// (its OAuth client name, e.g. "ChatGPT"); null when written by hand.
+		via: text('via'),
 		createdAt: timestampMs('created_at').notNull()
 	},
 	(table) => [

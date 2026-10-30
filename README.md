@@ -90,6 +90,19 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 
 ![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
 
+### KI-Anbindung (MCP)
+
+ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern oder etwas an sie anhängen. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
+
+Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration).
+
+Voraussetzung ist, dass `ORIGIN` gesetzt ist – ohne gibt es die Anbindung nicht.
+
+- **ChatGPT Business/Enterprise:** Ein Admin schaltet in den Workspace-Einstellungen den Entwicklermodus ein, legt einen Connector mit der Adresse oben und Authentifizierung „OAuth“ an und veröffentlicht ihn für den Workspace. Danach verbindet sich jede Person beim ersten Benutzen selbst.
+- **Claude Code und andere MCP-Clients:** die Adresse als HTTP-MCP-Server eintragen, z. B. `claude mcp add --transport http ownwiki https://dein-wiki.example.org/mcp`.
+
+ChatGPT ruft das Wiki von OpenAIs Servern aus auf, nicht vom eigenen Rechner. Das Wiki muss dafür nicht öffentlich erreichbar sein: OpenAIs [Secure MCP Tunnel](https://github.com/openai/tunnel-client) baut aus dem eigenen Netz eine ausgehende Verbindung auf.
+
 ## Schnellstart mit Docker
 
 ```sh
@@ -108,17 +121,17 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable             | Bedeutung                                                                                    |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                        |
-| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                 |
-| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet.   |
-| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                     |
-| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                             |
-| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                       |
-| `PORT`               | Port des Servers, Standard `3000`                                                            |
-| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`         |
-| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen |
+| Variable             | Bedeutung                                                                                                |
+| -------------------- | -------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                                    |
+| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                             |
+| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet. |
+| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                 |
+| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                                         |
+| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                   |
+| `PORT`               | Port des Servers, Standard `3000`                                                                        |
+| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                     |
+| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen             |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
@@ -190,6 +203,7 @@ Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und ver
 - **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
 - **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
 - Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
+- **MCP-Server** für KI-Assistenten unter `/mcp` (`src/lib/server/mcp`, offizielles MCP-SDK, zustandslos über Streamable HTTP), geschützt per OAuth – Better Auth ist dafür mit dem `mcp()`-Plugin zugleich OAuth-Server (`src/lib/server/auth.ts`, Zustimmungsseite unter `/consent`).
 
 ## Noch nicht umgesetzt
 
