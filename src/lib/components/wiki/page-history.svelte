@@ -22,12 +22,11 @@
 		data: {
 			page: { title: string; path: string };
 			versions: VersionEntry[];
-			authMode: string;
-			user?: { id: string };
+			canEdit: boolean;
 		};
 	} = $props();
 
-	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
+	const canEdit = $derived(data.canEdit);
 	const latestVersionNumber = data.versions[0]?.versionNumber;
 
 	let selected = $state(latestVersionNumber);

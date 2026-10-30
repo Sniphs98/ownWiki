@@ -1,5 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { createAttachment } from '$lib/server/repo/attachments';
+import { getPagePath } from '$lib/server/repo/pages';
+import { requireEdit } from '$lib/server/access';
 import { MAX_ATTACHMENT_SIZE } from '$lib/server/attachment-limits';
 import type { RequestHandler } from './$types';
 
@@ -10,6 +12,9 @@ export const POST: RequestHandler = async (event) => {
 
 	if (!(file instanceof File)) error(400, 'Keine Datei übermittelt.');
 	if (typeof pageId !== 'string' || !pageId) error(400, 'pageId fehlt.');
+	const path = await getPagePath(pageId);
+	if (!path) error(400, 'Seite nicht gefunden — speichere sie zuerst.');
+	requireEdit(event.locals.access, path);
 	if (file.size > MAX_ATTACHMENT_SIZE) {
 		error(413, `Datei ist zu groß (max. ${Math.round(MAX_ATTACHMENT_SIZE / 1024 / 1024)} MB).`);
 	}

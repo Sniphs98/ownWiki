@@ -32,6 +32,14 @@ export async function getPageWithLatestVersion(path: string) {
 	return { page: found, version };
 }
 
+export async function getPagePath(pageId: string): Promise<string | null> {
+	const found = await pg.query.page.findFirst({
+		where: eq(page.id, pageId),
+		columns: { path: true }
+	});
+	return found?.path ?? null;
+}
+
 export async function listVersions(pageId: string) {
 	return pg.query.pageVersion.findMany({
 		where: eq(pageVersion.pageId, pageId),

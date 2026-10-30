@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { findBacklinks } from '$lib/server/backlinks';
+import type { PageAccess } from '$lib/server/access';
 import {
 	addPageVersion,
 	createPage,
@@ -29,6 +30,9 @@ const failure = (text: string) => ({
 
 const notFound = (path: string) => failure(`Keine Seite unter "${path}".`);
 
+const notAllowed = (path: string) =>
+	failure(`Du darfst "${path}" nicht bearbeiten – dafür fehlen die Rechte in diesem Bereich.`);
+
 const conflict = (latest: number) =>
 	failure(
 		`Die Seite wurde inzwischen geändert (jetzt Version ${latest}). ` +
@@ -38,6 +42,8 @@ const conflict = (latest: number) =>
 /** Who is writing: the person who connected the assistant, and the assistant's name. */
 export interface McpActor {
 	userId: string;
+	/** What the person may do — the assistant may do exactly the same. */
+	access: PageAccess;
 	via: string;
 }
 
@@ -79,7 +85,7 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			annotations: READ_ONLY
 		},
 		async ({ query }) => {
-			const hits = await searchPages(query, 20);
+			const hits = actor.access.readable(await searchPages(query, 20));
 			return json({
 				results: hits.map((hit) => ({
 					id: hit.path,
@@ -102,9 +108,9 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			annotations: READ_ONLY
 		},
 		async ({ id }) => {
-			const found = await getPageWithLatestVersion(id);
+			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
 			if (!found) return notFound(id);
-			const pages = await listPages();
+			const pages = actor.access.readable(await listPages());
 			return json({
 				id: found.page.path,
 				title: found.version.title,
@@ -133,9 +139,9 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 		},
 		async ({ prefix }) => {
 			const base = prefix?.replace(/^\/+|\/+$/g, '');
-			const pages = (await listPages()).filter(
-				(p) => !base || p.path === base || p.path.startsWith(`${base}/`)
-			);
+			const pages = actor.access
+				.readable(await listPages())
+				.filter((p) => !base || p.path === base || p.path.startsWith(`${base}/`));
 			return json({
 				pages: pages.map((p) => ({
 					id: p.path,
@@ -155,8 +161,8 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			annotations: READ_ONLY
 		},
 		async ({ id }) => {
-			if (!(await getPageWithLatestVersion(id))) return notFound(id);
-			const pages = await findBacklinks(id);
+			if (!actor.access.canRead(id) || !(await getPageWithLatestVersion(id))) return notFound(id);
+			const pages = await findBacklinks(id, actor.access);
 			return json({
 				backlinks: pages.map((p) => ({ id: p.path, title: p.title, url: pageUrl(p.path) }))
 			});
@@ -181,6 +187,7 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 		async ({ id, content, change_summary }) => {
 			const path = slugifyPath(id);
 			if (!path) return failure(`"${id}" ist kein gültiger Pfad.`);
+			if (!actor.access.canEdit(path)) return notAllowed(path);
 			const title = titleFromMarkdown(content).slice(0, 200);
 			if (!title) return failure('Beginne den Text mit einer Überschrift (`# Titel`).');
 
@@ -222,8 +229,9 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			annotations: WRITES
 		},
 		async ({ id, content, base_version, change_summary }) => {
-			const found = await getPageWithLatestVersion(id);
+			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
 			if (!found) return notFound(id);
+			if (!actor.access.canEdit(id)) return notAllowed(id);
 			// As in the editor: without a heading on top, the page keeps its title.
 			const title = titleFromMarkdown(content).slice(0, 200) || found.version.title;
 
@@ -260,8 +268,9 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			annotations: WRITES
 		},
 		async ({ id, content, change_summary }) => {
-			const found = await getPageWithLatestVersion(id);
+			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
 			if (!found) return notFound(id);
+			if (!actor.access.canEdit(id)) return notAllowed(id);
 
 			try {
 				const version = await addPageVersion({

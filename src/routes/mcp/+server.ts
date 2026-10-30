@@ -2,13 +2,17 @@ import { error } from '@sveltejs/kit';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { requireMcpAuth } from '@better-auth/mcp';
 import { auth, mcpResource } from '$lib/server/auth';
+import { accessFor } from '$lib/server/access';
+import { authMode } from '$lib/server/auth-mode';
+import { getUserRole } from '$lib/server/repo/access';
 import { internalOrigin } from '$lib/server/internal-origin';
 import { createWikiMcpServer, type McpActor } from '$lib/server/mcp/server';
 import type { RequestHandler } from './$types';
 
 /**
- * The person an access token was issued to (`sub`) and the name the
- * assistant registered under (`azp` is its client id), for the history.
+ * The person an access token was issued to (`sub`), with their rights, and
+ * the name the assistant registered under (`azp` is its client id), for
+ * the history.
  */
 async function actorFrom(claims: { sub?: string; azp?: unknown }): Promise<McpActor> {
 	const { adapter } = await auth.$context;
@@ -19,7 +23,12 @@ async function actorFrom(claims: { sub?: string; azp?: unknown }): Promise<McpAc
 					where: [{ field: 'clientId', value: claims.azp }]
 				})
 			: null;
-	return { userId: claims.sub ?? '', via: client?.name || 'KI-Assistent' };
+	const userId = claims.sub ?? '';
+	return {
+		userId,
+		via: client?.name || 'KI-Assistent',
+		access: await accessFor({ id: userId, role: await getUserRole(userId) }, authMode)
+	};
 }
 
 /** Answers one MCP request: a fresh server and transport each time, nothing kept between requests. */

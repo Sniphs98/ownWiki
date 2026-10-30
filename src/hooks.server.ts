@@ -4,7 +4,13 @@ import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
 import { authMode } from '$lib/server/auth-mode';
 import { isCrossSiteForm } from '$lib/server/csrf';
-import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from '$lib/server/pdf/internal-token';
+import {
+	PDF_INTERNAL_TOKEN,
+	PDF_INTERNAL_TOKEN_HEADER,
+	PDF_INTERNAL_USER_HEADER
+} from '$lib/server/pdf/internal-token';
+import { accessFor } from '$lib/server/access';
+import { getUserRole } from '$lib/server/repo/access';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
@@ -36,17 +42,27 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 
 	event.locals.authMode = authMode;
 
+	// The PDF generator (generate-pdf.ts) navigates here from a loopback
+	// Playwright browser to render /print/... for screenshotting — it has
+	// no real session, so it authenticates with this process-local secret
+	// instead, and names the person the PDF is for. It only ever reads.
+	const hasInternalToken =
+		!WRITE_METHODS.has(event.request.method) &&
+		event.request.headers.get(PDF_INTERNAL_TOKEN_HEADER) === PDF_INTERNAL_TOKEN;
+
+	if (!building) {
+		const pdfUserId = hasInternalToken
+			? event.request.headers.get(PDF_INTERNAL_USER_HEADER)
+			: null;
+		const viewer = pdfUserId
+			? { id: pdfUserId, role: await getUserRole(pdfUserId) }
+			: event.locals.user;
+		event.locals.access = await accessFor(viewer, authMode);
+	}
+
 	if (!building && !isPublicPath(event.url.pathname)) {
 		const requiresAuth =
 			authMode === 'full' || (authMode === 'read-only' && WRITE_METHODS.has(event.request.method));
-
-		// The PDF generator (generate-pdf.ts) navigates here from a loopback
-		// Playwright browser to render /print/... for screenshotting — it has
-		// no real session, so it authenticates with this process-local secret
-		// instead. It only ever reads.
-		const hasInternalToken =
-			!WRITE_METHODS.has(event.request.method) &&
-			event.request.headers.get(PDF_INTERNAL_TOKEN_HEADER) === PDF_INTERNAL_TOKEN;
 
 		if (requiresAuth && !session && !hasInternalToken) {
 			if (event.request.headers.get('accept')?.includes('text/html')) {

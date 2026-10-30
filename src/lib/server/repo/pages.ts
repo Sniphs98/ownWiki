@@ -7,6 +7,7 @@ const impl =
 
 export const listPages = impl.listPages;
 export const getPageWithLatestVersion = impl.getPageWithLatestVersion;
+export const getPagePath = impl.getPagePath;
 export const listVersions = impl.listVersions;
 
 // Writes keep the search index in step with the pages.

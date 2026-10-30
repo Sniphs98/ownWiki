@@ -1,13 +1,14 @@
 import { getPageWithLatestVersion, listPages, type PageSummary } from '$lib/server/repo/pages';
 import { linkedPagePaths } from '$lib/wiki-links';
+import type { PageAccess } from '$lib/server/access';
 
 /**
- * The pages whose latest version links to `path`. Reads every page, which
+ * The pages `access` may read whose latest version links to `path`. Reads every page, which
  * is fine for a personal wiki; a link table filled on save would be the
  * next step once that gets slow.
  */
-export async function findBacklinks(path: string): Promise<PageSummary[]> {
-	const pages = await listPages();
+export async function findBacklinks(path: string, access: PageAccess): Promise<PageSummary[]> {
+	const pages = access.readable(await listPages());
 	const linking: PageSummary[] = [];
 
 	for (const candidate of pages) {
