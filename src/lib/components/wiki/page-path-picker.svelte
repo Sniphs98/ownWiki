@@ -42,9 +42,11 @@
 	let search = $state('');
 	let trigger = $state<HTMLButtonElement | null>(null);
 
+	// An empty path is no page (only old data has one); emptyOption stands for "nothing".
+	const options = $derived(paths.filter(Boolean));
 	/** The typed text as a path, when it isn't one of the listed ones. */
 	const typed = $derived(slugifyPath(search.trim()));
-	const offerTyped = $derived(typed !== '' && !paths.includes(typed));
+	const offerTyped = $derived(typed !== '' && !options.includes(typed));
 
 	async function choose(path: string) {
 		value = path;
@@ -103,7 +105,7 @@
 							{emptyOption}
 						</Command.Item>
 					{/if}
-					{#each paths as path (path)}
+					{#each options as path (path)}
 						<Command.Item value={path} onSelect={() => choose(path)}>
 							<CheckIcon class={cn(value !== path && 'text-transparent')} />
 							{path}
