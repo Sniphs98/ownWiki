@@ -42,9 +42,9 @@ function ensureIndex() {
 	return ready;
 }
 
-type LatestVersion = { id: string; path: string; title: string; content: string };
+export type LatestVersion = { id: string; path: string; title: string; content: string };
 
-function latestVersions(pageId?: string) {
+export function latestVersions(pageId?: string) {
 	return sql<LatestVersion[]>`
 		SELECT DISTINCT ON (p.id) p.id, p.path, v.title, v.content
 		FROM page p

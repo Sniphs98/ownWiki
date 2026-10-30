@@ -9,14 +9,11 @@ export interface SearchHit {
 	path: string;
 	title: string;
 	snippet: SnippetPart[];
+	/** Found by what the page is about, not by its words (semantic search). */
+	byMeaning?: boolean;
 }
 
-/**
- * A way of finding pages. Today there's one — full-text search in the
- * database (search.sqlite.ts / search.pg.ts). A semantic search over
- * vector embeddings can implement the same interface later and be merged
- * into the results in search/index.ts, without touching pages or the UI.
- */
+/** Full-text search in the database (search.sqlite.ts / search.pg.ts). */
 export interface SearchProvider {
 	search(query: string, limit: number): Promise<SearchHit[]>;
 	/** (Re)indexes a page from its latest version. */
