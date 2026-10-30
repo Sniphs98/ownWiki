@@ -44,7 +44,12 @@ test('notes go into one’s own inbox and are sorted into pages from there', asy
 
 	// Sorted into a page that doesn't exist yet: it's created from the note.
 	const note = notes.filter({ hasText: `Neue Idee ${id}` });
-	await note.getByRole('combobox', { name: 'Einsortieren in Seite' }).fill(`e2e/ideen-${id}`);
+	await note.getByRole('combobox', { name: 'Einsortieren in Seite' }).click();
+	await page.getByPlaceholder('Pfad suchen oder eingeben …').fill(`e2e/ideen-${id}`);
+	await page.getByRole('option', { name: `Neue Seite anlegen: e2e/ideen-${id}` }).click();
+	await expect(note.getByRole('combobox', { name: 'Einsortieren in Seite' })).toHaveText(
+		`e2e/ideen-${id}`
+	);
 	await note.getByRole('button', { name: 'Einsortieren' }).click();
 	await expect(page).toHaveURL(new RegExp(`/w/e2e/ideen-${id}$`));
 	await expect(page.getByRole('heading', { name: `Ideen ${id}` })).toBeVisible();

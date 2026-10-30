@@ -37,6 +37,7 @@ export const actions: Actions = {
 	file: async (event) => {
 		const user = requireUser(event);
 		const form = await event.request.formData();
+		if (!field(form, 'path')) return fail(400, { message: 'Wähle eine Seite zum Einsortieren.' });
 		const result = await fileNote(
 			{ userId: user.id, access: event.locals.access },
 			field(form, 'noteId'),

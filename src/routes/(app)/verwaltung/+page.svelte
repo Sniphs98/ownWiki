@@ -5,6 +5,7 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import PagePathPicker from '$lib/components/wiki/page-path-picker.svelte';
 	import type { AccessLevel, AccessRule } from '$lib/access';
 	import type { ActionData, PageData } from './$types';
 
@@ -101,15 +102,16 @@
 				use:enhance
 				class="flex flex-wrap items-end gap-2 border-t pt-4"
 			>
-				<label class="flex min-w-48 flex-1 flex-col gap-1 text-sm">
-					Bereich
-					<Input name="path" list="page-paths" placeholder="leer = ganzes Wiki" />
-					<datalist id="page-paths">
-						{#each data.paths as path (path)}
-							<option value={path}></option>
-						{/each}
-					</datalist>
-				</label>
+				<div class="flex min-w-48 flex-1 flex-col gap-1 text-sm">
+					<span>Bereich</span>
+					<PagePathPicker
+						name="path"
+						paths={data.paths}
+						label="Bereich"
+						emptyOption="Ganzes Wiki"
+						newLabel="Bereich"
+					/>
+				</div>
 				<label class="flex flex-col gap-1 text-sm">
 					Für
 					<select name="subject" class={selectClass}>

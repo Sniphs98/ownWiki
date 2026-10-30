@@ -2,7 +2,8 @@
 	import { enhance } from '$app/forms';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+	import { Textarea } from '$lib/components/ui/textarea';
+	import PagePathPicker from '$lib/components/wiki/page-path-picker.svelte';
 
 	let { data, form } = $props();
 
@@ -30,24 +31,17 @@
 	{/if}
 
 	<form method="post" action="?/add" use:enhance class="flex flex-col gap-2">
-		<textarea
+		<Textarea
 			name="content"
-			rows="3"
+			rows={3}
 			placeholder="Was willst du festhalten?"
 			aria-label="Neue Notiz"
-			class="w-full rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
 			value={form && 'content' in form && typeof form.content === 'string' ? form.content : ''}
-		></textarea>
+		/>
 		<div class="flex justify-end">
 			<Button type="submit">Notieren</Button>
 		</div>
 	</form>
-
-	<datalist id="inbox-paths">
-		{#each data.paths as path (path)}
-			<option value={path}></option>
-		{/each}
-	</datalist>
 
 	{#if data.notes.length === 0}
 		<p class="text-sm text-muted-foreground">Die Inbox ist leer.</p>
@@ -62,13 +56,12 @@
 					<div class="mt-3 flex flex-wrap items-center gap-2">
 						<form method="post" action="?/file" use:enhance class="flex flex-1 gap-2">
 							<input type="hidden" name="noteId" value={note.id} />
-							<Input
+							<PagePathPicker
 								name="path"
-								list="inbox-paths"
-								required
-								placeholder="Seite, z. B. projekte/ideen"
-								aria-label="Einsortieren in Seite"
-								class="min-w-48 flex-1"
+								paths={data.paths}
+								label="Einsortieren in Seite"
+								newLabel="Neue Seite anlegen"
+								class="flex-1"
 							/>
 							<Button type="submit" variant="outline">Einsortieren</Button>
 						</form>

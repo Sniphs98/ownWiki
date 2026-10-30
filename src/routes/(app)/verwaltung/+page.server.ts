@@ -32,7 +32,11 @@ export const load: PageServerLoad = async (event) => {
 		listRules(),
 		listPages()
 	]);
-	return { users, groups, rules, paths: pages.map((p) => p.path) };
+	// Every page and every area above one ("personal" for "personal/kuendigung").
+	const areas = new Set(
+		pages.flatMap((p) => p.path.split('/').map((_, i, parts) => parts.slice(0, i + 1).join('/')))
+	);
+	return { users, groups, rules, paths: [...areas].sort() };
 };
 
 const field = (form: FormData, name: string) => form.get(name)?.toString().trim() ?? '';

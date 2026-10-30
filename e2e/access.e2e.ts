@@ -70,7 +70,9 @@ test('admins close an area, open it for a group, and everything else follows', a
 	).toBeVisible();
 
 	const setRule = async (subject: string, level: string) => {
-		await admin.page.getByLabel('Bereich').fill(secret);
+		await admin.page.getByRole('combobox', { name: 'Bereich' }).click();
+		await admin.page.getByPlaceholder('Pfad suchen oder eingeben …').fill(secret);
+		await admin.page.getByRole('option', { name: secret, exact: true }).click();
 		await admin.page.getByLabel('Für').selectOption({ label: subject });
 		await admin.page.getByLabel('Recht').selectOption({ label: level });
 		await admin.page.getByRole('button', { name: 'Regel setzen' }).click();
