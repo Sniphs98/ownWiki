@@ -2,7 +2,7 @@ import { dbDialect } from '$lib/server/db';
 import { indexPage, removePageFromIndex } from '$lib/server/search';
 import { bindTargets, linkTargets } from '$lib/wiki-links';
 import { bindUnbound, linksOf, setLinks } from './links';
-import type { AddVersionInput, CreatePageInput } from './pages.types';
+import type { AddVersionInput, CreatePageInput, PageMove } from './pages.types';
 
 const impl =
 	dbDialect === 'postgresql' ? await import('./pages.pg') : await import('./pages.sqlite');
@@ -11,11 +11,14 @@ export const listPages = impl.listPages;
 export const getPageWithLatestVersion = impl.getPageWithLatestVersion;
 export const getPagePath = impl.getPagePath;
 export const listVersions = impl.listVersions;
+export const redirectFor = impl.redirectFor;
 
 // Writes keep the search index and the links (backlinks.ts) in step with the pages.
 
 export async function createPage(input: CreatePageInput): Promise<string> {
 	const pageId = await impl.createPage(input);
+	// A page made where another one used to be takes the path over.
+	await impl.deleteRedirect(input.path);
 	await updateLinks(pageId, input.content);
 	await bindWaitingLinks(pageId, input.path, input.title);
 	await indexPage(pageId);
@@ -37,6 +40,15 @@ export async function deletePage(pageId: string): Promise<void> {
 }
 
 /**
+ * Moves pages to new paths in one go (see move.ts for the checks). Links
+ * are bound to the pages, so they follow; the search index learns the paths.
+ */
+export async function movePages(moves: PageMove[]): Promise<void> {
+	await impl.movePages(moves);
+	for (const move of moves) await indexPage(move.pageId);
+}
+
+/**
  * Stores what a page links to, each link bound to the page it means — the
  * same one as before if it still exists, so moves and renames of linked
  * pages don't change where a link leads (see bindTargets).
@@ -53,5 +65,5 @@ async function bindWaitingLinks(pageId: string, path: string, title: string): Pr
 	await bindUnbound([key, `/${key}`, title.toLowerCase()], pageId);
 }
 
-export type { PageSummary, CreatePageInput, AddVersionInput } from './pages.types';
+export type { PageSummary, CreatePageInput, AddVersionInput, PageMove } from './pages.types';
 export { PageConflictError } from './pages.types';

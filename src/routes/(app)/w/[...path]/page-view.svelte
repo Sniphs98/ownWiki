@@ -4,6 +4,7 @@
 	import PageBreakMarkers from '$lib/components/wiki/page-break-markers.svelte';
 	import PageActions from '$lib/components/wiki/page-actions.svelte';
 	import PdfExportDialog from '$lib/components/wiki/pdf-export-dialog.svelte';
+	import MoveDialog from '$lib/components/wiki/move-dialog.svelte';
 	import { pageAside } from '$lib/page-aside.svelte';
 	import { PRINT_TEXT_WIDTH } from '$lib/print-layout';
 	import { resolve } from '$app/paths';
@@ -17,6 +18,7 @@
 	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.page.path}/`)));
 
 	let exportOpen = $state(false);
+	let moveOpen = $state(false);
 
 	$effect(() => {
 		pageAside.actions = asideActions;
@@ -27,7 +29,14 @@
 </script>
 
 {#snippet asideActions()}
-	<PageActions path={data.page.path} {canEdit} onexport={() => (exportOpen = true)} column />
+	<PageActions
+		path={data.page.path}
+		pageId={data.page.id}
+		{canEdit}
+		onexport={() => (exportOpen = true)}
+		onmove={() => (moveOpen = true)}
+		column
+	/>
 {/snippet}
 
 <svelte:head>
@@ -38,7 +47,13 @@
 	<!-- Beside the text when there's room (the layout's side panel, see
 		 pageAside below), otherwise above it. -->
 	<div class="mb-2 flex justify-end @min-[1360px]:hidden">
-		<PageActions path={data.page.path} {canEdit} onexport={() => (exportOpen = true)} />
+		<PageActions
+			path={data.page.path}
+			pageId={data.page.id}
+			{canEdit}
+			onexport={() => (exportOpen = true)}
+			onmove={() => (moveOpen = true)}
+		/>
 	</div>
 	<PageHeader
 		title={data.version.title}
@@ -98,6 +113,15 @@
 		</section>
 	{/if}
 </div>
+
+{#if canEdit && moveOpen}
+	<MoveDialog
+		bind:open={moveOpen}
+		path={data.page.path}
+		title={data.version.title}
+		pagePaths={data.pages.map((p) => p.path)}
+	/>
+{/if}
 
 <PdfExportDialog
 	bind:open={exportOpen}

@@ -154,6 +154,7 @@ test('an assistant connects through login and consent, then reads as that person
 		'create_page',
 		'update_page',
 		'append_to_page',
+		'move_page',
 		'add_to_inbox',
 		'list_inbox',
 		'file_inbox_note',

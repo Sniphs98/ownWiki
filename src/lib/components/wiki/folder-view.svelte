@@ -9,8 +9,10 @@
 	import FolderIcon from '@lucide/svelte/icons/folder';
 	import PinIcon from '@lucide/svelte/icons/pin';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import FolderInputIcon from '@lucide/svelte/icons/folder-input';
 	import { Button } from '$lib/components/ui/button';
 	import NewPageDialog from './new-page-dialog.svelte';
+	import MoveDialog from './move-dialog.svelte';
 	import { buildPageTree, findNode } from '$lib/page-tree';
 	import type { PageSummary } from '$lib/server/repo/pages';
 
@@ -24,6 +26,7 @@
 	const folder = $derived(findNode(buildPageTree(pages, pinned), path));
 	const name = $derived(path.split('/').at(-1) ?? path);
 	let newPageOpen = $state(false);
+	let moveOpen = $state(false);
 </script>
 
 <svelte:head>
@@ -40,10 +43,16 @@
 			<p class="mt-1 text-sm text-muted-foreground">Ordner · /w/{path}</p>
 		</div>
 		{#if canEdit}
-			<Button variant="outline" size="sm" onclick={() => (newPageOpen = true)}>
-				<PlusIcon data-icon="inline-start" />
-				Neue Seite hier
-			</Button>
+			<div class="flex gap-2">
+				<Button variant="ghost" size="sm" onclick={() => (moveOpen = true)}>
+					<FolderInputIcon data-icon="inline-start" />
+					Verschieben
+				</Button>
+				<Button variant="outline" size="sm" onclick={() => (newPageOpen = true)}>
+					<PlusIcon data-icon="inline-start" />
+					Neue Seite hier
+				</Button>
+			</div>
 		{/if}
 	</div>
 
@@ -82,4 +91,7 @@
 
 {#if canEdit}
 	<NewPageDialog bind:open={newPageOpen} parentPath={path} parentTitle={name} />
+	{#if moveOpen}
+		<MoveDialog bind:open={moveOpen} {path} title={name} pagePaths={pages.map((p) => p.path)} />
+	{/if}
 {/if}

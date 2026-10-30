@@ -1,13 +1,14 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '$lib/server/db';
-import { page, pageVersion } from '$lib/server/db/schema/pg';
+import { page, pageRedirect, pageVersion } from '$lib/server/db/schema/pg';
 import type * as schema from '$lib/server/db/schema/pg';
 import {
 	PageConflictError,
 	type CreatePageInput,
 	type AddVersionInput,
-	type PageSummary
+	type PageSummary,
+	type PageMove
 } from './pages.types';
 
 const pg = db as PostgresJsDatabase<typeof schema>;
@@ -130,4 +131,36 @@ export async function addPageVersion(input: AddVersionInput): Promise<number> {
 // external object storage.
 export async function deletePage(pageId: string): Promise<void> {
 	await pg.delete(page).where(eq(page.id, pageId));
+}
+
+/**
+ * Gives pages their new paths, all at once. Each old path leads to its page
+ * from then on (page_redirect); a redirect at a new path goes.
+ */
+export async function movePages(moves: PageMove[]): Promise<void> {
+	await pg.transaction(async (tx) => {
+		await tx.delete(pageRedirect).where(
+			inArray(
+				pageRedirect.path,
+				moves.map((m) => m.to)
+			)
+		);
+		for (const move of moves) {
+			await tx.update(page).set({ path: move.to }).where(eq(page.id, move.pageId));
+			await tx
+				.insert(pageRedirect)
+				.values({ path: move.from, pageId: move.pageId })
+				.onConflictDoUpdate({ target: pageRedirect.path, set: { pageId: move.pageId } });
+		}
+	});
+}
+
+/** The page an old path leads to, if one was moved away from it. */
+export async function redirectFor(path: string): Promise<string | null> {
+	const found = await pg.query.pageRedirect.findFirst({ where: eq(pageRedirect.path, path) });
+	return found?.pageId ?? null;
+}
+
+export async function deleteRedirect(path: string): Promise<void> {
+	await pg.delete(pageRedirect).where(eq(pageRedirect.path, path));
 }

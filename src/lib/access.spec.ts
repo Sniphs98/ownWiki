@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accessLevel, areasOf, type AccessRule, type Viewer } from './access';
+import { accessLevel, areasOf, compareReaders, type AccessRule, type Viewer } from './access';
 
 const viewer = (overrides: Partial<Viewer> = {}): Viewer => ({
 	userId: 'erika',
@@ -103,5 +103,42 @@ describe('accessLevel', () => {
 	it('lets admins edit everything', () => {
 		const rules = [rule('', 'everyone', 'none'), rule('', 'user:erika', 'none')];
 		expect(accessLevel('geheim', viewer({ isAdmin: true }), rules)).toBe('edit');
+	});
+});
+
+describe('compareReaders', () => {
+	const rules: AccessRule[] = [
+		{ path: 'hr', subjectType: 'everyone', subjectId: '', level: 'none' },
+		{ path: 'hr', subjectType: 'group', subjectId: 'g-hr', level: 'read' }
+	];
+	const person = (name: string, groupIds: string[] = [], isAdmin = false) => ({
+		name,
+		userId: name,
+		isAdmin,
+		groupIds,
+		ceiling: 'edit' as const
+	});
+	const people = [person('Hanna', ['g-hr']), person('Ida'), person('Ada', [], true)];
+	const visitor: Viewer = { isAdmin: false, groupIds: [], ceiling: 'read' };
+
+	it('names who loses reading a page moved into a closed area, leaving out admins', () => {
+		expect(compareReaders('alle/x', 'hr/x', rules, people, visitor)).toEqual({
+			gained: [],
+			lost: ['Ida'],
+			withoutLogin: 'lost'
+		});
+	});
+
+	it('and who gains it when the page comes out', () => {
+		expect(compareReaders('hr/x', 'alle/x', rules, people, visitor)).toEqual({
+			gained: ['Ida'],
+			lost: [],
+			withoutLogin: 'gained'
+		});
+		expect(compareReaders('alle/x', 'auch/x', rules, people, visitor)).toEqual({
+			gained: [],
+			lost: [],
+			withoutLogin: null
+		});
 	});
 });

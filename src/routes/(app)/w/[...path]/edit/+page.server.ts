@@ -15,6 +15,7 @@ import { setTags, tagsOf } from '$lib/server/repo/tags';
 import { parseTags } from '$lib/tags';
 import { refreshWikiLinks } from '$lib/wiki-links';
 import { linkBindings } from '$lib/server/backlinks';
+import { movedPath } from '$lib/server/move';
 import { slugifyPath } from '$lib/slug';
 import { titleFromMarkdown } from '$lib/page-title';
 import type { Actions, PageServerLoad } from './$types';
@@ -25,6 +26,10 @@ export const load: PageServerLoad = async (event) => {
 	const path = event.params.path;
 	requireEdit(event.locals.access, path);
 	const existing = await getPageWithLatestVersion(path);
+	if (!existing) {
+		const movedTo = await movedPath(path);
+		if (movedTo) redirect(303, `/w/${movedTo}/edit`);
+	}
 
 	// New pages only get the canonical path the "Neue Seite" dialog and
 	// wiki links produce ("Personal/Kündigung" → "personal/kuendigung").
@@ -92,6 +97,15 @@ export const actions: Actions = {
 		const baseVersion = Number(formData.getAll('baseVersion').at(-1) ?? 0);
 
 		const authorId = event.locals.user?.id;
+		// Opened on a page that someone moved meanwhile: don't make a new one here.
+		const movedTo = !existing && baseVersion > 0 ? await movedPath(path) : null;
+		if (movedTo) {
+			return fail(409, {
+				message:
+					`Die Seite wurde inzwischen nach „${movedTo}“ verschoben. ` +
+					'Kopiere deine Änderungen und öffne sie dort neu.'
+			});
+		}
 		if (!existing && slugifyPath(path) !== path) {
 			return fail(400, { message: 'Ungültiger Seitenpfad.' });
 		}

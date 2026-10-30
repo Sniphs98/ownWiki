@@ -234,3 +234,15 @@ export const pagePin = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.userId, table.path] })]
 );
+
+/**
+ * Where moved pages used to be: an old path leads to the page now. A page
+ * created at such a path later takes it over (the redirect goes).
+ */
+export const pageRedirect = pgTable('page_redirect', {
+	path: text('path').primaryKey(),
+	pageId: text('page_id')
+		.notNull()
+		.references(() => page.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
