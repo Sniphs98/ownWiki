@@ -17,7 +17,7 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
 - **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
 - **Inhaltsverzeichnis** der geöffneten Seite rechts neben dem Text.
-- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki.
+- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki –, dazu **Rechte pro Bereich** für Gruppen und einzelne Personen.
 - **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
 
 ### Inhaltsverzeichnis
@@ -89,6 +89,17 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 Über das Symbol oben rechts wählst du hell, dunkel oder die Systemeinstellung. Diagramme bleiben auf weißem Grund, damit sie genauso aussehen wie im (immer hellen) PDF.
 
 ![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
+
+### Rechte pro Bereich
+
+Admins legen unter **Verwaltung** (Schild-Symbol oben rechts) Gruppen an, z. B. „HR“, und vergeben Rechte: für einen Bereich – einen Seitenpfad mit allem darunter, oder das ganze Wiki – an alle, eine Gruppe oder eine einzelne Person, jeweils _kein Zugriff_, _lesen_ oder _bearbeiten_.
+
+- Ohne Regel darf jede Person alles lesen und bearbeiten.
+- Eine Regel auf `personal` gilt auch für `personal/kuendigung`; eine Regel auf einem Unterbereich geht für dieselbe Gruppe oder Person vor.
+- Die Regel für eine Person geht vor der ihrer Gruppen (von mehreren Gruppen zählt die großzügigste), die einer Gruppe vor der für alle.
+- Admins dürfen immer alles. Das erste Konto eines Wikis ist Admin; weitere ernennt man in der Verwaltung.
+
+Was jemand nicht lesen darf, gibt es für ihn nicht: Die Seite fehlt in Seitenleiste, Suche, PDF-Export, Links und Backlinks, auch Dateien darauf sind nicht abrufbar. Das gilt genauso für KI-Assistenten – sie dürfen genau, was die Person darf, die sie verbunden hat. `AUTH_MODE` begrenzt weiterhin, was ohne Anmeldung möglich ist.
 
 ### KI-Anbindung (MCP)
 
