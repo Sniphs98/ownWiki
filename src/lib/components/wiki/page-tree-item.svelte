@@ -13,6 +13,7 @@
 	import { page as currentPage } from '$app/state';
 	import type { PageTreeNode } from '$lib/page-tree';
 	import { untrack } from 'svelte';
+	import { cn } from '$lib/utils';
 
 	let {
 		node,
@@ -30,6 +31,12 @@
 		if (isAncestorOfActive) open = true;
 	});
 	let addOpen = $state(false);
+
+	// Shown while this row is hovered (or reached by keyboard). Not shadcn's
+	// showOnHover: that reacts to any menu item around this one, so hovering a
+	// folder showed the actions of everything inside it, and a clicked action
+	// stayed visible while it kept the focus.
+	const ON_HOVER = 'md:opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100';
 
 	// The pin sits left of the other actions: the chevron (folders) and "+".
 	const PIN_OFFSETS = ['right-1', 'right-6', 'right-11'];
@@ -55,8 +62,7 @@
 	{#if canPin}
 		{@const label = node.pinned ? 'Nicht mehr anpinnen' : 'Oben anpinnen'}
 		<Sidebar.MenuAction
-			showOnHover={!node.pinned}
-			class={pinOffset}
+			class={cn(pinOffset, !node.pinned && ON_HOVER)}
 			title={label}
 			aria-pressed={node.pinned}
 			disabled={pinning}
@@ -71,7 +77,7 @@
 {#if node.children.length > 0}
 	<Collapsible.Root bind:open class="group/collapsible">
 		<Sidebar.MenuItem>
-			<div class="flex items-center">
+			<div class="group/row relative flex items-center">
 				{#if node.page}
 					<Sidebar.MenuButton {isActive} class="flex-1">
 						{#snippet child({ props })}
@@ -94,8 +100,7 @@
 				{@render pinAction()}
 				{#if canEdit}
 					<Sidebar.MenuAction
-						showOnHover
-						class="right-6"
+						class={cn('right-6', ON_HOVER)}
 						title="Unterseite hinzufügen"
 						onclick={() => (addOpen = true)}
 					>
@@ -128,7 +133,7 @@
 	</Collapsible.Root>
 {:else}
 	<Sidebar.MenuItem>
-		<div class="flex items-center">
+		<div class="group/row relative flex items-center">
 			<Sidebar.MenuButton {isActive} class="flex-1">
 				{#snippet child({ props })}
 					<a {...props} {href}>
@@ -140,7 +145,7 @@
 			{@render pinAction()}
 			{#if canEdit}
 				<Sidebar.MenuAction
-					showOnHover
+					class={ON_HOVER}
 					title="Unterseite hinzufügen"
 					onclick={() => (addOpen = true)}
 				>

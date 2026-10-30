@@ -55,3 +55,29 @@ test('without a login there is nothing to pin', async ({ page }) => {
 	await page.goto('/w/e2e/handbuch/betrieb');
 	await expect(page.getByRole('button', { name: /anpinnen/ })).toHaveCount(0);
 });
+
+test('hovering a folder shows its own actions only, and they go away again', async ({
+	browser
+}) => {
+	const { context, page } = await person(browser, 'Hugo');
+	await page.goto('/w/e2e/handbuch/betrieb');
+	const handbuchPin = page.getByRole('button', { name: 'Oben anpinnen: Handbuch' });
+	const betriebPin = page.getByRole('button', { name: 'Oben anpinnen: Betrieb' });
+
+	await page.getByRole('link', { name: 'Handbuch', exact: true }).hover();
+	await expect(handbuchPin).toHaveCSS('opacity', '1');
+	await expect(betriebPin).toHaveCSS('opacity', '0');
+
+	// Clicked and left: hidden again, though it still has the focus.
+	await handbuchPin.click();
+	await page.getByRole('heading', { level: 1 }).first().hover();
+	await expect(page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' })).toHaveCSS(
+		'opacity',
+		'1'
+	); // pinned ones always show their pin
+	await page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' }).click();
+	await page.getByRole('heading', { level: 1 }).first().hover();
+	await expect(handbuchPin).toHaveCSS('opacity', '0');
+
+	await context.close();
+});
