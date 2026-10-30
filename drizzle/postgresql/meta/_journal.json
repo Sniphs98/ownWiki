@@ -43,6 +43,13 @@
       "when": 1793383319402,
       "tag": "0005_version_via",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793384559780,
+      "tag": "0006_access_rules",
+      "breakpoints": true
     }
   ]
 }
