@@ -211,3 +211,18 @@ export const inboxNote = sqliteTable(
 	},
 	(table) => [index('inbox_note_user_id_idx').on(table.userId)]
 );
+
+/**
+ * What a person pinned in the page tree: a page or a folder, by path —
+ * shown first in its level, for them only (see $lib/page-tree.ts).
+ */
+export const pagePin = sqliteTable(
+	'page_pin',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		path: text('path').notNull()
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.path] })]
+);

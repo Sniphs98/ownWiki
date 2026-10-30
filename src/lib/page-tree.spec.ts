@@ -21,6 +21,19 @@ describe('buildPageTree', () => {
 		]);
 	});
 
+	it('puts pinned pages and folders first in their level, each level on its own', () => {
+		const tree = buildPageTree(
+			[page('anleitung/a'), page('anleitung/editor'), page('it'), page('zuletzt')],
+			['zuletzt', 'anleitung/editor', 'gibt-es-nicht']
+		);
+		expect(tree.map((n) => [n.name, n.pinned])).toEqual([
+			['zuletzt', true],
+			['anleitung', false],
+			['it', false]
+		]);
+		expect(tree[1].children.map((n) => n.name)).toEqual(['editor', 'a']);
+	});
+
 	it('attaches a page to its folder node when both exist', () => {
 		const [node] = buildPageTree([page('personal/a'), page('personal', 'Personal')]);
 		expect(node.page?.title).toBe('Personal');
