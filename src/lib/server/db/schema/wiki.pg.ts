@@ -182,3 +182,18 @@ export const pageLink = pgTable(
 		index('page_link_target_idx').on(table.target)
 	]
 );
+
+/** A page's tags (see $lib/tags.ts) — not part of its versions. */
+export const pageTag = pgTable(
+	'page_tag',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		tag: text('tag').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.tag] }),
+		index('page_tag_tag_idx').on(table.tag)
+	]
+);

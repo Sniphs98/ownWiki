@@ -147,6 +147,7 @@ test('an assistant connects through login and consent, then reads as that person
 		'search',
 		'fetch',
 		'list_pages',
+		'list_tags',
 		'get_backlinks',
 		'create_page',
 		'update_page',
@@ -192,9 +193,18 @@ test('an assistant writes as the person, and the history says so', async ({
 
 	const created = await callTool(request, token, 'create_page', {
 		id,
-		content: '# KI-Notiz\n\nErster Gedanke.\n'
+		content: '# KI-Notiz\n\nErster Gedanke.\n',
+		tags: ['Notiz', 'KI Test']
 	});
 	expect(created).toMatchObject({ id, title: 'KI-Notiz', version: 1 });
+
+	// Tags: normalized, readable, and a way to find pages.
+	const fetchedTags = (await callTool(request, token, 'fetch', { id })).metadata.tags;
+	expect(fetchedTags).toEqual(['ki-test', 'notiz']);
+	const { tags } = await callTool(request, token, 'list_tags', {});
+	expect(tags).toContainEqual({ tag: 'ki-test', pages: 1 });
+	const tagged = await callTool(request, token, 'list_pages', { tag: 'KI Test' });
+	expect(tagged.pages).toEqual([expect.objectContaining({ id, tags: ['ki-test', 'notiz'] })]);
 
 	const appended = await callTool(request, token, 'append_to_page', {
 		id,
@@ -217,9 +227,11 @@ test('an assistant writes as the person, and the history says so', async ({
 	const updated = await callTool(request, token, 'update_page', {
 		id,
 		content: '# Gedanken\n\nErster Gedanke.\n\n- Zweiter Gedanke\n',
-		base_version: 2
+		base_version: 2,
+		tags: ['notiz']
 	});
 	expect(updated).toMatchObject({ title: 'Gedanken', version: 3 });
+	expect((await callTool(request, token, 'fetch', { id })).metadata.tags).toEqual(['notiz']);
 
 	const duplicate = await rpc(
 		request,

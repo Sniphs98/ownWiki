@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
 	import { Button } from '$lib/components/ui/button';
+	import { Input } from '$lib/components/ui/input';
 	import * as Alert from '$lib/components/ui/alert';
 	import * as AlertDialog from '$lib/components/ui/alert-dialog';
 	import MarkdownEditor from './markdown-editor.svelte';
@@ -12,6 +13,7 @@
 	import { toolbarSetting } from '$lib/toolbar-setting.svelte';
 	import UnlinkedFiles from './unlinked-files.svelte';
 	import { titleFromMarkdown } from '$lib/page-title';
+	import { parseTags } from '$lib/tags';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
 
 	let {
@@ -21,6 +23,7 @@
 		hasChildren,
 		existingTitle,
 		existingContent,
+		existingTags,
 		nextVersionNumber,
 		attachments,
 		errorMessage,
@@ -32,6 +35,7 @@
 		hasChildren: boolean;
 		existingTitle: string;
 		existingContent: string;
+		existingTags: string[];
 		/** Version number this save will create — shown in the PDF page header. */
 		nextVersionNumber: number;
 		attachments: AttachmentMeta[];
@@ -47,6 +51,11 @@
 	}
 
 	let content = $state(initialContent());
+	let tags = $state(initialTags());
+
+	function initialTags() {
+		return existingTags.join(', ');
+	}
 	/** Without a heading on top, the page keeps the title it has. */
 	const title = $derived(titleFromMarkdown(content) || existingTitle);
 	let saving = $state(false);
@@ -61,7 +70,10 @@
 	let initialMarkdown: string | undefined;
 
 	function hasChanges() {
-		return initialMarkdown !== undefined && editor?.getMarkdown() !== initialMarkdown;
+		const tagsChanged = parseTags(tags).join() !== existingTags.join();
+		return (
+			tagsChanged || (initialMarkdown !== undefined && editor?.getMarkdown() !== initialMarkdown)
+		);
 	}
 
 	/** Where to go once the changes may be discarded. */
@@ -131,6 +143,19 @@
 				onupload={() => invalidateAll()}
 			/>
 		</PageBreakMarkers>
+	</div>
+
+	<div class="mt-4 flex flex-col gap-1 text-sm">
+		<label for="page-tags" class="font-medium">Tags</label>
+		<Input
+			id="page-tags"
+			name="tags"
+			bind:value={tags}
+			placeholder="z. B. hr, urlaub, prozess"
+			autocomplete="off"
+			aria-describedby="page-tags-hint"
+		/>
+		<span id="page-tags-hint" class="text-xs text-muted-foreground">Durch Kommas getrennt.</span>
 	</div>
 
 	<div class="mt-4 flex items-center justify-between gap-2">

@@ -45,6 +45,20 @@
 		updatedAt={data.page.updatedAt}
 		historyHref={resolve('/(app)/w/[...path]/history', { path: data.page.path })}
 	/>
+	{#if data.tags.length > 0}
+		<ul class="mb-4 flex flex-wrap gap-1.5" aria-label="Tags">
+			{#each data.tags as tag (tag)}
+				<li>
+					<a
+						href={resolve('/(app)/tags/[tag]', { tag })}
+						class="rounded-md bg-secondary px-2 py-0.5 text-xs text-secondary-foreground transition-colors hover:bg-accent"
+					>
+						#{tag}
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
 	{#key data.version.id}
 		<PageBreakMarkers
 			title={data.version.title}

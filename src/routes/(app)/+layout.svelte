@@ -6,6 +6,7 @@
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import TagsIcon from '@lucide/svelte/icons/tags';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -99,6 +100,15 @@
 			{/if}
 
 			<div class="flex items-center justify-end gap-1">
+				<Button
+					href={resolve('/(app)/tags')}
+					variant="ghost"
+					size="icon"
+					title="Tags"
+					aria-label="Tags"
+				>
+					<TagsIcon />
+				</Button>
 				{#if data.isAdmin}
 					<Button
 						href={resolve('/(app)/verwaltung')}
