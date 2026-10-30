@@ -90,6 +90,17 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 
 ![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
 
+### KI-Anbindung (MCP)
+
+ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken). Schreiben kann sie noch nicht.
+
+Eingeschaltet wird das mit `MCP_TOKEN` (siehe [Konfiguration](#konfiguration)). Die Adresse für den Assistenten ist dann:
+
+- **ChatGPT** (Einstellungen → Apps & Connectors → Entwicklermodus → Connector anlegen, Authentifizierung „Keine“): `https://dein-wiki.example.org/mcp/<MCP_TOKEN>` – das Token steckt in der Adresse, weil ChatGPT keine eigenen Header schicken kann. Die Adresse also wie ein Passwort behandeln.
+- **Clients mit eigenen Headern** (z. B. Claude Code): `https://dein-wiki.example.org/mcp` mit `Authorization: Bearer <MCP_TOKEN>`.
+
+ChatGPT erreicht das Wiki nur, wenn es per HTTPS aus dem Internet erreichbar ist – zum Ausprobieren reicht ein Tunnel wie `cloudflared tunnel --url http://localhost:3000`. Der Zugang über das Token gilt unabhängig von `AUTH_MODE`, also auch für ein privates Wiki.
+
 ## Schnellstart mit Docker
 
 ```sh
@@ -108,17 +119,18 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable             | Bedeutung                                                                                    |
-| -------------------- | -------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                        |
-| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                 |
-| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet.   |
-| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                     |
-| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                             |
-| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                       |
-| `PORT`               | Port des Servers, Standard `3000`                                                            |
-| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`         |
-| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen |
+| Variable             | Bedeutung                                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                                     |
+| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                              |
+| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung und für absolute Links im PDF verwendet.                |
+| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                  |
+| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                                          |
+| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                    |
+| `PORT`               | Port des Servers, Standard `3000`                                                                         |
+| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                      |
+| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen              |
+| `MCP_TOKEN`          | Schaltet die KI-Anbindung unter `/mcp` ein (siehe oben). Langer Zufallswert, z. B. `openssl rand -hex 32` |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
@@ -190,6 +202,7 @@ Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und ver
 - **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
 - **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
 - Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
+- **MCP-Server** für KI-Assistenten unter `/mcp` (`src/lib/server/mcp`, offizielles MCP-SDK, zustandslos über Streamable HTTP).
 
 ## Noch nicht umgesetzt
 

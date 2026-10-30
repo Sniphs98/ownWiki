@@ -8,8 +8,9 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
 // log in on a `full` (private) wiki.
-const PUBLIC_PATHS = new Set(['/login']);
-const PUBLIC_PATH_PREFIXES = ['/api/auth/'];
+// /mcp checks its own token (MCP_TOKEN) instead of a session.
+const PUBLIC_PATHS = new Set(['/login', '/mcp']);
+const PUBLIC_PATH_PREFIXES = ['/api/auth/', '/mcp/'];
 
 function isPublicPath(pathname: string) {
 	return (
