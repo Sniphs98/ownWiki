@@ -11,7 +11,17 @@ export const load: PageServerLoad = async (event) => {
 	const { access } = event.locals;
 	requireRead(access, event.params.path);
 	const result = await getPageWithLatestVersion(event.params.path);
-	if (!result) error(404, 'Seite nicht gefunden');
+	if (!result) {
+		// No page here, but pages below it: a folder, shown as a list of them.
+		const below = `${event.params.path}/`;
+		const pages = access.readable(await listPages());
+		if (!pages.some((p) => p.path.startsWith(below))) error(404, 'Seite nicht gefunden');
+		return {
+			kind: 'folder' as const,
+			path: event.params.path,
+			canEdit: access.canEdit(event.params.path)
+		};
+	}
 
 	const [allPages, cover, backlinks, tags] = await Promise.all([
 		listPages(),
@@ -23,6 +33,7 @@ export const load: PageServerLoad = async (event) => {
 	const pages = access.readable(allPages);
 
 	return {
+		kind: 'page' as const,
 		page: result.page,
 		version: {
 			...result.version,

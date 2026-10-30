@@ -63,3 +63,15 @@ function sortTree(nodes: PageTreeNode[]) {
 	nodes.sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.name.localeCompare(b.name));
 	for (const node of nodes) sortTree(node.children);
 }
+
+/** The node at `path` in a tree from buildPageTree, if there is one. */
+export function findNode(tree: PageTreeNode[], path: string): PageTreeNode | undefined {
+	let level = tree;
+	let node: PageTreeNode | undefined;
+	for (const segment of path.split('/').filter(Boolean)) {
+		node = level.find((n) => n.name === segment);
+		if (!node) return undefined;
+		level = node.children;
+	}
+	return node;
+}

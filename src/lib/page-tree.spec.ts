@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageTree } from './page-tree';
+import { buildPageTree, findNode } from './page-tree';
 
 const at = new Date(0);
 const page = (path: string, title = path) => ({ id: path, path, title, updatedAt: at });
@@ -38,5 +38,14 @@ describe('buildPageTree', () => {
 		const [node] = buildPageTree([page('personal/a'), page('personal', 'Personal')]);
 		expect(node.page?.title).toBe('Personal');
 		expect(node.children).toHaveLength(1);
+	});
+});
+
+describe('findNode', () => {
+	it('finds a folder or page by path', () => {
+		const tree = buildPageTree([page('anleitung/editor/tabellen'), page('it')]);
+		expect(findNode(tree, 'anleitung/editor')?.children.map((n) => n.name)).toEqual(['tabellen']);
+		expect(findNode(tree, 'it')?.page?.title).toBe('it');
+		expect(findNode(tree, 'anleitung/fehlt')).toBeUndefined();
 	});
 });

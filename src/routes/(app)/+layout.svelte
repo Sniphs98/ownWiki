@@ -40,10 +40,7 @@
 		if (!match) return [];
 
 		const path = match[1].replace(/\/(edit|history)$/, '');
-		return breadcrumbs(
-			path,
-			data.pages.map((p) => p.path)
-		);
+		return breadcrumbs(path);
 	});
 </script>
 
@@ -67,9 +64,6 @@
 								<Breadcrumb.Item class={index === crumbs.length - 1 ? 'min-w-0' : 'shrink-0'}>
 									{#if index === crumbs.length - 1}
 										<Breadcrumb.Page class="truncate">{crumb.label}</Breadcrumb.Page>
-									{:else if !crumb.isPage}
-										<!-- A folder: there's no page to go to. -->
-										<span class="text-muted-foreground">{crumb.label}</span>
 									{:else}
 										<Breadcrumb.Link href={resolve('/(app)/w/[...path]', { path: crumb.path })}>
 											{crumb.label}

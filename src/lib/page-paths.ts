@@ -15,17 +15,12 @@ export function withAreas(paths: string[]): string[] {
 
 export interface Crumb {
 	label: string;
+	/** A page, or a folder — /w/ shows a folder as the list of what's in it. */
 	path: string;
-	/** Whether a page lives there; an area without one (a folder) isn't a link. */
-	isPage: boolean;
 }
 
 /** The breadcrumb trail for a wiki path, e.g. "anleitung/editor" → anleitung › editor. */
-export function breadcrumbs(path: string, pagePaths: string[]): Crumb[] {
-	const pages = new Set(pagePaths);
+export function breadcrumbs(path: string): Crumb[] {
 	const segments = path.split('/').filter(Boolean);
-	return segments.map((label, i) => {
-		const crumbPath = segments.slice(0, i + 1).join('/');
-		return { label, path: crumbPath, isPage: pages.has(crumbPath) };
-	});
+	return segments.map((label, i) => ({ label, path: segments.slice(0, i + 1).join('/') }));
 }

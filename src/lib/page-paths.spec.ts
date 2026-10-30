@@ -18,11 +18,11 @@ describe('withAreas', () => {
 });
 
 describe('breadcrumbs', () => {
-	it('links only the parts that are pages, not folders', () => {
-		expect(breadcrumbs('anleitung/editor/tabellen', ['anleitung/editor', 'x'])).toEqual([
-			{ label: 'anleitung', path: 'anleitung', isPage: false },
-			{ label: 'editor', path: 'anleitung/editor', isPage: true },
-			{ label: 'tabellen', path: 'anleitung/editor/tabellen', isPage: false }
+	it('has a crumb for every part of the path', () => {
+		expect(breadcrumbs('anleitung/editor/tabellen')).toEqual([
+			{ label: 'anleitung', path: 'anleitung' },
+			{ label: 'editor', path: 'anleitung/editor' },
+			{ label: 'tabellen', path: 'anleitung/editor/tabellen' }
 		]);
 	});
 });
