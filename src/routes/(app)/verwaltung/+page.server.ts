@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ACCESS_LEVELS, type AccessLevel, type SubjectType } from '$lib/access';
 import { slugifyPath } from '$lib/slug';
+import { withAreas } from '$lib/page-paths';
 import { listPages } from '$lib/server/repo/pages';
 import {
 	addMember,
@@ -32,11 +33,7 @@ export const load: PageServerLoad = async (event) => {
 		listRules(),
 		listPages()
 	]);
-	// Every page and every area above one ("personal" for "personal/kuendigung").
-	const areas = new Set(
-		pages.flatMap((p) => p.path.split('/').map((_, i, parts) => parts.slice(0, i + 1).join('/')))
-	);
-	return { users, groups, rules, paths: [...areas].sort() };
+	return { users, groups, rules, paths: withAreas(pages.map((p) => p.path)) };
 };
 
 const field = (form: FormData, name: string) => form.get(name)?.toString().trim() ?? '';

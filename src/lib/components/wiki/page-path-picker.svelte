@@ -12,6 +12,7 @@
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Button } from '$lib/components/ui/button';
+	import { pathOptions } from '$lib/page-paths';
 	import { slugifyPath } from '$lib/slug';
 	import { cn } from '$lib/utils';
 
@@ -42,8 +43,7 @@
 	let search = $state('');
 	let trigger = $state<HTMLButtonElement | null>(null);
 
-	// An empty path is no page (only old data has one); emptyOption stands for "nothing".
-	const options = $derived(paths.filter(Boolean));
+	const options = $derived(pathOptions(paths));
 	/** The typed text as a path, when it isn't one of the listed ones. */
 	const typed = $derived(slugifyPath(search.trim()));
 	const offerTyped = $derived(typed !== '' && !options.includes(typed));
