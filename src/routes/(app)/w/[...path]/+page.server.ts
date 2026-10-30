@@ -3,7 +3,7 @@ import { getPageWithLatestVersion, listPages } from '$lib/server/repo/pages';
 import { getCover } from '$lib/server/repo/covers';
 import { resolveWikiLinks } from '$lib/wiki-links';
 import { requireRead } from '$lib/server/access';
-import { findBacklinks } from '$lib/server/backlinks';
+import { findBacklinks, linkBindings } from '$lib/server/backlinks';
 import { tagsOf } from '$lib/server/repo/tags';
 import type { PageServerLoad } from './$types';
 
@@ -31,13 +31,14 @@ export const load: PageServerLoad = async (event) => {
 	]);
 	// Links to pages the visitor can't see read like links to missing ones.
 	const pages = access.readable(allPages);
+	const bindings = await linkBindings(result.page.id, pages);
 
 	return {
 		kind: 'page' as const,
 		page: result.page,
 		version: {
 			...result.version,
-			content: resolveWikiLinks(result.version.content, pages)
+			content: resolveWikiLinks(result.version.content, pages, bindings)
 		},
 		/** The page's PDF title page (pdf-export-dialog.svelte), if it has one. */
 		cover,

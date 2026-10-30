@@ -6,12 +6,15 @@ import {
 	createPage,
 	deletePage,
 	getPageWithLatestVersion,
+	listPages,
 	PageConflictError
 } from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
 import { setTags, tagsOf } from '$lib/server/repo/tags';
 import { parseTags } from '$lib/tags';
+import { refreshWikiLinks } from '$lib/wiki-links';
+import { linkBindings } from '$lib/server/backlinks';
 import { slugifyPath } from '$lib/slug';
 import { titleFromMarkdown } from '$lib/page-title';
 import type { Actions, PageServerLoad } from './$types';
@@ -35,13 +38,26 @@ export const load: PageServerLoad = async (event) => {
 	return {
 		path,
 		page: existing?.page ?? null,
-		version: existing?.version ?? null,
+		// Links to renamed or moved pages already read as those pages are called now.
+		version: existing ? await withCurrentLinks(existing, event.locals.access) : null,
 		prefillTitle: existing?.version.title ?? event.url.searchParams.get('title') ?? '',
 		tags: existing ? await tagsOf(existing.page.id) : [],
 		// Files shown on the PDF title page aren't "unlinked" (unlinked-files.svelte).
 		attachments: existing ? await attachmentsOutsideCover(existing.page.id) : []
 	};
 };
+
+async function withCurrentLinks(
+	existing: NonNullable<Awaited<ReturnType<typeof getPageWithLatestVersion>>>,
+	access: App.Locals['access']
+) {
+	const pages = access.readable(await listPages());
+	const bindings = await linkBindings(existing.page.id, pages);
+	return {
+		...existing.version,
+		content: refreshWikiLinks(existing.version.content, pages, bindings)
+	};
+}
 
 async function attachmentsOutsideCover(pageId: string) {
 	const [attachments, cover] = await Promise.all([

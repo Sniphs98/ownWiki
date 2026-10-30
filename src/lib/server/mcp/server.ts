@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { findBacklinks } from '$lib/server/backlinks';
+import { findBacklinks, linkBindings } from '$lib/server/backlinks';
 import { listPageTags, setTags, tagsOf } from '$lib/server/repo/tags';
 import { readableTags } from '$lib/server/tags';
 import { addNote, deleteNote, listNotes } from '$lib/server/repo/inbox';
@@ -17,7 +17,7 @@ import {
 import { searchPages, semanticSearchEnabled } from '$lib/server/search';
 import { titleFromMarkdown } from '$lib/page-title';
 import { slugifyPath } from '$lib/slug';
-import { linkedPagePaths } from '$lib/wiki-links';
+import { linkedPagePaths, refreshWikiLinks } from '$lib/wiki-links';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 // Writes never lose anything: every change is a new version in the history.
@@ -135,17 +135,20 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 		async ({ id }) => {
 			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
 			if (!found) return notFound(id);
-			const [pages, tags] = await Promise.all([listPages(), tagsOf(found.page.id)]);
+			const [allPages, tags] = await Promise.all([listPages(), tagsOf(found.page.id)]);
+			const pages = actor.access.readable(allPages);
+			const bindings = await linkBindings(found.page.id, pages);
 			return json({
 				id: found.page.path,
 				title: found.version.title,
-				text: found.version.content,
+				// Links to renamed or moved pages already read as those pages are called now.
+				text: refreshWikiLinks(found.version.content, pages, bindings),
 				url: pageUrl(found.page.path),
 				metadata: {
 					version: found.version.versionNumber,
 					updatedAt: found.page.updatedAt.toISOString(),
 					tags,
-					linksTo: linkedPagePaths(found.version.content, actor.access.readable(pages))
+					linksTo: linkedPagePaths(found.version.content, pages, bindings)
 				}
 			});
 		}

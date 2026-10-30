@@ -1,26 +1,53 @@
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull, or } from 'drizzle-orm';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { db } from '$lib/server/db';
 import { pageLink } from '$lib/server/db/schema/pg';
 import type * as schema from '$lib/server/db/schema/pg';
+import type { BoundLink, StoredLink } from './links.types';
 
 const pg = db as PostgresJsDatabase<typeof schema>;
 
-/** Replaces what a page links to. */
-export async function setLinks(pageId: string, targets: string[]): Promise<void> {
+/** Replaces what a page links to, with the page each link is bound to. */
+export async function setLinks(pageId: string, links: BoundLink[]): Promise<void> {
 	await pg.transaction(async (tx) => {
 		await tx.delete(pageLink).where(eq(pageLink.pageId, pageId));
-		if (targets.length > 0) {
-			await tx.insert(pageLink).values(targets.map((target) => ({ pageId, target })));
+		if (links.length > 0) {
+			await tx
+				.insert(pageLink)
+				.values(links.map((link) => ({ pageId, target: link.target, targetPageId: link.pageId })));
 		}
 	});
 }
 
-/** The pages linking to any of these targets, with the target they use. */
-export async function linksTo(targets: string[]): Promise<{ pageId: string; target: string }[]> {
-	if (targets.length === 0) return [];
+/** A page's links, with what they're bound to. */
+export async function linksOf(pageId: string): Promise<BoundLink[]> {
 	return pg
-		.select({ pageId: pageLink.pageId, target: pageLink.target })
+		.select({ target: pageLink.target, pageId: pageLink.targetPageId })
 		.from(pageLink)
-		.where(inArray(pageLink.target, targets));
+		.where(eq(pageLink.pageId, pageId));
+}
+
+/** The links that may lead to a page: bound to it, or not bound yet and written one of these ways. */
+export async function linksTo(pageId: string, targets: string[]): Promise<StoredLink[]> {
+	return pg
+		.select({
+			fromPageId: pageLink.pageId,
+			target: pageLink.target,
+			pageId: pageLink.targetPageId
+		})
+		.from(pageLink)
+		.where(
+			or(
+				eq(pageLink.targetPageId, pageId),
+				and(isNull(pageLink.targetPageId), inArray(pageLink.target, targets))
+			)
+		);
+}
+
+/** Binds the links not bound yet that are written one of these ways to a page that now has that name. */
+export async function bindUnbound(targets: string[], pageId: string): Promise<void> {
+	await pg
+		.update(pageLink)
+		.set({ targetPageId: pageId })
+		.where(and(isNull(pageLink.targetPageId), inArray(pageLink.target, targets)));
 }

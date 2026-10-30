@@ -161,8 +161,8 @@ export const accessRule = sqliteTable(
 
 /**
  * What each page's latest version links to, as written (see linkTargets in
- * $lib/wiki-links.ts) — resolved to pages only when asked, so a link to a
- * page created later counts once it exists. Kept in step on every save.
+ * $lib/wiki-links.ts), and the page each link is bound to — so links
+ * survive moves and renames. Kept in step on every save.
  */
 export const pageLink = sqliteTable(
 	'page_link',
@@ -170,11 +170,14 @@ export const pageLink = sqliteTable(
 		pageId: text('page_id')
 			.notNull()
 			.references(() => page.id, { onDelete: 'cascade' }),
-		target: text('target').notNull()
+		target: text('target').notNull(),
+		/** The page the link meant when saved (see bindTargets); null until it exists. */
+		targetPageId: text('target_page_id').references(() => page.id, { onDelete: 'set null' })
 	},
 	(table) => [
 		primaryKey({ columns: [table.pageId, table.target] }),
-		index('page_link_target_idx').on(table.target)
+		index('page_link_target_idx').on(table.target),
+		index('page_link_target_page_id_idx').on(table.targetPageId)
 	]
 );
 
