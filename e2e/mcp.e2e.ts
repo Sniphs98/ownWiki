@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { expect, test, type APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page, type Playwright } from '@playwright/test';
 import { FULL_PORT } from '../playwright.config';
 
 // The private wiki: an AI assistant gets in through OAuth, as the person
@@ -47,12 +47,15 @@ test('without an access token, /mcp says where to log in', async ({ request }) =
 	expect((await rpc(request, 'tools/list', {}, 'kein-echtes-token')).status()).toBe(401);
 });
 
-test('an assistant connects through login and consent, then reads as that person', async ({
-	page,
-	playwright,
-	// The assistant's server: no login cookie, like ChatGPT's.
-	request
-}) => {
+/**
+ * Connects an assistant the way ChatGPT does — discovery, registration,
+ * then the person's login and consent in the browser — and returns its
+ * access token. `request` is the assistant's server: no login cookie.
+ */
+async function connectAssistant(
+	{ page, playwright, request }: { page: Page; playwright: Playwright; request: APIRequestContext },
+	name: string
+) {
 	// Discovery and registration, as an assistant does it.
 	const resource = await (await request.get('/.well-known/oauth-protected-resource/mcp')).json();
 	const server = await (
@@ -76,7 +79,7 @@ test('an assistant connects through login and consent, then reads as that person
 	const password = 'ein-langes-passwort-123';
 	const person = await playwright.request.newContext({ baseURL });
 	const signUp = await person.post('/api/auth/sign-up/email', {
-		data: { email, password, name: 'Erika Muster' },
+		data: { email, password, name },
 		headers: { origin: baseURL }
 	});
 	expect(signUp.ok()).toBe(true);
@@ -104,7 +107,7 @@ test('an assistant connects through login and consent, then reads as that person
 
 	await expect(page).toHaveURL(/\/consent\?/);
 	await expect(page.getByText('E2E-Assistent')).toBeVisible();
-	await expect(page.getByText('Erika Muster')).toBeVisible();
+	await expect(page.getByText(name)).toBeVisible();
 	const [callbackRequest] = await Promise.all([
 		page.waitForRequest((req) => req.url().startsWith(REDIRECT_URI)),
 		page.getByRole('button', { name: 'Erlauben' }).click()
@@ -126,16 +129,26 @@ test('an assistant connects through login and consent, then reads as that person
 		}
 	});
 	expect(tokenResponse.ok()).toBe(true);
-	const { access_token: token } = await tokenResponse.json();
+	return (await tokenResponse.json()).access_token as string;
+}
 
-	// …and uses the wiki's tools with it.
+test('an assistant connects through login and consent, then reads as that person', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Erika Muster');
+
 	const tools = await rpc(request, 'tools/list', {}, token);
 	expect(tools.ok()).toBe(true);
 	expect((await tools.json()).result.tools.map((t: { name: string }) => t.name)).toEqual([
 		'search',
 		'fetch',
 		'list_pages',
-		'get_backlinks'
+		'get_backlinks',
+		'create_page',
+		'update_page',
+		'append_to_page'
 	]);
 
 	const { results } = await callTool(request, token, 'search', { query: 'Sicherung' });
@@ -154,4 +167,56 @@ test('an assistant connects through login and consent, then reads as that person
 		'e2e/handbuch/betrieb',
 		'e2e/handbuch/einrichtung'
 	]);
+});
+
+test('an assistant writes as the person, and the history says so', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Max Notiz');
+	const id = `e2e/ki-notiz-${Date.now()}`;
+
+	const created = await callTool(request, token, 'create_page', {
+		id,
+		content: '# KI-Notiz\n\nErster Gedanke.\n'
+	});
+	expect(created).toMatchObject({ id, title: 'KI-Notiz', version: 1 });
+
+	const appended = await callTool(request, token, 'append_to_page', {
+		id,
+		content: '- Zweiter Gedanke',
+		change_summary: 'Gedanken ergänzt'
+	});
+	expect(appended.version).toBe(2);
+
+	// Built on version 1, but version 2 is there now: refused, nothing lost.
+	const stale = await rpc(
+		request,
+		'tools/call',
+		{ name: 'update_page', arguments: { id, content: '# KI-Notiz\n\nNeu.', base_version: 1 } },
+		token
+	);
+	const staleResult = (await stale.json()).result;
+	expect(staleResult.isError).toBe(true);
+	expect(staleResult.content[0].text).toContain('jetzt Version 2');
+
+	const updated = await callTool(request, token, 'update_page', {
+		id,
+		content: '# Gedanken\n\nErster Gedanke.\n\n- Zweiter Gedanke\n',
+		base_version: 2
+	});
+	expect(updated).toMatchObject({ title: 'Gedanken', version: 3 });
+
+	const duplicate = await rpc(
+		request,
+		'tools/call',
+		{ name: 'create_page', arguments: { id, content: '# Nochmal' } },
+		token
+	);
+	expect((await duplicate.json()).result.isError).toBe(true);
+
+	await page.goto(`/w/${id}/history`);
+	await expect(page.getByText('Max Notiz über E2E-Assistent')).toHaveCount(3);
+	await expect(page.getByText('Gedanken ergänzt')).toBeVisible();
 });

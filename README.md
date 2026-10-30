@@ -92,7 +92,7 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 
 ### KI-Anbindung (MCP)
 
-ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken). Schreiben kann sie noch nicht.
+ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern oder etwas an sie anhängen. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
 
 Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration).
 

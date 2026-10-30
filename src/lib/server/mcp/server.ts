@@ -1,36 +1,68 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { findBacklinks } from '$lib/server/backlinks';
-import { getPageWithLatestVersion, listPages } from '$lib/server/repo/pages';
+import {
+	addPageVersion,
+	createPage,
+	getPageWithLatestVersion,
+	listPages,
+	PageConflictError
+} from '$lib/server/repo/pages';
 import { searchPages } from '$lib/server/search';
+import { titleFromMarkdown } from '$lib/page-title';
+import { slugifyPath } from '$lib/slug';
 import { linkedPagePaths } from '$lib/wiki-links';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
+// Writes never lose anything: every change is a new version in the history.
+const WRITES = { readOnlyHint: false, destructiveHint: false, openWorldHint: false } as const;
 
 /** Tool results are JSON, as text — the form ChatGPT's `search` and `fetch` expect. */
 const json = (value: unknown) => ({
 	content: [{ type: 'text' as const, text: JSON.stringify(value) }]
 });
 
-const notFound = (path: string) => ({
-	content: [{ type: 'text' as const, text: `Keine Seite unter "${path}".` }],
+const failure = (text: string) => ({
+	content: [{ type: 'text' as const, text }],
 	isError: true
 });
+
+const notFound = (path: string) => failure(`Keine Seite unter "${path}".`);
+
+const conflict = (latest: number) =>
+	failure(
+		`Die Seite wurde inzwischen geändert (jetzt Version ${latest}). ` +
+			'Lies sie mit `fetch` neu und wende deine Änderung auf den aktuellen Stand an.'
+	);
+
+/** Who is writing: the person who connected the assistant, and the assistant's name. */
+export interface McpActor {
+	userId: string;
+	via: string;
+}
+
+const CHANGE_SUMMARY = z
+	.string()
+	.max(200)
+	.optional()
+	.describe('Kurz, was geändert wurde und warum – erscheint im Versionsverlauf');
 
 /**
  * The wiki as an MCP server, for AI assistants. A page's id is its path
  * (e.g. `personal/kuendigung`); `origin` makes the links to it absolute.
  * `search` and `fetch` follow the shape ChatGPT's connectors and deep
- * research expect.
+ * research expect. Writes are saved as `actor`, like an edit in the editor.
  */
-export function createWikiMcpServer(origin: string) {
+export function createWikiMcpServer(origin: string, actor: McpActor) {
 	const server = new McpServer(
 		{ name: 'ownwiki', version: '1.0.0' },
 		{
 			instructions:
 				'ownWiki ist das persönliche Wiki (Second Brain) des Nutzers, in Markdown. ' +
 				'Seiten werden über ihren Pfad angesprochen. Erst mit `search` suchen, dann mit ' +
-				'`fetch` lesen. `[[Seitenname]]` im Text ist ein Link auf eine andere Seite.'
+				'`fetch` lesen. `[[Seitenname]]` im Text ist ein Link auf eine andere Seite. ' +
+				'Die erste Zeile einer Seite ist eine Überschrift (`# Titel`) und ihr Titel. ' +
+				'Jede Änderung wird als neue Version gespeichert und lässt sich wiederherstellen.'
 		}
 	);
 	const pageUrl = (path: string) => `${origin}/w/${path}`;
@@ -128,6 +160,125 @@ export function createWikiMcpServer(origin: string) {
 			return json({
 				backlinks: pages.map((p) => ({ id: p.path, title: p.title, url: pageUrl(p.path) }))
 			});
+		}
+	);
+
+	server.registerTool(
+		'create_page',
+		{
+			title: 'Seite anlegen',
+			description:
+				'Legt eine neue Wiki-Seite an. Der Text beginnt mit einer Überschrift (`# Titel`), ' +
+				'die zum Titel der Seite wird. Der Pfad ordnet die Seite ein, z. B. ' +
+				'`projekte/website/relaunch`; vorher mit `list_pages` passende Bereiche ansehen.',
+			inputSchema: {
+				id: z.string().min(1).describe('Pfad der neuen Seite, z. B. projekte/relaunch'),
+				content: z.string().min(1).describe('Markdown, beginnend mit `# Titel`'),
+				change_summary: CHANGE_SUMMARY
+			},
+			annotations: WRITES
+		},
+		async ({ id, content, change_summary }) => {
+			const path = slugifyPath(id);
+			if (!path) return failure(`"${id}" ist kein gültiger Pfad.`);
+			const title = titleFromMarkdown(content).slice(0, 200);
+			if (!title) return failure('Beginne den Text mit einer Überschrift (`# Titel`).');
+
+			try {
+				await createPage({
+					path,
+					title,
+					content,
+					authorId: actor.userId,
+					via: actor.via,
+					changeSummary: change_summary
+				});
+			} catch (err) {
+				if (!(err instanceof PageConflictError)) throw err;
+				return failure(
+					`Unter "${path}" gibt es schon eine Seite. Ändere sie mit \`update_page\` ` +
+						'oder `append_to_page`, oder wähle einen anderen Pfad.'
+				);
+			}
+			return json({ id: path, title, version: 1, url: pageUrl(path) });
+		}
+	);
+
+	server.registerTool(
+		'update_page',
+		{
+			title: 'Seite ändern',
+			description:
+				'Ersetzt den ganzen Text einer Seite. Erst mit `fetch` lesen und dessen ' +
+				'`metadata.version` als `base_version` mitgeben – hat jemand die Seite inzwischen ' +
+				'geändert, schlägt das fehl, statt seine Änderung zu überschreiben. Nur zum ' +
+				'Ergänzen besser `append_to_page`.',
+			inputSchema: {
+				id: z.string().min(1).describe('Pfad der Seite'),
+				content: z.string().min(1).describe('Der komplette neue Text, als Markdown'),
+				base_version: z.number().int().positive().describe('Version, auf der die Änderung beruht'),
+				change_summary: CHANGE_SUMMARY
+			},
+			annotations: WRITES
+		},
+		async ({ id, content, base_version, change_summary }) => {
+			const found = await getPageWithLatestVersion(id);
+			if (!found) return notFound(id);
+			// As in the editor: without a heading on top, the page keeps its title.
+			const title = titleFromMarkdown(content).slice(0, 200) || found.version.title;
+
+			try {
+				const version = await addPageVersion({
+					pageId: found.page.id,
+					title,
+					content,
+					baseVersion: base_version,
+					authorId: actor.userId,
+					via: actor.via,
+					changeSummary: change_summary
+				});
+				return json({ id, title, version, url: pageUrl(id) });
+			} catch (err) {
+				if (err instanceof PageConflictError) return conflict(err.latestVersion);
+				throw err;
+			}
+		}
+	);
+
+	server.registerTool(
+		'append_to_page',
+		{
+			title: 'An Seite anhängen',
+			description:
+				'Hängt Markdown ans Ende einer Seite an, z. B. eine neue Notiz, einen Abschnitt ' +
+				'(`## …`) oder Listenpunkte. Der vorhandene Text bleibt unverändert.',
+			inputSchema: {
+				id: z.string().min(1).describe('Pfad der Seite'),
+				content: z.string().min(1).describe('Anzuhängendes Markdown'),
+				change_summary: CHANGE_SUMMARY
+			},
+			annotations: WRITES
+		},
+		async ({ id, content, change_summary }) => {
+			const found = await getPageWithLatestVersion(id);
+			if (!found) return notFound(id);
+
+			try {
+				const version = await addPageVersion({
+					pageId: found.page.id,
+					title: found.version.title,
+					content: `${found.version.content.trimEnd()}\n\n${content.trim()}\n`,
+					// Appends to exactly the text just read, never over a newer save.
+					baseVersion: found.version.versionNumber,
+					authorId: actor.userId,
+					via: actor.via,
+					changeSummary: change_summary
+				});
+				return json({ id, version, url: pageUrl(id) });
+			} catch (err) {
+				if (err instanceof PageConflictError) return conflict(err.latestVersion);
+				throw err;
+			}
 		}
 	);
 

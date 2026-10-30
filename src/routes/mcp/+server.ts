@@ -3,12 +3,28 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { requireMcpAuth } from '@better-auth/mcp';
 import { auth, mcpResource } from '$lib/server/auth';
 import { internalOrigin } from '$lib/server/internal-origin';
-import { createWikiMcpServer } from '$lib/server/mcp/server';
+import { createWikiMcpServer, type McpActor } from '$lib/server/mcp/server';
 import type { RequestHandler } from './$types';
 
+/**
+ * The person an access token was issued to (`sub`) and the name the
+ * assistant registered under (`azp` is its client id), for the history.
+ */
+async function actorFrom(claims: { sub?: string; azp?: unknown }): Promise<McpActor> {
+	const { adapter } = await auth.$context;
+	const client =
+		typeof claims.azp === 'string'
+			? await adapter.findOne<{ name?: string | null }>({
+					model: 'oauthClient',
+					where: [{ field: 'clientId', value: claims.azp }]
+				})
+			: null;
+	return { userId: claims.sub ?? '', via: client?.name || 'KI-Assistent' };
+}
+
 /** Answers one MCP request: a fresh server and transport each time, nothing kept between requests. */
-async function answer(request: Request, origin: string) {
-	const server = createWikiMcpServer(origin);
+async function answer(request: Request, origin: string, actor: McpActor) {
+	const server = createWikiMcpServer(origin, actor);
 	const transport = new WebStandardStreamableHTTPServerTransport({
 		sessionIdGenerator: undefined,
 		enableJsonResponse: true
@@ -34,10 +50,14 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	const jwksUrl = `${internalOrigin(url)}/api/auth/jwks`;
 	let handler = protectedHandlers.get(jwksUrl);
 	if (!handler) {
-		handler = requireMcpAuth(auth, (req) => answer(req, url.origin), {
-			resource: mcpResource,
-			jwksUrl
-		});
+		handler = requireMcpAuth(
+			auth,
+			async (req, claims) => answer(req, url.origin, await actorFrom(claims)),
+			{
+				resource: mcpResource,
+				jwksUrl
+			}
+		);
 		protectedHandlers.set(jwksUrl, handler);
 	}
 	return handler(request);
