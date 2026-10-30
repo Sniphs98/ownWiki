@@ -64,7 +64,7 @@ describe('resolveWikiLinks', () => {
 describe('linkedPagePaths', () => {
 	it('finds pages linked by wiki link or by /w/ link, each once', () => {
 		const markdown = [
-			'Siehe \[\[Kündigung#Fristen]] und [[personal/onboarding|Start]].',
+			'Siehe \\[\\[Kündigung#Fristen]] und [[personal/onboarding|Start]].',
 			'Nochmal [Onboarding](/w/personal/onboarding#ablauf) und [[Kündigung]].'
 		].join('\n');
 		expect(linkedPagePaths(markdown, pages)).toEqual([
