@@ -84,7 +84,9 @@ Geeignet ist jeder Dienst mit der Embeddings-Schnittstelle von OpenAI (siehe `EM
 
 - **OpenAI:** `EMBEDDINGS_URL=https://api.openai.com/v1`, `EMBEDDINGS_MODEL=text-embedding-3-small` und ein API-Schlüssel. Kostet für ein ganzes Firmen-Wiki Cent-Beträge.
 - **Azure OpenAI** (Daten in der EU): `EMBEDDINGS_URL=https://<ressource>.openai.azure.com/openai/v1`, als Modell der Name des Deployments.
-- **Lokal mit [Ollama](https://ollama.com)**, ohne dass Text das Haus verlässt: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (vorher `ollama pull bge-m3`).
+- **Lokal mit [Ollama](https://ollama.com)**, ohne dass Text den Server verlässt und ohne Grafikkarte – am einfachsten mit dem mitgelieferten Container, siehe [Schnellstart](#schnellstart-mit-docker). Ohne Docker: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (vorher `ollama pull bge-m3`).
+
+Lokal oder Cloud lässt sich jederzeit wechseln: Nach einem Modellwechsel erfasst ownWiki alle Seiten im Hintergrund neu, bis dahin sucht es mit der Volltextsuche.
 
 Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
 
@@ -135,6 +137,15 @@ docker compose up -d
 ```
 
 Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volume `wikidata`; Migrationen laufen beim Start automatisch. Für PostgreSQL in `.env` `DATABASE_DIALECT=postgresql` und die passende `DATABASE_URL` setzen und mit `docker compose --profile postgresql up -d` starten.
+
+**Semantische Suche auf eigener Hardware:** In `.env` zusätzlich
+
+```sh
+EMBEDDINGS_URL=http://ollama:11434/v1
+EMBEDDINGS_MODEL=bge-m3
+```
+
+setzen und mit `docker compose --profile ollama up -d` starten. Das startet [Ollama](https://ollama.com) als eigenen Container und lädt beim ersten Mal das Modell herunter (bge-m3, etwa 1,2 GB; versteht Deutsch gut). Eine Grafikkarte ist nicht nötig, das Modell braucht rund 2 GB Arbeitsspeicher. Sobald es da ist, erfasst das Wiki alle Seiten im Hintergrund – auf einem Prozessor dauert das beim ersten Mal eine Weile, danach geht es pro gespeicherter Seite in Sekunden. Reicht die Hardware nicht, trägt man stattdessen einen Cloud-Dienst wie Azure OpenAI ein (siehe [Suche](#suche)) und startet ohne `--profile ollama`.
 
 Das Image enthält Chromium für den PDF-Export.
 
