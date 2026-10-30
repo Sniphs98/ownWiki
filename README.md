@@ -143,9 +143,10 @@ Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volum
 ```sh
 EMBEDDINGS_URL=http://ollama:11434/v1
 EMBEDDINGS_MODEL=bge-m3
+EMBEDDINGS_MIN_SCORE=0.5
 ```
 
-setzen und mit `docker compose --profile ollama up -d` starten. Das startet [Ollama](https://ollama.com) als eigenen Container und lädt beim ersten Mal das Modell herunter (bge-m3, etwa 1,2 GB; versteht Deutsch gut). Eine Grafikkarte ist nicht nötig, das Modell braucht rund 2 GB Arbeitsspeicher. Sobald es da ist, erfasst das Wiki alle Seiten im Hintergrund – auf einem Prozessor dauert das beim ersten Mal eine Weile, danach geht es pro gespeicherter Seite in Sekunden. Reicht die Hardware nicht, trägt man stattdessen einen Cloud-Dienst wie Azure OpenAI ein (siehe [Suche](#suche)) und startet ohne `--profile ollama`.
+setzen und mit `docker compose --profile ollama up -d` starten. Das startet [Ollama](https://ollama.com) als eigenen Container und lädt beim ersten Mal das Modell herunter (bge-m3, etwa 1,2 GB; versteht Deutsch gut). Eine Grafikkarte ist nicht nötig, das Modell braucht rund 2 GB Arbeitsspeicher. Sobald es da ist, erfasst das Wiki alle Seiten im Hintergrund. Gemessen auf einem Prozessor mit 12 Threads ohne Grafikkarte: eine Suche rund 30 ms, das Erfassen etwa 0,3 s pro Abschnitt – für 1.000 Seiten beim ersten Start also grob eine halbe Stunde, danach pro gespeicherter Seite ein, zwei Sekunden. Reicht die Hardware nicht, trägt man stattdessen einen Cloud-Dienst wie Azure OpenAI ein (siehe [Suche](#suche)) und startet ohne `--profile ollama`.
 
 Das Image enthält Chromium für den PDF-Export.
 
@@ -153,22 +154,22 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable                | Bedeutung                                                                                                                                                                                                       |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`      | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                           |
-| `DATABASE_URL`          | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                    |
-| `ORIGIN`                | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                        |
-| `BETTER_AUTH_SECRET`    | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                        |
-| `AUTH_MODE`             | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                |
-| `ALLOW_SIGNUP`          | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                          |
-| `PORT`                  | Port des Servers, Standard `3000`                                                                                                                                                                               |
-| `ADDRESS_HEADER`        | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                            |
-| `BODY_SIZE_LIMIT`       | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                    |
-| `EMBEDDINGS_URL`        | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                      |
-| `EMBEDDINGS_MODEL`      | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                      |
-| `EMBEDDINGS_API_KEY`    | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                              |
-| `EMBEDDINGS_DIMENSIONS` | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                     |
-| `EMBEDDINGS_MIN_SCORE`  | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); andere Modelle liefern oft höhere Werte – dann höher setzen, wenn zu viel gefunden wird |
+| Variable                | Bedeutung                                                                                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`      | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                            |
+| `DATABASE_URL`          | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                     |
+| `ORIGIN`                | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                         |
+| `BETTER_AUTH_SECRET`    | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                         |
+| `AUTH_MODE`             | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                 |
+| `ALLOW_SIGNUP`          | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                           |
+| `PORT`                  | Port des Servers, Standard `3000`                                                                                                                                                                                |
+| `ADDRESS_HEADER`        | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                             |
+| `BODY_SIZE_LIMIT`       | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                     |
+| `EMBEDDINGS_URL`        | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                       |
+| `EMBEDDINGS_MODEL`      | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                       |
+| `EMBEDDINGS_API_KEY`    | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                               |
+| `EMBEDDINGS_DIMENSIONS` | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                      |
+| `EMBEDDINGS_MIN_SCORE`  | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); für `bge-m3` `0.5`. Andere Modelle: höher setzen, wenn zu viel Unpassendes gefunden wird |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
