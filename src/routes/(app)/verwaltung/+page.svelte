@@ -5,8 +5,10 @@
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import * as Select from '$lib/components/ui/select';
 	import PagePathPicker from '$lib/components/wiki/page-path-picker.svelte';
-	import type { AccessLevel, AccessRule } from '$lib/access';
+	import OptionPicker, { type PickerOption } from '$lib/components/wiki/option-picker.svelte';
+	import { ACCESS_LEVELS, type AccessLevel, type AccessRule } from '$lib/access';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -17,8 +19,20 @@
 		edit: 'Bearbeiten'
 	};
 
-	const selectClass =
-		'h-8 rounded-lg border border-input bg-transparent px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30';
+	// The rule being set: for whom ("everyone", "group:<id>", "user:<id>") and which right.
+	let subject = $state('everyone');
+	let level = $state<AccessLevel>('read');
+
+	const subjects = $derived<PickerOption[]>([
+		{ value: 'everyone', label: 'Alle' },
+		...data.groups.map((g) => ({ value: `group:${g.id}`, label: g.name, group: 'Gruppen' })),
+		...data.users.map((u) => ({
+			value: `user:${u.id}`,
+			label: u.name,
+			hint: u.email,
+			group: 'Personen'
+		}))
+	]);
 
 	const groupName = $derived(new Map(data.groups.map((g) => [g.id, g.name])));
 	const userName = $derived(new Map(data.users.map((u) => [u.id, u.name])));
@@ -112,32 +126,29 @@
 						newLabel="Bereich"
 					/>
 				</div>
-				<label class="flex flex-col gap-1 text-sm">
-					Für
-					<select name="subject" class={selectClass}>
-						<option value="everyone">Alle</option>
-						{#if data.groups.length}
-							<optgroup label="Gruppen">
-								{#each data.groups as group (group.id)}
-									<option value="group:{group.id}">{group.name}</option>
-								{/each}
-							</optgroup>
-						{/if}
-						<optgroup label="Personen">
-							{#each data.users as user (user.id)}
-								<option value="user:{user.id}">{user.name}</option>
+				<div class="flex flex-col gap-1 text-sm">
+					<span>Für</span>
+					<OptionPicker
+						name="subject"
+						label="Für"
+						bind:value={subject}
+						options={subjects}
+						searchPlaceholder="Gruppe oder Person suchen …"
+					/>
+				</div>
+				<div class="flex flex-col gap-1 text-sm">
+					<span>Recht</span>
+					<Select.Root type="single" name="level" bind:value={level}>
+						<Select.Trigger aria-label="Recht" class="min-w-36">
+							{LEVEL_LABELS[level]}
+						</Select.Trigger>
+						<Select.Content>
+							{#each ACCESS_LEVELS as option (option)}
+								<Select.Item value={option} label={LEVEL_LABELS[option]} />
 							{/each}
-						</optgroup>
-					</select>
-				</label>
-				<label class="flex flex-col gap-1 text-sm">
-					Recht
-					<select name="level" class={selectClass}>
-						<option value="none">{LEVEL_LABELS.none}</option>
-						<option value="read" selected>{LEVEL_LABELS.read}</option>
-						<option value="edit">{LEVEL_LABELS.edit}</option>
-					</select>
-				</label>
+						</Select.Content>
+					</Select.Root>
+				</div>
 				<Button type="submit">Regel setzen</Button>
 			</form>
 		</Card.Content>
@@ -187,15 +198,17 @@
 					{#if others.length}
 						<form method="post" action="?/addMember" use:enhance class="flex gap-2">
 							<input type="hidden" name="groupId" value={group.id} />
-							<select
+							<OptionPicker
 								name="userId"
-								class={selectClass}
-								aria-label="Person zu {group.name} hinzufügen"
-							>
-								{#each others as user (user.id)}
-									<option value={user.id}>{user.name} ({user.email})</option>
-								{/each}
-							</select>
+								label="Person zu {group.name} hinzufügen"
+								placeholder="Person wählen …"
+								searchPlaceholder="Name oder E-Mail …"
+								options={others.map((user) => ({
+									value: user.id,
+									label: user.name,
+									hint: user.email
+								}))}
+							/>
 							<Button type="submit" variant="outline" size="sm">Hinzufügen</Button>
 						</form>
 					{/if}
