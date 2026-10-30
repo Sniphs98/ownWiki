@@ -1,4 +1,4 @@
-import type { Handle } from '@sveltejs/kit';
+import type { Handle, ServerInit } from '@sveltejs/kit';
 import { error, redirect } from '@sveltejs/kit';
 import { building } from '$app/environment';
 import { auth } from '$lib/server/auth';
@@ -11,6 +11,7 @@ import {
 } from '$lib/server/pdf/internal-token';
 import { accessFor } from '$lib/server/access';
 import { getUserRole } from '$lib/server/repo/access';
+import { startSemanticIndex } from '$lib/server/search';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
@@ -51,9 +52,7 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 		event.request.headers.get(PDF_INTERNAL_TOKEN_HEADER) === PDF_INTERNAL_TOKEN;
 
 	if (!building) {
-		const pdfUserId = hasInternalToken
-			? event.request.headers.get(PDF_INTERNAL_USER_HEADER)
-			: null;
+		const pdfUserId = hasInternalToken ? event.request.headers.get(PDF_INTERNAL_USER_HEADER) : null;
 		const viewer = pdfUserId
 			? { id: pdfUserId, role: await getUserRole(pdfUserId) }
 			: event.locals.user;
@@ -77,3 +76,8 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 };
 
 export const handle: Handle = handleAuth;
+
+// Embeds pages saved before semantic search was set up, in the background.
+export const init: ServerInit = () => {
+	if (!building) void startSemanticIndex();
+};

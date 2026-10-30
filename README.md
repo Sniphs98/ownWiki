@@ -78,6 +78,16 @@ Das Suchfeld oben in der Mitte durchsucht Titel, Pfade und Text aller Seiten (Di
 
 Unter SQLite sucht ownWiki mit FTS5, unter PostgreSQL mit der deutschen Volltextsuche der Datenbank (mit echter Wortstamm-Erkennung). Der Suchindex wird bei jedem Speichern aktualisiert und beim ersten Start automatisch aufgebaut.
 
+**Semantische Suche (optional):** Mit einem Embedding-Dienst findet die Suche Seiten auch über ihre Bedeutung – „Datensicherung“ findet den Abschnitt „Backup“, die Frage „wie beantrage ich Urlaub?“ die Seite zum Urlaubsantrag. Solche Treffer stehen zwischen den Volltext-Treffern und sind als „inhaltlich ähnlich“ markiert; die KI-Anbindung sucht genauso. Dafür wird jede Seite in Abschnitte zerlegt, und der Dienst berechnet zu jedem einen Vektor (Embedding). Neue und geänderte Seiten kommen nach wenigen Sekunden dazu, bestehende beim ersten Start. Ist der Dienst nicht erreichbar, sucht ownWiki weiter mit der Volltextsuche.
+
+Geeignet ist jeder Dienst mit der Embeddings-Schnittstelle von OpenAI (siehe `EMBEDDINGS_URL` unten), z. B.:
+
+- **OpenAI:** `EMBEDDINGS_URL=https://api.openai.com/v1`, `EMBEDDINGS_MODEL=text-embedding-3-small` und ein API-Schlüssel. Kostet für ein ganzes Firmen-Wiki Cent-Beträge.
+- **Azure OpenAI** (Daten in der EU): `EMBEDDINGS_URL=https://<ressource>.openai.azure.com/openai/v1`, als Modell der Name des Deployments.
+- **Lokal mit [Ollama](https://ollama.com)**, ohne dass Text das Haus verlässt: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (vorher `ollama pull bge-m3`).
+
+Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
+
 ### Versionsverlauf
 
 Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
@@ -132,17 +142,22 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable             | Bedeutung                                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                                    |
-| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                             |
-| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet. |
-| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                 |
-| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                                         |
-| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                   |
-| `PORT`               | Port des Servers, Standard `3000`                                                                        |
-| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                     |
-| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen             |
+| Variable                | Bedeutung                                                                                                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`      | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                           |
+| `DATABASE_URL`          | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                    |
+| `ORIGIN`                | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                        |
+| `BETTER_AUTH_SECRET`    | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                        |
+| `AUTH_MODE`             | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                |
+| `ALLOW_SIGNUP`          | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                          |
+| `PORT`                  | Port des Servers, Standard `3000`                                                                                                                                                                               |
+| `ADDRESS_HEADER`        | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                            |
+| `BODY_SIZE_LIMIT`       | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                    |
+| `EMBEDDINGS_URL`        | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                      |
+| `EMBEDDINGS_MODEL`      | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                      |
+| `EMBEDDINGS_API_KEY`    | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                              |
+| `EMBEDDINGS_DIMENSIONS` | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                     |
+| `EMBEDDINGS_MIN_SCORE`  | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); andere Modelle liefern oft höhere Werte – dann höher setzen, wenn zu viel gefunden wird |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
@@ -214,9 +229,9 @@ Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und ver
 - **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
 - **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
 - Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
+- **Suche** (`src/lib/server/search`): Volltext in der Datenbank, dazu optional semantisch – Seiten werden in Abschnitte zerlegt (`semantic/chunks.ts`), im Hintergrund eingebettet, im Arbeitsspeicher verglichen und mit den Volltext-Treffern per Reciprocal Rank Fusion gemischt.
 - **MCP-Server** für KI-Assistenten unter `/mcp` (`src/lib/server/mcp`, offizielles MCP-SDK, zustandslos über Streamable HTTP), geschützt per OAuth – Better Auth ist dafür mit dem `mcp()`-Plugin zugleich OAuth-Server (`src/lib/server/auth.ts`, Zustimmungsseite unter `/consent`).
 
 ## Noch nicht umgesetzt
 
-- Semantische Suche (KI/Vektor-Embeddings) – die Suche ist dafür als austauschbarer Baustein angelegt (`src/lib/server/search`)
 - Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank
