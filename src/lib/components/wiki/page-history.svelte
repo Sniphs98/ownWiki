@@ -12,6 +12,8 @@
 		content: string;
 		changeSummary: string | null;
 		createdAt: Date;
+		author: { name: string } | null;
+		via: string | null;
 	}
 
 	let {
@@ -32,6 +34,12 @@
 	const selectedVersion = $derived(data.versions.find((v) => v.versionNumber === selected));
 
 	let restoring = $state(false);
+
+	/** Who wrote a version: "Erika Muster", or "Erika Muster über ChatGPT". */
+	function byline(version: VersionEntry) {
+		const author = version.author?.name ?? (version.via ? 'Unbekannt' : '');
+		return version.via ? `${author} über ${version.via}` : author;
+	}
 </script>
 
 <svelte:head>
@@ -72,6 +80,9 @@
 					<div class="text-xs text-muted-foreground">
 						{version.createdAt.toLocaleString('de-DE')}
 					</div>
+					{#if byline(version)}
+						<div class="text-xs text-muted-foreground">{byline(version)}</div>
+					{/if}
 					{#if version.changeSummary}
 						<div class="mt-1 text-xs italic">{version.changeSummary}</div>
 					{/if}

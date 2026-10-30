@@ -11,6 +11,8 @@ export interface CreatePageInput {
 	content: string;
 	authorId?: string;
 	changeSummary?: string;
+	/** The AI assistant writing for the author (see page_version.via). */
+	via?: string;
 }
 
 export interface AddVersionInput {
@@ -19,6 +21,8 @@ export interface AddVersionInput {
 	content: string;
 	authorId?: string;
 	changeSummary?: string;
+	/** The AI assistant writing for the author (see page_version.via). */
+	via?: string;
 	/**
 	 * The version the edit started from. If someone saved a newer one in the
 	 * meantime, the save fails with PageConflictError instead of silently
