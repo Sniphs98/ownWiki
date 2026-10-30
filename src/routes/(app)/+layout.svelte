@@ -1,6 +1,7 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import { breadcrumbs } from '$lib/page-paths';
 	import PageSidebar from '$lib/components/wiki/page-sidebar.svelte';
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
@@ -38,12 +39,11 @@
 		const match = page.url.pathname.match(/^\/w\/(.+)$/);
 		if (!match) return [];
 
-		const segments = match[1].replace(/\/edit$/, '').split('/');
-		let acc = '';
-		return segments.map((segment) => {
-			acc = acc ? `${acc}/${segment}` : segment;
-			return { label: segment, path: acc };
-		});
+		const path = match[1].replace(/\/(edit|history)$/, '');
+		return breadcrumbs(
+			path,
+			data.pages.map((p) => p.path)
+		);
 	});
 </script>
 
@@ -67,6 +67,9 @@
 								<Breadcrumb.Item class={index === crumbs.length - 1 ? 'min-w-0' : 'shrink-0'}>
 									{#if index === crumbs.length - 1}
 										<Breadcrumb.Page class="truncate">{crumb.label}</Breadcrumb.Page>
+									{:else if !crumb.isPage}
+										<!-- A folder: there's no page to go to. -->
+										<span class="text-muted-foreground">{crumb.label}</span>
 									{:else}
 										<Breadcrumb.Link href={resolve('/(app)/w/[...path]', { path: crumb.path })}>
 											{crumb.label}
