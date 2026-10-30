@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { page } from '$app/state';
 	import * as Card from '$lib/components/ui/card';
 	import * as Tabs from '$lib/components/ui/tabs';
 	import * as Field from '$lib/components/ui/field';
@@ -11,6 +12,13 @@
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let activeTab = $state('signIn');
+
+	// Keeps the page's query (redirectTo, or an AI assistant's authorization
+	// request) for the action — a bare "?/signIn" would replace it.
+	const actionUrl = (name: string) => {
+		const query = page.url.search.slice(1);
+		return query ? `?/${name}&${query}` : `?/${name}`;
+	};
 
 	$effect(() => {
 		if (form?.mode) activeTab = form.mode;
@@ -42,7 +50,7 @@
 				</Tabs.List>
 
 				<Tabs.Content value="signIn">
-					<form method="post" action="?/signIn" use:enhance>
+					<form method="post" action={actionUrl('signIn')} use:enhance>
 						<Field.FieldGroup>
 							<Field.Field data-invalid={form?.mode === 'signIn' && !!form.message}>
 								<Field.FieldLabel for="signin-email">E-Mail</Field.FieldLabel>
@@ -74,7 +82,7 @@
 				</Tabs.Content>
 
 				<Tabs.Content value="signUp">
-					<form method="post" action="?/signUp" use:enhance>
+					<form method="post" action={actionUrl('signUp')} use:enhance>
 						<Field.FieldGroup>
 							<Field.Field data-invalid={form?.mode === 'signUp' && !!form.message}>
 								<Field.FieldLabel for="signup-name">Name</Field.FieldLabel>
