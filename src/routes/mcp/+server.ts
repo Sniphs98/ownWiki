@@ -3,6 +3,7 @@ import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/
 import { requireMcpAuth } from '@better-auth/mcp';
 import { auth, mcpResource } from '$lib/server/auth';
 import { accessFor } from '$lib/server/access';
+import { isConnected } from '$lib/server/ai-connections';
 import { authMode } from '$lib/server/auth-mode';
 import { getUserRole } from '$lib/server/repo/access';
 import { internalOrigin } from '$lib/server/internal-origin';
@@ -42,6 +43,17 @@ async function answer(request: Request, origin: string, actor: McpActor) {
 	return transport.handleRequest(request);
 }
 
+/** As for a missing token: the assistant has to be allowed again. */
+function disconnected(origin: string) {
+	const metadata = `${origin}/.well-known/oauth-protected-resource/mcp`;
+	return new Response('Diese Verbindung wurde getrennt.', {
+		status: 401,
+		headers: {
+			'www-authenticate': `Bearer error="invalid_token", error_description="Verbindung getrennt", resource_metadata="${metadata}"`
+		}
+	});
+}
+
 const protectedHandlers = new Map<string, (request: Request) => Promise<Response>>();
 
 /**
@@ -61,7 +73,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	if (!handler) {
 		handler = requireMcpAuth(
 			auth,
-			async (req, claims) => answer(req, url.origin, await actorFrom(claims)),
+			async (req, claims) => {
+				// Disconnected under Einstellungen: the token is still signed, but no longer good.
+				if (
+					!claims.sub ||
+					typeof claims.azp !== 'string' ||
+					!(await isConnected(claims.sub, claims.azp))
+				) {
+					return disconnected(url.origin);
+				}
+				return answer(req, url.origin, await actorFrom(claims));
+			},
 			{
 				resource: mcpResource,
 				jwksUrl

@@ -25,8 +25,9 @@
 		</Card.Header>
 		<Card.Content>
 			<p class="text-sm text-muted-foreground">
-				Die Anwendung kann dann Seiten suchen, lesen, anlegen und ändern, bis du die Verbindung dort
-				trennst. Jede Änderung landet mit deinem Namen im Versionsverlauf.
+				Die Anwendung kann dann Seiten suchen, lesen, anlegen und ändern, bis du die Verbindung
+				trennst – dort oder hier im Wiki unter Einstellungen. Jede Änderung landet mit deinem Namen
+				im Versionsverlauf.
 			</p>
 		</Card.Content>
 		<Card.Footer>

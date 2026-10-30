@@ -324,3 +324,24 @@ test("an assistant notes in the person's inbox and sorts notes into pages", asyn
 	await callTool(request, token, 'delete_inbox_note', { id: notes[0].id });
 	expect((await callTool(request, token, 'list_inbox', {})).notes).toEqual([]);
 });
+
+test('a person disconnects an assistant under Einstellungen, and it is locked out at once', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Tom Trenn');
+	expect((await rpc(request, 'tools/list', {}, token)).ok()).toBe(true);
+
+	await page.goto('/settings');
+	const connections = page.getByRole('list', { name: 'Verbundene Assistenten' });
+	await expect(connections.getByRole('listitem')).toHaveCount(1);
+	await expect(connections).toContainText('E2E-Assistent');
+	await connections.getByRole('button', { name: 'Trennen' }).click();
+	await expect(page.getByText('Kein Assistent verbunden.')).toBeVisible();
+
+	// The token is still signed and unexpired, but no longer lets it in.
+	const refused = await rpc(request, 'tools/list', {}, token);
+	expect(refused.status()).toBe(401);
+	expect(refused.headers()['www-authenticate']).toContain('invalid_token');
+});
