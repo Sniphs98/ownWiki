@@ -114,6 +114,8 @@ async function connectAssistant(
 		page.waitForRequest((req) => req.url().startsWith(REDIRECT_URI)),
 		page.getByRole('button', { name: 'Erlauben' }).click()
 	]);
+	// The browser then fails to reach the made-up address; let it, before going on.
+	await page.waitForURL(/^chrome-error:/, { timeout: 5_000 }).catch(() => {});
 	const callback = new URL(callbackRequest.url());
 	expect(callback.searchParams.get('state')).toBe('e2e-state');
 	const code = callback.searchParams.get('code');
@@ -151,7 +153,11 @@ test('an assistant connects through login and consent, then reads as that person
 		'get_backlinks',
 		'create_page',
 		'update_page',
-		'append_to_page'
+		'append_to_page',
+		'add_to_inbox',
+		'list_inbox',
+		'file_inbox_note',
+		'delete_inbox_note'
 	]);
 
 	const { results } = await callTool(request, token, 'search', { query: 'Sicherung' });
@@ -286,4 +292,35 @@ test('an assistant may do no more than the person who connected it', async ({
 	expect((await call('create_page', { id: `${area}/zu/neu`, content: '# Neu' })).isError).toBe(
 		true
 	);
+});
+
+test("an assistant notes in the person's inbox and sorts notes into pages", async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Ina Box');
+	const target = `e2e/inbox-ki-${Date.now().toString(36)}`;
+
+	const { id } = await callTool(request, token, 'add_to_inbox', { content: 'Idee: Tischkicker' });
+	await callTool(request, token, 'add_to_inbox', { content: 'Unwichtig' });
+
+	// The person sees both, marked as written by the assistant.
+	await page.goto('/inbox');
+	await expect(page.getByText('Idee: Tischkicker')).toBeVisible();
+	await expect(page.getByText('über E2E-Assistent').first()).toBeVisible();
+
+	const { notes } = await callTool(request, token, 'list_inbox', {});
+	expect(notes.map((note: { text: string }) => note.text)).toEqual([
+		'Unwichtig',
+		'Idee: Tischkicker'
+	]);
+
+	const filed = await callTool(request, token, 'file_inbox_note', { id, page_id: target });
+	expect(filed).toMatchObject({ id: target, created: true });
+	const fetched = await callTool(request, token, 'fetch', { id: target });
+	expect(fetched.text).toContain('Idee: Tischkicker');
+
+	await callTool(request, token, 'delete_inbox_note', { id: notes[0].id });
+	expect((await callTool(request, token, 'list_inbox', {})).notes).toEqual([]);
 });

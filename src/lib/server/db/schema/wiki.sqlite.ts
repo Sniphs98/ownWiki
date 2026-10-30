@@ -192,3 +192,22 @@ export const pageTag = sqliteTable(
 		index('page_tag_tag_idx').on(table.tag)
 	]
 );
+
+/**
+ * A person's inbox: quick notes, from the /inbox page or an AI assistant,
+ * not yet sorted into a page. Only the person sees them.
+ */
+export const inboxNote = sqliteTable(
+	'inbox_note',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		content: text('content').notNull(),
+		/** The AI assistant that wrote it (its OAuth client name); null when written by hand. */
+		via: text('via'),
+		createdAt: timestampMs('created_at').notNull()
+	},
+	(table) => [index('inbox_note_user_id_idx').on(table.userId)]
+);

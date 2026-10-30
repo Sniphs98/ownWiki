@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { findBacklinks } from '$lib/server/backlinks';
 import { listPageTags, setTags, tagsOf } from '$lib/server/repo/tags';
 import { readableTags } from '$lib/server/tags';
+import { addNote, deleteNote, listNotes } from '$lib/server/repo/inbox';
+import { fileNote, MAX_NOTE_LENGTH } from '$lib/server/inbox';
 import { parseTags } from '$lib/tags';
 import type { PageAccess } from '$lib/server/access';
 import {
@@ -80,7 +82,8 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 				'Seiten werden über ihren Pfad angesprochen. Erst mit `search` suchen, dann mit ' +
 				'`fetch` lesen. `[[Seitenname]]` im Text ist ein Link auf eine andere Seite. ' +
 				'Die erste Zeile einer Seite ist eine Überschrift (`# Titel`) und ihr Titel. ' +
-				'Seiten haben Tags (`list_tags`, `list_pages` mit `tag`). ' +
+				'Seiten haben Tags (`list_tags`, `list_pages` mit `tag`). Was noch keinen Platz ' +
+				'hat, kommt in die persönliche Inbox (`add_to_inbox`). ' +
 				'Jede Änderung wird als neue Version gespeichert und lässt sich wiederherstellen.'
 		}
 	);
@@ -340,6 +343,82 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 				if (err instanceof PageConflictError) return conflict(err.latestVersion);
 				throw err;
 			}
+		}
+	);
+
+	server.registerTool(
+		'add_to_inbox',
+		{
+			title: 'In der Inbox notieren',
+			description:
+				'Notiert etwas schnell in der persönlichen Inbox des Nutzers, die nur er sieht – ' +
+				'für Gedanken, Aufgaben und Funde, deren Platz im Wiki noch offen ist. Ist klar, ' +
+				'wohin es gehört, besser gleich `append_to_page` oder `create_page`.',
+			inputSchema: {
+				content: z.string().min(1).max(MAX_NOTE_LENGTH).describe('Die Notiz, als Markdown')
+			},
+			annotations: WRITES
+		},
+		async ({ content }) => {
+			const id = await addNote({ userId: actor.userId, content: content.trim(), via: actor.via });
+			return json({ id });
+		}
+	);
+
+	server.registerTool(
+		'list_inbox',
+		{
+			title: 'Inbox lesen',
+			description:
+				'Die Notizen in der Inbox des Nutzers, neueste zuerst – etwa um sie gemeinsam ' +
+				'einzusortieren (`file_inbox_note`).',
+			annotations: READ_ONLY
+		},
+		async () => {
+			const notes = await listNotes(actor.userId);
+			return json({
+				notes: notes.map((note) => ({
+					id: note.id,
+					text: note.content,
+					createdAt: note.createdAt.toISOString(),
+					via: note.via
+				}))
+			});
+		}
+	);
+
+	server.registerTool(
+		'file_inbox_note',
+		{
+			title: 'Notiz einsortieren',
+			description:
+				'Sortiert eine Inbox-Notiz ins Wiki ein: Gibt es unter `page_id` eine Seite, wird ' +
+				'die Notiz angehängt, sonst entsteht dort eine neue Seite. Danach ist die Notiz ' +
+				'aus der Inbox verschwunden.',
+			inputSchema: {
+				id: z.string().min(1).describe('Id der Notiz aus `list_inbox`'),
+				page_id: z.string().min(1).describe('Pfad der Seite, z. B. projekte/ideen')
+			},
+			annotations: WRITES
+		},
+		async ({ id, page_id }) => {
+			const result = await fileNote(actor, id, page_id);
+			if (!result.ok) return failure(result.message);
+			return json({ id: result.path, created: result.created, url: pageUrl(result.path) });
+		}
+	);
+
+	server.registerTool(
+		'delete_inbox_note',
+		{
+			title: 'Notiz löschen',
+			description: 'Löscht eine Notiz aus der Inbox, z. B. wenn sie erledigt ist.',
+			inputSchema: { id: z.string().min(1).describe('Id der Notiz aus `list_inbox`') },
+			annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false }
+		},
+		async ({ id }) => {
+			if (!(await deleteNote(actor.userId, id))) return failure('Diese Notiz gibt es nicht.');
+			return json({ deleted: id });
 		}
 	);
 

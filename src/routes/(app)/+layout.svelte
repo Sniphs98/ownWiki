@@ -7,6 +7,7 @@
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import TagsIcon from '@lucide/svelte/icons/tags';
+	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -100,6 +101,26 @@
 			{/if}
 
 			<div class="flex items-center justify-end gap-1">
+				{#if data.user}
+					<Button
+						href={resolve('/(app)/inbox')}
+						variant="ghost"
+						size="icon"
+						class="relative"
+						title="Inbox: schnelle Notizen"
+						aria-label={data.inboxCount
+							? `Inbox, ${data.inboxCount} ${data.inboxCount === 1 ? 'Notiz' : 'Notizen'}`
+							: 'Inbox'}
+					>
+						<InboxIcon />
+						{#if data.inboxCount}
+							<span
+								class="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-primary px-1 text-[10px] leading-4 text-primary-foreground"
+								aria-hidden="true">{data.inboxCount}</span
+							>
+						{/if}
+					</Button>
+				{/if}
 				<Button
 					href={resolve('/(app)/tags')}
 					variant="ghost"
