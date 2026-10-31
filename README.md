@@ -137,7 +137,7 @@ With your company's Microsoft account (Entra ID), people log in with **Mit Micro
 
 **Setting it up (once, in the [Microsoft Entra admin center](https://entra.microsoft.com)):**
 
-1. _Applications → App registrations → New registration_: a name such as "ownWiki", supported account types _Accounts in this organizational directory only_ (single tenant), a redirect URI of type _Web_: `https://your-wiki.example.org/api/auth/callback/microsoft` (the address in `ORIGIN`).
+1. _Applications → App registrations → New registration_: a name such as "ownWiki", supported account types _Accounts in this organizational directory only_ (single tenant), a redirect URI of type _Web_: `https://your-wiki.example.org/api/auth/callback/microsoft` (the address in `ORIGIN`, plus `BASE_PATH` if the wiki runs under a path: `https://example.org/wiki/api/auth/callback/microsoft`).
 2. On the overview page, set the _Application (client) ID_ as `MICROSOFT_CLIENT_ID` and the _Directory (tenant) ID_ as `MICROSOFT_TENANT_ID`.
 3. _Certificates & secrets → New client secret_: set its **value** as `MICROSOFT_CLIENT_SECRET`. It expires (after at most 24 months): create a new one in time — the app can have two at once, so the switch needs no downtime.
 4. Optional: _API permissions → Grant admin consent_, so nobody has to consent individually on their first login (only `openid`, `profile`, `email`, `offline_access` and `User.Read` are needed).
@@ -165,7 +165,7 @@ ownWiki can serve as a "second brain" for AI assistants such as ChatGPT or Claud
 | `create_page`, `update_page`, `append_to_page`, `move_page`          | Write; `update_page` refuses to overwrite a newer version than it read |
 | `add_to_inbox`, `list_inbox`, `file_inbox_note`, `delete_inbox_note` | The person's inbox                                                     |
 
-The address for the assistant is `https://your-wiki.example.org/mcp`. It logs in with **OAuth**: everyone connects the assistant once to their own wiki account — log in, then **Erlauben** (Allow) — and from then on the assistant acts as that person. So it's clear who did what, and there's no shared password. Assistants register themselves (dynamic client registration). Under **Einstellungen → KI-Verbindungen** (Settings → AI connections), everyone sees their connected assistants and can disconnect them; access ends at once.
+The address for the assistant is `https://your-wiki.example.org/mcp` (under a path: `https://example.org/wiki/mcp`). It logs in with **OAuth**: everyone connects the assistant once to their own wiki account — log in, then **Erlauben** (Allow) — and from then on the assistant acts as that person. So it's clear who did what, and there's no shared password. Assistants register themselves (dynamic client registration). Under **Einstellungen → KI-Verbindungen** (Settings → AI connections), everyone sees their connected assistants and can disconnect them; access ends at once.
 
 This needs `ORIGIN` to be set — without it, there's no MCP endpoint.
 
@@ -202,6 +202,52 @@ The image includes Chromium for the PDF export.
 
 Instead of building it yourself, you can use the ready-made image from the GitHub Container Registry: in `compose.yaml`, replace `build: .` with `image: ghcr.io/sniphs98/ownwiki:latest` (or a fixed version such as `:1.4.0`).
 
+## Behind a reverse proxy
+
+ownWiki runs behind any reverse proxy (Traefik, nginx, Caddy …), on a domain of its own (`https://wiki.example.org`) or under a path (`https://example.org/wiki`). For a path, set `BASE_PATH` — when the container starts, not when the image is built, so the published image works for both.
+
+- `ORIGIN` is the public address **without** the path: `https://example.org`, not `https://example.org/wiki`.
+- `ADDRESS_HEADER=X-Forwarded-For` with `XFF_DEPTH=1` (one proxy in front) makes the login rate limit see the visitors' real addresses instead of the proxy's.
+- The proxy must pass requests on unchanged — in particular without stripping the path: the wiki expects `/wiki/…`.
+- AI assistants look for the OAuth documents at the domain's root (`/.well-known/oauth-protected-resource/wiki/mcp`, `/.well-known/oauth-authorization-server/wiki/api/auth`), as the standard says. Under a path, the proxy passes those on to the wiki too, with the path in front. Without the AI connection, that rule isn't needed.
+
+**Traefik**, with the wiki under `/wiki` — `compose.yaml` (`websecure` and `letsencrypt` are your Traefik's entry point and certificate resolver):
+
+```yaml
+services:
+  app:
+    image: ghcr.io/sniphs98/ownwiki:latest
+    restart: always
+    env_file: .env
+    environment:
+      ORIGIN: https://example.org
+      BASE_PATH: /wiki
+      ADDRESS_HEADER: X-Forwarded-For
+      XFF_DEPTH: '1'
+    volumes:
+      - wikidata:/app/data
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.ownwiki.loadbalancer.server.port=3000
+      # The wiki itself.
+      - traefik.http.routers.ownwiki.rule=Host(`example.org`) && (Path(`/wiki`) || PathPrefix(`/wiki/`))
+      - traefik.http.routers.ownwiki.entrypoints=websecure
+      - traefik.http.routers.ownwiki.tls.certresolver=letsencrypt
+      - traefik.http.routers.ownwiki.service=ownwiki
+      # Where AI assistants look for how to log in: at the root, passed on under /wiki.
+      - traefik.http.routers.ownwiki-oauth.rule=Host(`example.org`) && (PathPrefix(`/.well-known/oauth-protected-resource/wiki`) || PathPrefix(`/.well-known/oauth-authorization-server/wiki`) || PathPrefix(`/.well-known/openid-configuration/wiki`))
+      - traefik.http.routers.ownwiki-oauth.entrypoints=websecure
+      - traefik.http.routers.ownwiki-oauth.tls.certresolver=letsencrypt
+      - traefik.http.routers.ownwiki-oauth.middlewares=ownwiki-oauth
+      - traefik.http.routers.ownwiki-oauth.service=ownwiki
+      - traefik.http.middlewares.ownwiki-oauth.addprefix.prefix=/wiki
+
+volumes:
+  wikidata:
+```
+
+On a domain of its own, a single router with `Host(`wiki.example.org`)` is enough, and `BASE_PATH` stays unset. Traefik has no upload limit by default; with another proxy, allow request bodies of at least 11 MB (e.g. nginx `client_max_body_size 11m;`) and a read timeout that a large PDF export fits into (a minute is plenty).
+
 ## Configuration
 
 | Variable                  | Meaning                                                                                                                                                                               |
@@ -216,6 +262,8 @@ Instead of building it yourself, you can use the ready-made image from the GitHu
 | `MICROSOFT_CLIENT_SECRET` | The app registration's client secret                                                                                                                                                  |
 | `MICROSOFT_TENANT_ID`     | Your company's directory (tenant) ID — only accounts from it get in                                                                                                                   |
 | `PASSWORD_LOGIN`          | `false`: log in with Microsoft only, no passwords. Default: both                                                                                                                      |
+| `BASE_PATH`               | The path the wiki is served under behind a reverse proxy, e.g. `/wiki` (see above). Set at start, no new build needed. Default: the root                                              |
+| `XFF_DEPTH`               | With `ADDRESS_HEADER=X-Forwarded-For`: how many proxies sit in front of the wiki, usually `1`                                                                                         |
 | `PORT`                    | The server's port, default `3000`                                                                                                                                                     |
 | `ADDRESS_HEADER`          | Behind a reverse proxy: the header with the client's real IP, e.g. `X-Forwarded-For`                                                                                                  |
 | `BODY_SIZE_LIMIT`         | The largest request the server accepts. `11M` in the Docker image, so uploads of up to 10 MB work                                                                                     |
@@ -260,10 +308,10 @@ Use the migrations rather than `npm run db:push`: some of them carry hand-writte
 | `npm run lint` / `npm run format` | Prettier and ESLint                                                                                                          |
 | `npm run test:unit`               | Unit tests with Vitest                                                                                                       |
 | `npm run test:e2e`                | End-to-end tests with Playwright                                                                                             |
-| `npm run build`                   | Production build (`node build` runs it)                                                                                      |
+| `npm run build`                   | Production build (`npm start` runs it, under `BASE_PATH` if set)                                                             |
 | `npm run db:generate`             | Generate a migration from schema changes (run once for SQLite and once for PostgreSQL, with the matching `DATABASE_DIALECT`) |
 
-The end-to-end tests build the app and run it as in the Docker image (`node build`), with databases of their own under `.data/e2e/`, seeded fresh on every run — the development database stays untouched. Next to the main server they start servers for the other access modes and stand-ins for an embeddings service (`e2e/fake-embeddings.js`) and for Microsoft's login (`e2e/fake-microsoft.js`). Among other things, they check that the web view and the PDF break at the same places, that no blank pages appear and that the page break lines match the real PDF.
+The end-to-end tests build the app and run it as in the Docker image (`npm start`), with databases of their own under `.data/e2e/`, seeded fresh on every run — the development database stays untouched. Next to the main server they start servers for the other access modes a server under `BASE_PATH=/wiki`, and stand-ins for an embeddings service (`e2e/fake-embeddings.js`) and for Microsoft's login (`e2e/fake-microsoft.js`). Among other things, they check that the web view and the PDF break at the same places, that no blank pages appear and that the page break lines match the real PDF.
 
 On every pull request and every push to `main`, GitHub Actions runs lint, type check, unit and end-to-end tests and the Docker build (`.github/workflows/ci.yml`). There, an end-to-end test that fails once is retried once and reported as flaky.
 
