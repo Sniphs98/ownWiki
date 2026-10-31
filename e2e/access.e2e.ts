@@ -10,7 +10,7 @@ const PASSWORD = 'ein-langes-passwort-123';
 
 /** Signs a new person up in their own browser context, logged in. */
 async function person(browser: Browser, name: string) {
-	const email = `${name.toLowerCase()}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@example.test`;
+	const email = `${name.toLowerCase().replace(/\W+/g, '-')}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@example.test`;
 	const context = await browser.newContext({ baseURL });
 	const response = await context.request.post('/api/auth/sign-up/email', {
 		data: { email, password: PASSWORD, name },
@@ -34,7 +34,7 @@ test('admins close an area, open it for a group, and everything else follows', a
 	browser,
 	request
 }) => {
-	const area = `e2e/zugriff-${Date.now().toString(36)}`;
+	const area = `e2e/zugriff-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 	const secret = `${area}/geheim`;
 	const word = `Zugriffsprobe${Date.now().toString(36)}`;
 	for (const [path, title] of [
@@ -51,8 +51,11 @@ test('admins close an area, open it for a group, and everything else follows', a
 
 	const admin = await person(browser, 'Ada');
 	makeAdmin(admin.email);
-	const member = await person(browser, 'Mia');
-	const groupName = `HR ${Date.now().toString(36)}`;
+	// Unique names: repeated runs share the database, and may start in the same millisecond.
+	const run = Math.random().toString(36).slice(2, 7);
+	const memberName = `Mia ${run}`;
+	const member = await person(browser, memberName);
+	const groupName = `HR ${run}`;
 
 	// The admin sets it up: a group with Mia, closed to everyone, readable for the group.
 	await admin.page.goto('/verwaltung');
@@ -60,7 +63,7 @@ test('admins close an area, open it for a group, and everything else follows', a
 	await admin.page.getByRole('button', { name: 'Gruppe anlegen' }).click();
 	await admin.page.getByRole('combobox', { name: `Person zu ${groupName} hinzufügen` }).click();
 	await admin.page.getByPlaceholder('Name oder E-Mail …').fill(member.email);
-	await admin.page.getByRole('option', { name: new RegExp(`^Mia`) }).click();
+	await admin.page.getByRole('option', { name: new RegExp(`^${memberName}`) }).click();
 	await admin.page
 		.locator('form', {
 			has: admin.page.getByRole('combobox', { name: `Person zu ${groupName} hinzufügen` })
@@ -68,7 +71,7 @@ test('admins close an area, open it for a group, and everything else follows', a
 		.getByRole('button', { name: 'Hinzufügen' })
 		.click();
 	await expect(
-		admin.page.getByRole('button', { name: `Mia aus ${groupName} entfernen` })
+		admin.page.getByRole('button', { name: `${memberName} aus ${groupName} entfernen` })
 	).toBeVisible();
 
 	const setRule = async (subject: string, level: string) => {
@@ -111,7 +114,7 @@ test('admins close an area, open it for a group, and everything else follows', a
 	expect(memberSave.status()).toBe(403);
 
 	// A rule just for Mia goes before her group's.
-	await setRule('Mia', 'Bearbeiten');
+	await setRule(memberName, 'Bearbeiten');
 	expect((await member.page.request.get(`/w/${secret}/edit`)).status()).toBe(200);
 
 	// Admins always may; others don't get to the administration at all.
