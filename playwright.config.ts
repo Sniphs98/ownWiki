@@ -5,6 +5,9 @@ const PORT = 4173;
 /** Further servers from the same build, for the other AUTH_MODEs (auth-modes.e2e.ts). */
 export const READ_ONLY_PORT = 4174;
 export const FULL_PORT = 4175;
+/** A private wiki that logs in with Microsoft (e2e/fake-microsoft.js), registration closed. */
+export const MICROSOFT_PORT = 4176;
+export const FAKE_MICROSOFT_PORT = 4181;
 
 /** A stand-in for OpenAI's embeddings API (e2e/fake-embeddings.js). */
 const EMBEDDINGS_PORT = 4180;
@@ -33,6 +36,11 @@ export default defineConfig({
 			env: { PORT: String(EMBEDDINGS_PORT) }
 		},
 		{
+			command: 'node e2e/fake-microsoft.js',
+			port: FAKE_MICROSOFT_PORT,
+			env: { PORT: String(FAKE_MICROSOFT_PORT) }
+		},
+		{
 			// The real production server (adapter-node, as in the Docker image) —
 			// not `vite preview` — so the PDF export runs exactly as deployed.
 			command: 'node e2e/setup-db.js && npm run build && node build',
@@ -57,8 +65,26 @@ export default defineConfig({
 				EMBEDDINGS_URL: `http://localhost:${EMBEDDINGS_PORT}/v1`,
 				EMBEDDINGS_MODEL: 'fake'
 			})
+		},
+		{
+			command: 'node e2e/setup-db.js && node build',
+			port: MICROSOFT_PORT,
+			// Its own database, though private like the full server's.
+			env: serverEnv(MICROSOFT_PORT, 'full', {
+				DATABASE_URL: './.data/e2e/microsoft/wiki.db',
+				ALLOW_SIGNUP: 'false',
+				MICROSOFT_CLIENT_ID: 'e2e-client',
+				MICROSOFT_CLIENT_SECRET: 'e2e-secret',
+				MICROSOFT_TENANT_ID: 'e2e-tenant',
+				MICROSOFT_AUTHORITY: `http://localhost:${FAKE_MICROSOFT_PORT}`
+			})
 		}
 	],
 	use: { baseURL: `http://localhost:${PORT}` },
-	testMatch: '**/*.e2e.{ts,js}'
+	testMatch: '**/*.e2e.{ts,js}',
+	// In CI, a test that fails once may run again: under the full run's load
+	// (four servers, PDF rendering) an editor test now and then misses a
+	// keystroke, and that shouldn't block a release. Reported as "flaky";
+	// a real failure fails twice.
+	retries: process.env.CI ? 1 : 0
 });

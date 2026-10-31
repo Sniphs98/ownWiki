@@ -1,7 +1,8 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
 import { isSignupAllowed } from '$lib/server/signup';
+import { microsoftLogin, passwordLogin } from '$lib/server/microsoft';
 import { safeRedirectPath } from '$lib/safe-redirect';
 import { oauthContinuation } from '$lib/server/oauth-flow';
 import { createRateLimiter } from '$lib/server/rate-limit';
@@ -37,11 +38,37 @@ export const load: PageServerLoad = async (event) => {
 	if (event.locals.user) {
 		redirect(303, await redirectTarget(event.url));
 	}
-	return { signupAllowed: await isSignupAllowed() };
+	return {
+		passwordLogin,
+		signupAllowed: passwordLogin && (await isSignupAllowed()),
+		microsoftLogin: !!microsoftLogin,
+		// Back from Microsoft without a login (see the microsoft action).
+		error: event.url.searchParams.get('error')
+	};
 };
 
+const PASSWORD_LOGIN_OFF = 'Hier meldest du dich mit Microsoft an.';
+
 export const actions: Actions = {
+	/** Off to Microsoft's login; it comes back to /api/auth/callback/microsoft. */
+	microsoft: async (event) => {
+		if (!microsoftLogin) error(404, 'Nicht gefunden');
+		const { url } = await auth.api.signInSocial({
+			headers: event.request.headers,
+			body: {
+				provider: 'microsoft',
+				// Also back into an AI assistant's authorization, if that brought us here.
+				callbackURL: await redirectTarget(event.url),
+				errorCallbackURL: '/login'
+			}
+		});
+		if (!url) error(500, 'Microsoft-Anmeldung konnte nicht gestartet werden.');
+		redirect(303, url);
+	},
+
 	signIn: async (event) => {
+		if (!passwordLogin)
+			return fail(403, { mode: 'signIn' as const, email: '', message: PASSWORD_LOGIN_OFF });
 		const formData = await event.request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
@@ -70,6 +97,14 @@ export const actions: Actions = {
 	},
 
 	signUp: async (event) => {
+		if (!passwordLogin) {
+			return fail(403, {
+				mode: 'signUp' as const,
+				email: '',
+				name: '',
+				message: PASSWORD_LOGIN_OFF
+			});
+		}
 		const formData = await event.request.formData();
 		const email = formData.get('email')?.toString() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
