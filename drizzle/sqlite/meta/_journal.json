@@ -43,6 +43,55 @@
       "when": 1793383317138,
       "tag": "0005_version_via",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1793384557753,
+      "tag": "0006_access_rules",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793396006794,
+      "tag": "0007_page_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793396280521,
+      "tag": "0008_page_tags",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1793396648089,
+      "tag": "0009_inbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1793400107760,
+      "tag": "0010_page_pins",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1793402819619,
+      "tag": "0011_link_bindings",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1793403315931,
+      "tag": "0012_page_redirects",
+      "breakpoints": true
     }
   ]
 }

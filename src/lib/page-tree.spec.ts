@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildPageTree } from './page-tree';
+import { buildPageTree, findNode } from './page-tree';
 
 const at = new Date(0);
 const page = (path: string, title = path) => ({ id: path, path, title, updatedAt: at });
@@ -21,9 +21,31 @@ describe('buildPageTree', () => {
 		]);
 	});
 
+	it('puts pinned pages and folders first in their level, each level on its own', () => {
+		const tree = buildPageTree(
+			[page('anleitung/a'), page('anleitung/editor'), page('it'), page('zuletzt')],
+			['zuletzt', 'anleitung/editor', 'gibt-es-nicht']
+		);
+		expect(tree.map((n) => [n.name, n.pinned])).toEqual([
+			['zuletzt', true],
+			['anleitung', false],
+			['it', false]
+		]);
+		expect(tree[1].children.map((n) => n.name)).toEqual(['editor', 'a']);
+	});
+
 	it('attaches a page to its folder node when both exist', () => {
 		const [node] = buildPageTree([page('personal/a'), page('personal', 'Personal')]);
 		expect(node.page?.title).toBe('Personal');
 		expect(node.children).toHaveLength(1);
+	});
+});
+
+describe('findNode', () => {
+	it('finds a folder or page by path', () => {
+		const tree = buildPageTree([page('anleitung/editor/tabellen'), page('it')]);
+		expect(findNode(tree, 'anleitung/editor')?.children.map((n) => n.name)).toEqual(['tabellen']);
+		expect(findNode(tree, 'it')?.page?.title).toBe('it');
+		expect(findNode(tree, 'anleitung/fehlt')).toBeUndefined();
 	});
 });

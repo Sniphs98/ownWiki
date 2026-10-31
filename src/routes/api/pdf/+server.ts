@@ -5,10 +5,15 @@ import { wantsToc } from '$lib/pdf-toc-setting.svelte';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async (event) => {
-	const allPages = await listPages();
-	if (allPages.length === 0) error(404, 'Noch keine Seiten vorhanden');
+	const pages = event.locals.access.readable(await listPages());
+	if (pages.length === 0) error(404, 'Noch keine Seiten vorhanden');
 
-	const pdf = await generatePdfOrFail(wantsToc(event.url) ? '/print?toc=1' : '/print', event.url);
+	// Rendered as the person asking: with exactly the pages they may read.
+	const pdf = await generatePdfOrFail(
+		wantsToc(event.url) ? '/print?toc=1' : '/print',
+		event.url,
+		event.locals.user?.id
+	);
 
 	return new Response(new Uint8Array(pdf), {
 		headers: {

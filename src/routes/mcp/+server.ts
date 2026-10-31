@@ -2,13 +2,18 @@ import { error } from '@sveltejs/kit';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import { requireMcpAuth } from '@better-auth/mcp';
 import { auth, mcpResource } from '$lib/server/auth';
+import { accessFor } from '$lib/server/access';
+import { isConnected } from '$lib/server/ai-connections';
+import { authMode } from '$lib/server/auth-mode';
+import { getUserRole } from '$lib/server/repo/access';
 import { internalOrigin } from '$lib/server/internal-origin';
 import { createWikiMcpServer, type McpActor } from '$lib/server/mcp/server';
 import type { RequestHandler } from './$types';
 
 /**
- * The person an access token was issued to (`sub`) and the name the
- * assistant registered under (`azp` is its client id), for the history.
+ * The person an access token was issued to (`sub`), with their rights, and
+ * the name the assistant registered under (`azp` is its client id), for
+ * the history.
  */
 async function actorFrom(claims: { sub?: string; azp?: unknown }): Promise<McpActor> {
 	const { adapter } = await auth.$context;
@@ -19,7 +24,12 @@ async function actorFrom(claims: { sub?: string; azp?: unknown }): Promise<McpAc
 					where: [{ field: 'clientId', value: claims.azp }]
 				})
 			: null;
-	return { userId: claims.sub ?? '', via: client?.name || 'KI-Assistent' };
+	const userId = claims.sub ?? '';
+	return {
+		userId,
+		via: client?.name || 'KI-Assistent',
+		access: await accessFor({ id: userId, role: await getUserRole(userId) }, authMode)
+	};
 }
 
 /** Answers one MCP request: a fresh server and transport each time, nothing kept between requests. */
@@ -31,6 +41,17 @@ async function answer(request: Request, origin: string, actor: McpActor) {
 	});
 	await server.connect(transport);
 	return transport.handleRequest(request);
+}
+
+/** As for a missing token: the assistant has to be allowed again. */
+function disconnected(origin: string) {
+	const metadata = `${origin}/.well-known/oauth-protected-resource/mcp`;
+	return new Response('Diese Verbindung wurde getrennt.', {
+		status: 401,
+		headers: {
+			'www-authenticate': `Bearer error="invalid_token", error_description="Verbindung getrennt", resource_metadata="${metadata}"`
+		}
+	});
 }
 
 const protectedHandlers = new Map<string, (request: Request) => Promise<Response>>();
@@ -52,7 +73,17 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	if (!handler) {
 		handler = requireMcpAuth(
 			auth,
-			async (req, claims) => answer(req, url.origin, await actorFrom(claims)),
+			async (req, claims) => {
+				// Disconnected under Einstellungen: the token is still signed, but no longer good.
+				if (
+					!claims.sub ||
+					typeof claims.azp !== 'string' ||
+					!(await isConnected(claims.sub, claims.azp))
+				) {
+					return disconnected(url.origin);
+				}
+				return answer(req, url.origin, await actorFrom(claims));
+			},
 			{
 				resource: mcpResource,
 				jwksUrl

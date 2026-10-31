@@ -11,7 +11,7 @@
 	let { data } = $props();
 
 	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
-	const topLevel = $derived(buildPageTree(data.pages));
+	const topLevel = $derived(buildPageTree(data.pages, data.pinned));
 </script>
 
 <svelte:head>

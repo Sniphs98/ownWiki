@@ -9,3 +9,9 @@ import crypto from 'node:crypto';
 export const PDF_INTERNAL_TOKEN = crypto.randomBytes(32).toString('hex');
 
 export const PDF_INTERNAL_TOKEN_HEADER = 'x-internal-pdf-token';
+
+/**
+ * Alongside the token: the person who asked for the PDF, so the print view
+ * shows exactly the pages they may read. Only trusted with the token.
+ */
+export const PDF_INTERNAL_USER_HEADER = 'x-internal-pdf-user';

@@ -8,6 +8,8 @@ export interface PageTreeNode {
 	name: string;
 	fullPath: string;
 	page?: PageTreePage;
+	/** Pinned by the person looking: shown first in its folder. */
+	pinned: boolean;
 	children: PageTreeNode[];
 }
 
@@ -18,8 +20,12 @@ interface PageLike {
 	updatedAt: Date;
 }
 
-/** Builds a nested folder tree from flat page paths (e.g. "personal/kuendigung"). */
-export function buildPageTree(pages: PageLike[]): PageTreeNode[] {
+/**
+ * Builds a nested folder tree from flat page paths (e.g. "personal/kuendigung").
+ * Each level is sorted by name, with the `pinned` paths (pages or folders) first.
+ */
+export function buildPageTree(pages: PageLike[], pinned: string[] = []): PageTreeNode[] {
+	const pins = new Set(pinned);
 	const root: PageTreeNode[] = [];
 
 	for (const p of pages) {
@@ -32,7 +38,12 @@ export function buildPageTree(pages: PageLike[]): PageTreeNode[] {
 
 			let node = level.find((n) => n.name === segment);
 			if (!node) {
-				node = { name: segment, fullPath: currentPath, children: [] };
+				node = {
+					name: segment,
+					fullPath: currentPath,
+					pinned: pins.has(currentPath),
+					children: []
+				};
 				level.push(node);
 			}
 
@@ -49,6 +60,18 @@ export function buildPageTree(pages: PageLike[]): PageTreeNode[] {
 }
 
 function sortTree(nodes: PageTreeNode[]) {
-	nodes.sort((a, b) => a.name.localeCompare(b.name));
+	nodes.sort((a, b) => Number(b.pinned) - Number(a.pinned) || a.name.localeCompare(b.name));
 	for (const node of nodes) sortTree(node.children);
+}
+
+/** The node at `path` in a tree from buildPageTree, if there is one. */
+export function findNode(tree: PageTreeNode[], path: string): PageTreeNode | undefined {
+	let level = tree;
+	let node: PageTreeNode | undefined;
+	for (const segment of path.split('/').filter(Boolean)) {
+		node = level.find((n) => n.name === segment);
+		if (!node) return undefined;
+		level = node.children;
+	}
+	return node;
 }

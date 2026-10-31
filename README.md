@@ -14,10 +14,13 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
 - **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
-- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
+- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`, mit Vorschlägen beim Tippen. Sie bleiben gültig, wenn die Seite umbenannt oder verschoben wird; unter jeder Seite steht, welche Seiten auf sie verlinken (Backlinks).
+- **Seiten verschieben** samt Unterseiten, mit Weiterleitung von alten Adressen und einem festen Link pro Seite.
+- **Tags** an Seiten, mit Übersicht unter `/tags`.
+- **Inbox** pro Person für schnelle Notizen, die später in eine Seite einsortiert werden.
 - **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
 - **Inhaltsverzeichnis** der geöffneten Seite rechts neben dem Text.
-- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki.
+- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki –, dazu **Rechte pro Bereich** für Gruppen und einzelne Personen.
 - **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
 
 ### Inhaltsverzeichnis
@@ -78,6 +81,31 @@ Das Suchfeld oben in der Mitte durchsucht Titel, Pfade und Text aller Seiten (Di
 
 Unter SQLite sucht ownWiki mit FTS5, unter PostgreSQL mit der deutschen Volltextsuche der Datenbank (mit echter Wortstamm-Erkennung). Der Suchindex wird bei jedem Speichern aktualisiert und beim ersten Start automatisch aufgebaut.
 
+**Semantische Suche (optional):** Mit einem Embedding-Dienst findet die Suche Seiten auch über ihre Bedeutung – „Datensicherung“ findet den Abschnitt „Backup“, die Frage „wie beantrage ich Urlaub?“ die Seite zum Urlaubsantrag. Solche Treffer stehen zwischen den Volltext-Treffern und sind als „inhaltlich ähnlich“ markiert; die KI-Anbindung sucht genauso. Dafür wird jede Seite in Abschnitte zerlegt, und der Dienst berechnet zu jedem einen Vektor (Embedding). Neue und geänderte Seiten kommen nach wenigen Sekunden dazu, bestehende beim ersten Start. Ist der Dienst nicht erreichbar, sucht ownWiki weiter mit der Volltextsuche.
+
+Geeignet ist jeder Dienst mit der Embeddings-Schnittstelle von OpenAI (siehe `EMBEDDINGS_URL` unten), z. B.:
+
+- **OpenAI:** `EMBEDDINGS_URL=https://api.openai.com/v1`, `EMBEDDINGS_MODEL=text-embedding-3-small` und ein API-Schlüssel. Kostet für ein ganzes Firmen-Wiki Cent-Beträge.
+- **Azure OpenAI** (Daten in der EU): `EMBEDDINGS_URL=https://<ressource>.openai.azure.com/openai/v1`, als Modell der Name des Deployments.
+- **Lokal mit [Ollama](https://ollama.com)**, ohne dass Text den Server verlässt und ohne Grafikkarte – am einfachsten mit dem mitgelieferten Container, siehe [Schnellstart](#schnellstart-mit-docker). Ohne Docker: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (vorher `ollama pull bge-m3`).
+
+Lokal oder Cloud lässt sich jederzeit wechseln: Nach einem Modellwechsel erfasst ownWiki alle Seiten im Hintergrund neu, bis dahin sucht es mit der Volltextsuche.
+
+Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
+
+### Links und Verschieben
+
+- **Vorschläge:** Tippt man im Editor `[[` – oder wählt im „/“-Menü „Seite verlinken“ –, schlägt eine Liste passende Seiten vor (Titel und Pfad) – mit den Pfeiltasten wählen, Enter oder Tab fügt den Link ein, Escape schließt die Liste. Für einen Namen, den noch keine Seite hat, gibt es „… verlinken (neue Seite)“. Haben zwei Seiten denselben Titel, wird der Pfad eingefügt (`[[hr/urlaub|Urlaub]]`), damit klar ist, welche gemeint ist.
+- **Links bleiben gültig:** Beim Speichern merkt sich das Wiki zu jedem Link, welche Seite er meint. Wird sie umbenannt oder verschoben, führt der Link weiter dorthin und zeigt ihren aktuellen Titel; bekommt danach eine andere Seite den alten Namen, übernimmt sie bestehende Links nicht. Im Text steht weiter, was geschrieben wurde – öffnet man die Seite im Editor, steht dort schon der aktuelle Name.
+- **Verschieben:** „Verschieben“ bei einer Seite oder einem Ordner wählt den neuen Ordner und Namen. Vorher zeigt der Dialog die neue Adresse, wie viele Unterseiten mitwandern, wie viele Seiten hierher verlinken – und wer am neuen Ort neu lesen darf oder nicht mehr, denn dort gelten dessen Rechte. Alte Adressen leiten weiter, der Verlauf vermerkt den Umzug.
+- **Fester Link:** „Link kopieren“ kopiert eine Adresse der Form `/p/…`, die immer zur Seite führt, wohin sie auch verschoben wird – gut für E-Mails und Tickets.
+
+### Backlinks, Tags und Inbox
+
+- **Backlinks:** Unter jeder Seite steht „Verlinkt von“ mit den Seiten, die per `[[Wiki-Link]]` oder `/w/…`-Link auf sie verweisen – soweit man sie lesen darf. Auch Links, die schon vor der Seite da waren, zählen, sobald es sie gibt.
+- **Tags:** Unter dem Editor setzt man Tags, durch Kommas getrennt („hr, urlaub“). Sie stehen unter dem Seitentitel; das Tag-Symbol oben rechts führt zur Übersicht aller Tags und ihrer Seiten. Tags gehören nicht zum Versionsverlauf.
+- **Inbox:** Über das Inbox-Symbol oben rechts (mit der Zahl offener Notizen) notiert man schnell etwas, das noch keinen Platz hat – nur man selbst sieht die eigene Inbox. Mit „Einsortieren“ landet eine Notiz in einer Seite: angehängt, wenn es die Seite gibt, sonst als neue Seite.
+
 ### Versionsverlauf
 
 Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
@@ -90,11 +118,22 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 
 ![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
 
+### Rechte pro Bereich
+
+Admins legen unter **Verwaltung** (Schild-Symbol oben rechts) Gruppen an, z. B. „HR“, und vergeben Rechte: für einen Bereich – einen Seitenpfad mit allem darunter, oder das ganze Wiki – an alle, eine Gruppe oder eine einzelne Person, jeweils _kein Zugriff_, _lesen_ oder _bearbeiten_.
+
+- Ohne Regel darf jede Person alles lesen und bearbeiten.
+- Eine Regel auf `personal` gilt auch für `personal/kuendigung`; eine Regel auf einem Unterbereich geht für dieselbe Gruppe oder Person vor.
+- Die Regel für eine Person geht vor der ihrer Gruppen (von mehreren Gruppen zählt die großzügigste), die einer Gruppe vor der für alle.
+- Admins dürfen immer alles. Das erste Konto eines Wikis ist Admin; weitere ernennt man in der Verwaltung.
+
+Was jemand nicht lesen darf, gibt es für ihn nicht: Die Seite fehlt in Seitenleiste, Suche, PDF-Export, Links und Backlinks, auch Dateien darauf sind nicht abrufbar. Das gilt genauso für KI-Assistenten – sie dürfen genau, was die Person darf, die sie verbunden hat. `AUTH_MODE` begrenzt weiterhin, was ohne Anmeldung möglich ist.
+
 ### KI-Anbindung (MCP)
 
-ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern oder etwas an sie anhängen. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
+ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche und Tags auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern, taggen oder etwas an sie anhängen. Außerdem notiert sie auf Zuruf in der persönlichen Inbox („notier dir das“) und sortiert Notizen mit einem ins Wiki ein. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
 
-Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration).
+Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration). Unter **Einstellungen → KI-Verbindungen** sieht jede Person ihre verbundenen Assistenten und kann sie trennen – der Zugriff endet sofort.
 
 Voraussetzung ist, dass `ORIGIN` gesetzt ist – ohne gibt es die Anbindung nicht.
 
@@ -115,23 +154,38 @@ docker compose up -d
 
 Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volume `wikidata`; Migrationen laufen beim Start automatisch. Für PostgreSQL in `.env` `DATABASE_DIALECT=postgresql` und die passende `DATABASE_URL` setzen und mit `docker compose --profile postgresql up -d` starten.
 
+**Semantische Suche auf eigener Hardware:** In `.env` zusätzlich
+
+```sh
+EMBEDDINGS_URL=http://ollama:11434/v1
+EMBEDDINGS_MODEL=bge-m3
+EMBEDDINGS_MIN_SCORE=0.5
+```
+
+setzen und mit `docker compose --profile ollama up -d` starten. Das startet [Ollama](https://ollama.com) als eigenen Container und lädt beim ersten Mal das Modell herunter (bge-m3, etwa 1,2 GB; versteht Deutsch gut). Eine Grafikkarte ist nicht nötig, das Modell braucht rund 2 GB Arbeitsspeicher. Sobald es da ist, erfasst das Wiki alle Seiten im Hintergrund. Gemessen auf einem Prozessor mit 12 Threads ohne Grafikkarte: eine Suche rund 30 ms, das Erfassen etwa 0,3 s pro Abschnitt – für 1.000 Seiten beim ersten Start also grob eine halbe Stunde, danach pro gespeicherter Seite ein, zwei Sekunden. Reicht die Hardware nicht, trägt man stattdessen einen Cloud-Dienst wie Azure OpenAI ein (siehe [Suche](#suche)) und startet ohne `--profile ollama`.
+
 Das Image enthält Chromium für den PDF-Export.
 
 Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container Registry nehmen – dafür in `compose.yaml` `build: .` durch `image: ghcr.io/sniphs98/ownwiki:latest` (oder eine feste Version wie `:1.2.0`) ersetzen.
 
 ## Konfiguration
 
-| Variable             | Bedeutung                                                                                                |
-| -------------------- | -------------------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`   | `sqlite` (Standard) oder `postgresql`                                                                    |
-| `DATABASE_URL`       | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                             |
-| `ORIGIN`             | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet. |
-| `BETTER_AUTH_SECRET` | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                 |
-| `AUTH_MODE`          | Wer was darf, siehe unten. Standard: `read-only`                                                         |
-| `ALLOW_SIGNUP`       | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                   |
-| `PORT`               | Port des Servers, Standard `3000`                                                                        |
-| `ADDRESS_HEADER`     | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                     |
-| `BODY_SIZE_LIMIT`    | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen             |
+| Variable                | Bedeutung                                                                                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`      | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                            |
+| `DATABASE_URL`          | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                     |
+| `ORIGIN`                | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                         |
+| `BETTER_AUTH_SECRET`    | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                         |
+| `AUTH_MODE`             | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                 |
+| `ALLOW_SIGNUP`          | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                           |
+| `PORT`                  | Port des Servers, Standard `3000`                                                                                                                                                                                |
+| `ADDRESS_HEADER`        | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                             |
+| `BODY_SIZE_LIMIT`       | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                     |
+| `EMBEDDINGS_URL`        | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                       |
+| `EMBEDDINGS_MODEL`      | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                       |
+| `EMBEDDINGS_API_KEY`    | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                               |
+| `EMBEDDINGS_DIMENSIONS` | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                      |
+| `EMBEDDINGS_MIN_SCORE`  | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); für `bge-m3` `0.5`. Andere Modelle: höher setzen, wenn zu viel Unpassendes gefunden wird |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
@@ -203,9 +257,9 @@ Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und ver
 - **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
 - **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
 - Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
+- **Suche** (`src/lib/server/search`): Volltext in der Datenbank, dazu optional semantisch – Seiten werden in Abschnitte zerlegt (`semantic/chunks.ts`), im Hintergrund eingebettet, im Arbeitsspeicher verglichen und mit den Volltext-Treffern per Reciprocal Rank Fusion gemischt.
 - **MCP-Server** für KI-Assistenten unter `/mcp` (`src/lib/server/mcp`, offizielles MCP-SDK, zustandslos über Streamable HTTP), geschützt per OAuth – Better Auth ist dafür mit dem `mcp()`-Plugin zugleich OAuth-Server (`src/lib/server/auth.ts`, Zustimmungsseite unter `/consent`).
 
 ## Noch nicht umgesetzt
 
-- Semantische Suche (KI/Vektor-Embeddings) – die Suche ist dafür als austauschbarer Baustein angelegt (`src/lib/server/search`)
 - Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank

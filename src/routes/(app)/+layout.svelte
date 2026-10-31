@@ -1,10 +1,14 @@
 <script lang="ts">
 	import * as Sidebar from '$lib/components/ui/sidebar';
 	import * as Breadcrumb from '$lib/components/ui/breadcrumb';
+	import { breadcrumbs } from '$lib/page-paths';
 	import PageSidebar from '$lib/components/wiki/page-sidebar.svelte';
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
+	import TagsIcon from '@lucide/svelte/icons/tags';
+	import InboxIcon from '@lucide/svelte/icons/inbox';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -35,19 +39,15 @@
 		const match = page.url.pathname.match(/^\/w\/(.+)$/);
 		if (!match) return [];
 
-		const segments = match[1].replace(/\/edit$/, '').split('/');
-		let acc = '';
-		return segments.map((segment) => {
-			acc = acc ? `${acc}/${segment}` : segment;
-			return { label: segment, path: acc };
-		});
+		const path = match[1].replace(/\/(edit|history)$/, '');
+		return breadcrumbs(path);
 	});
 </script>
 
 <!-- h-svh: the window never scrolls — only <main> does, below the fixed
 	 header (and the editor toolbar sticks to the top of <main>). -->
 <Sidebar.Provider class="h-svh">
-	<PageSidebar pages={data.pages} {canEdit} />
+	<PageSidebar pages={data.pages} {canEdit} pinned={data.pinned} canPin={!!data.user} />
 	<Sidebar.Inset class="min-h-0">
 		<!-- Three columns, the outer two equally wide, so the search sits in the
 			 middle: page location left, search centered, settings & account right. -->
@@ -98,6 +98,46 @@
 			{/if}
 
 			<div class="flex items-center justify-end gap-1">
+				{#if data.user}
+					<Button
+						href={resolve('/(app)/inbox')}
+						variant="ghost"
+						size="icon"
+						class="relative"
+						title="Inbox: schnelle Notizen"
+						aria-label={data.inboxCount
+							? `Inbox, ${data.inboxCount} ${data.inboxCount === 1 ? 'Notiz' : 'Notizen'}`
+							: 'Inbox'}
+					>
+						<InboxIcon />
+						{#if data.inboxCount}
+							<span
+								class="absolute -top-0.5 -right-0.5 min-w-4 rounded-full bg-primary px-1 text-[10px] leading-4 text-primary-foreground"
+								aria-hidden="true">{data.inboxCount}</span
+							>
+						{/if}
+					</Button>
+				{/if}
+				<Button
+					href={resolve('/(app)/tags')}
+					variant="ghost"
+					size="icon"
+					title="Tags"
+					aria-label="Tags"
+				>
+					<TagsIcon />
+				</Button>
+				{#if data.isAdmin}
+					<Button
+						href={resolve('/(app)/verwaltung')}
+						variant="ghost"
+						size="icon"
+						title="Verwaltung: Gruppen und Zugriffsrechte"
+						aria-label="Verwaltung"
+					>
+						<ShieldIcon />
+					</Button>
+				{/if}
 				<Button
 					href={resolve('/(app)/settings')}
 					variant="ghost"

@@ -6,7 +6,8 @@ import {
 	timestamp,
 	customType,
 	uniqueIndex,
-	index
+	index,
+	primaryKey
 } from 'drizzle-orm/pg-core';
 import { user } from './auth.pg';
 
@@ -114,4 +115,134 @@ export const pdfCover = pgTable('pdf_cover', {
 		.defaultNow()
 		.$onUpdate(() => new Date())
 		.notNull()
+});
+
+/** A named group of people, e.g. "HR" — access rules can name it (see $lib/access.ts). */
+export const userGroup = pgTable('user_group', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull().unique(),
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+export const userGroupMember = pgTable(
+	'user_group_member',
+	{
+		groupId: text('group_id')
+			.notNull()
+			.references(() => userGroup.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.groupId, table.userId] }),
+		index('user_group_member_user_id_idx').on(table.userId)
+	]
+);
+
+/**
+ * Who may do what in an area of the wiki, see $lib/access.ts. Deleting a
+ * group or person doesn't remove their rules here; rules for subjects that
+ * no longer exist simply never match.
+ */
+export const accessRule = pgTable(
+	'access_rule',
+	{
+		id: text('id').primaryKey(),
+		/** A page path and everything below it; '' for the whole wiki. */
+		path: text('path').notNull(),
+		/** 'everyone', 'group' or 'user'. */
+		subjectType: text('subject_type').notNull(),
+		/** The group's or person's id; '' for everyone. */
+		subjectId: text('subject_id').notNull().default(''),
+		/** 'none', 'read' or 'edit'. */
+		level: text('level').notNull(),
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => [
+		uniqueIndex('access_rule_subject_uidx').on(table.path, table.subjectType, table.subjectId)
+	]
+);
+
+/**
+ * What each page's latest version links to, as written (see linkTargets in
+ * $lib/wiki-links.ts), and the page each link is bound to — so links
+ * survive moves and renames. Kept in step on every save.
+ */
+export const pageLink = pgTable(
+	'page_link',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		target: text('target').notNull(),
+		/** The page the link meant when saved (see bindTargets); null until it exists. */
+		targetPageId: text('target_page_id').references(() => page.id, { onDelete: 'set null' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.target] }),
+		index('page_link_target_idx').on(table.target),
+		index('page_link_target_page_id_idx').on(table.targetPageId)
+	]
+);
+
+/** A page's tags (see $lib/tags.ts) — not part of its versions. */
+export const pageTag = pgTable(
+	'page_tag',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		tag: text('tag').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.tag] }),
+		index('page_tag_tag_idx').on(table.tag)
+	]
+);
+
+/**
+ * A person's inbox: quick notes, from the /inbox page or an AI assistant,
+ * not yet sorted into a page. Only the person sees them.
+ */
+export const inboxNote = pgTable(
+	'inbox_note',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		content: text('content').notNull(),
+		/** The AI assistant that wrote it (its OAuth client name); null when written by hand. */
+		via: text('via'),
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => [index('inbox_note_user_id_idx').on(table.userId)]
+);
+
+/**
+ * What a person pinned in the page tree: a page or a folder, by path —
+ * shown first in its level, for them only (see $lib/page-tree.ts).
+ */
+export const pagePin = pgTable(
+	'page_pin',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		path: text('path').notNull()
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.path] })]
+);
+
+/**
+ * Where moved pages used to be: an old path leads to the page now. A page
+ * created at such a path later takes it over (the redirect goes).
+ */
+export const pageRedirect = pgTable('page_redirect', {
+	path: text('path').primaryKey(),
+	pageId: text('page_id')
+		.notNull()
+		.references(() => page.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').defaultNow().notNull()
 });

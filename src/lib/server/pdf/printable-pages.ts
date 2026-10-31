@@ -3,6 +3,8 @@ import { getAttachment } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
 import type { Cover } from '$lib/cover';
 import { resolveWikiLinks } from '$lib/wiki-links';
+import { linkBindings } from '$lib/server/backlinks';
+import type { PageAccess } from '$lib/server/access';
 
 export interface PrintablePage {
 	title: string;
@@ -54,17 +56,20 @@ async function inlineAttachmentImages(markdown: string): Promise<string> {
  * Resolves the page (or, with scope=subtree, the page and all its
  * descendants) to print/export, with wiki-links resolved and attachment
  * images inlined. Shared by the /print preview route and the /api/pdf
- * export endpoint so both produce identical content.
+ * export endpoint so both produce identical content. Only pages `access`
+ * may read are included, or linked to.
  */
 export async function resolvePrintablePages(
 	path: string,
 	scope: string | null,
+	access: PageAccess,
 	{ withCover = false }: { withCover?: boolean } = {}
 ): Promise<PrintableResult | null> {
+	if (!access.canRead(path)) return null;
 	const result = await getPageWithLatestVersion(path);
 	if (!result) return null;
 
-	const allPages = await listPages();
+	const allPages = access.readable(await listPages());
 	const targets =
 		scope === 'subtree'
 			? allPages.filter((p) => p.path === path || p.path.startsWith(`${path}/`))
@@ -75,7 +80,8 @@ export async function resolvePrintablePages(
 		const found =
 			target.path === result.page.path ? result : await getPageWithLatestVersion(target.path);
 		if (!found) continue;
-		const withLinks = resolveWikiLinks(found.version.content, allPages);
+		const bindings = await linkBindings(found.page.id, allPages);
+		const withLinks = resolveWikiLinks(found.version.content, allPages, bindings);
 		const withImages = await inlineAttachmentImages(withLinks);
 		pages.push({
 			title: found.version.title,
@@ -99,15 +105,16 @@ export async function resolvePrintablePages(
 	};
 }
 
-/** Every page in the wiki, for the "export everything" PDF. */
-export async function resolveAllPrintablePages(): Promise<PrintableResult> {
-	const allPages = await listPages();
+/** Every page in the wiki `access` may read, for the "export everything" PDF. */
+export async function resolveAllPrintablePages(access: PageAccess): Promise<PrintableResult> {
+	const allPages = access.readable(await listPages());
 
 	const pages: PrintablePage[] = [];
 	for (const target of [...allPages].sort((a, b) => a.path.localeCompare(b.path))) {
 		const found = await getPageWithLatestVersion(target.path);
 		if (!found) continue;
-		const withLinks = resolveWikiLinks(found.version.content, allPages);
+		const bindings = await linkBindings(found.page.id, allPages);
+		const withLinks = resolveWikiLinks(found.version.content, allPages, bindings);
 		const withImages = await inlineAttachmentImages(withLinks);
 		pages.push({
 			title: found.version.title,

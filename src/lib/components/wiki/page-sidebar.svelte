@@ -8,9 +8,21 @@
 	import { resolve } from '$app/paths';
 	import type { PageSummary } from '$lib/server/repo/pages';
 
-	let { pages, canEdit }: { pages: PageSummary[]; canEdit: boolean } = $props();
+	let {
+		pages,
+		canEdit,
+		pinned = [],
+		canPin = false
+	}: {
+		pages: PageSummary[];
+		canEdit: boolean;
+		/** The paths the person pinned: first in their level. */
+		pinned?: string[];
+		/** Pins are per person: only with a login. */
+		canPin?: boolean;
+	} = $props();
 
-	const tree = $derived(buildPageTree(pages));
+	const tree = $derived(buildPageTree(pages, pinned));
 
 	let newPageOpen = $state(false);
 </script>
@@ -45,7 +57,7 @@
 						<p class="px-2 py-1.5 text-sm text-muted-foreground">Noch keine Seiten.</p>
 					{/if}
 					{#each tree as node (node.fullPath)}
-						<PageTreeItem {node} {canEdit} />
+						<PageTreeItem {node} {canEdit} {canPin} />
 					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>

@@ -1,4 +1,5 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import Database from 'better-sqlite3';
 import { expect, test, type APIRequestContext, type Page, type Playwright } from '@playwright/test';
 import { FULL_PORT } from '../playwright.config';
 
@@ -8,6 +9,7 @@ const baseURL = `http://localhost:${FULL_PORT}`;
 test.use({ baseURL });
 
 const RESOURCE = `${baseURL}/mcp`;
+const DATABASE = './.data/e2e/full/wiki.db';
 // The assistant's address for the authorization code; never really reached.
 const REDIRECT_URI = 'http://localhost:9/callback';
 
@@ -112,6 +114,8 @@ async function connectAssistant(
 		page.waitForRequest((req) => req.url().startsWith(REDIRECT_URI)),
 		page.getByRole('button', { name: 'Erlauben' }).click()
 	]);
+	// The browser then fails to reach the made-up address; let it, before going on.
+	await page.waitForURL(/^chrome-error:/, { timeout: 5_000 }).catch(() => {});
 	const callback = new URL(callbackRequest.url());
 	expect(callback.searchParams.get('state')).toBe('e2e-state');
 	const code = callback.searchParams.get('code');
@@ -145,10 +149,16 @@ test('an assistant connects through login and consent, then reads as that person
 		'search',
 		'fetch',
 		'list_pages',
+		'list_tags',
 		'get_backlinks',
 		'create_page',
 		'update_page',
-		'append_to_page'
+		'append_to_page',
+		'move_page',
+		'add_to_inbox',
+		'list_inbox',
+		'file_inbox_note',
+		'delete_inbox_note'
 	]);
 
 	const { results } = await callTool(request, token, 'search', { query: 'Sicherung' });
@@ -157,6 +167,17 @@ test('an assistant connects through login and consent, then reads as that person
 		title: 'Betrieb',
 		url: `${baseURL}/w/e2e/handbuch/betrieb`
 	});
+
+	// By meaning, without a shared word (e2e/fake-embeddings.js) — once embedded.
+	await expect
+		.poll(
+			async () =>
+				(await callTool(request, token, 'search', { query: 'Datensicherung' })).results.map(
+					(hit: { id: string }) => hit.id
+				),
+			{ timeout: 15_000 }
+		)
+		.toContain('e2e/handbuch/betrieb');
 
 	const fetched = await callTool(request, token, 'fetch', { id: 'e2e/handbuch/betrieb' });
 	expect(fetched.text).toContain('Täglich um 2 Uhr.');
@@ -179,9 +200,18 @@ test('an assistant writes as the person, and the history says so', async ({
 
 	const created = await callTool(request, token, 'create_page', {
 		id,
-		content: '# KI-Notiz\n\nErster Gedanke.\n'
+		content: '# KI-Notiz\n\nErster Gedanke.\n',
+		tags: ['Notiz', 'KI Test']
 	});
 	expect(created).toMatchObject({ id, title: 'KI-Notiz', version: 1 });
+
+	// Tags: normalized, readable, and a way to find pages.
+	const fetchedTags = (await callTool(request, token, 'fetch', { id })).metadata.tags;
+	expect(fetchedTags).toEqual(['ki-test', 'notiz']);
+	const { tags } = await callTool(request, token, 'list_tags', {});
+	expect(tags).toContainEqual({ tag: 'ki-test', pages: 1 });
+	const tagged = await callTool(request, token, 'list_pages', { tag: 'KI Test' });
+	expect(tagged.pages).toEqual([expect.objectContaining({ id, tags: ['ki-test', 'notiz'] })]);
 
 	const appended = await callTool(request, token, 'append_to_page', {
 		id,
@@ -204,9 +234,11 @@ test('an assistant writes as the person, and the history says so', async ({
 	const updated = await callTool(request, token, 'update_page', {
 		id,
 		content: '# Gedanken\n\nErster Gedanke.\n\n- Zweiter Gedanke\n',
-		base_version: 2
+		base_version: 2,
+		tags: ['notiz']
 	});
 	expect(updated).toMatchObject({ title: 'Gedanken', version: 3 });
+	expect((await callTool(request, token, 'fetch', { id })).metadata.tags).toEqual(['notiz']);
 
 	const duplicate = await rpc(
 		request,
@@ -219,4 +251,98 @@ test('an assistant writes as the person, and the history says so', async ({
 	await page.goto(`/w/${id}/history`);
 	await expect(page.getByText('Max Notiz über E2E-Assistent')).toHaveCount(3);
 	await expect(page.getByText('Gedanken ergänzt')).toBeVisible();
+});
+
+test('an assistant may do no more than the person who connected it', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const name = `Lea ${Date.now().toString(36)}`;
+	const token = await connectAssistant({ page, playwright, request }, name);
+	const area = `e2e/ki-zugriff-${Date.now().toString(36)}`;
+	await callTool(request, token, 'create_page', { id: `${area}/offen`, content: '# Offen' });
+	await callTool(request, token, 'create_page', { id: `${area}/zu`, content: '# Zu' });
+
+	// As an admin would set it on /verwaltung: Lea may only read "offen", not see "zu".
+	const db = new Database(DATABASE);
+	try {
+		const { id: userId } = db.prepare('SELECT id FROM user WHERE name = ?').get(name) as {
+			id: string;
+		};
+		const rule = db.prepare(
+			`INSERT INTO access_rule (id, path, subject_type, subject_id, level) VALUES (?, ?, 'user', ?, ?)`
+		);
+		rule.run(randomUUID(), `${area}/offen`, userId, 'read');
+		rule.run(randomUUID(), `${area}/zu`, userId, 'none');
+	} finally {
+		db.close();
+	}
+
+	const call = async (name: string, args: object) =>
+		(await (await rpc(request, 'tools/call', { name, arguments: args }, token)).json()).result;
+
+	const { pages } = await callTool(request, token, 'list_pages', { prefix: area });
+	expect(pages.map((p: { id: string }) => p.id)).toEqual([`${area}/offen`]);
+	expect((await call('fetch', { id: `${area}/zu` })).isError).toBe(true);
+	expect((await call('fetch', { id: `${area}/offen` })).isError).toBeUndefined();
+
+	const append = await call('append_to_page', { id: `${area}/offen`, content: 'Mehr' });
+	expect(append.isError).toBe(true);
+	expect(append.content[0].text).toContain('nicht bearbeiten');
+	expect((await call('create_page', { id: `${area}/zu/neu`, content: '# Neu' })).isError).toBe(
+		true
+	);
+});
+
+test("an assistant notes in the person's inbox and sorts notes into pages", async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Ina Box');
+	const target = `e2e/inbox-ki-${Date.now().toString(36)}`;
+
+	const { id } = await callTool(request, token, 'add_to_inbox', { content: 'Idee: Tischkicker' });
+	await callTool(request, token, 'add_to_inbox', { content: 'Unwichtig' });
+
+	// The person sees both, marked as written by the assistant.
+	await page.goto('/inbox');
+	await expect(page.getByText('Idee: Tischkicker')).toBeVisible();
+	await expect(page.getByText('über E2E-Assistent').first()).toBeVisible();
+
+	const { notes } = await callTool(request, token, 'list_inbox', {});
+	expect(notes.map((note: { text: string }) => note.text)).toEqual([
+		'Unwichtig',
+		'Idee: Tischkicker'
+	]);
+
+	const filed = await callTool(request, token, 'file_inbox_note', { id, page_id: target });
+	expect(filed).toMatchObject({ id: target, created: true });
+	const fetched = await callTool(request, token, 'fetch', { id: target });
+	expect(fetched.text).toContain('Idee: Tischkicker');
+
+	await callTool(request, token, 'delete_inbox_note', { id: notes[0].id });
+	expect((await callTool(request, token, 'list_inbox', {})).notes).toEqual([]);
+});
+
+test('a person disconnects an assistant under Einstellungen, and it is locked out at once', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Tom Trenn');
+	expect((await rpc(request, 'tools/list', {}, token)).ok()).toBe(true);
+
+	await page.goto('/settings');
+	const connections = page.getByRole('list', { name: 'Verbundene Assistenten' });
+	await expect(connections.getByRole('listitem')).toHaveCount(1);
+	await expect(connections).toContainText('E2E-Assistent');
+	await connections.getByRole('button', { name: 'Trennen' }).click();
+	await expect(page.getByText('Kein Assistent verbunden.')).toBeVisible();
+
+	// The token is still signed and unexpired, but no longer lets it in.
+	const refused = await rpc(request, 'tools/list', {}, token);
+	expect(refused.status()).toBe(401);
+	expect(refused.headers()['www-authenticate']).toContain('invalid_token');
 });

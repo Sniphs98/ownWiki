@@ -1,13 +1,14 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, inArray } from 'drizzle-orm';
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import { db } from '$lib/server/db';
-import { page, pageVersion } from '$lib/server/db/schema/sqlite';
+import { page, pageRedirect, pageVersion } from '$lib/server/db/schema/sqlite';
 import type * as schema from '$lib/server/db/schema/sqlite';
 import {
 	PageConflictError,
 	type CreatePageInput,
 	type AddVersionInput,
-	type PageSummary
+	type PageSummary,
+	type PageMove
 } from './pages.types';
 
 const sqlite = db as BetterSQLite3Database<typeof schema>;
@@ -30,6 +31,14 @@ export async function getPageWithLatestVersion(path: string) {
 	if (!version) return null;
 
 	return { page: found, version };
+}
+
+export async function getPagePath(pageId: string): Promise<string | null> {
+	const found = await sqlite.query.page.findFirst({
+		where: eq(page.id, pageId),
+		columns: { path: true }
+	});
+	return found?.path ?? null;
 }
 
 export async function listVersions(pageId: string) {
@@ -115,4 +124,38 @@ export async function addPageVersion(input: AddVersionInput): Promise<number> {
 // attachments are stored inline rather than in external object storage.
 export async function deletePage(pageId: string): Promise<void> {
 	await sqlite.delete(page).where(eq(page.id, pageId));
+}
+
+/**
+ * Gives pages their new paths, all at once. Each old path leads to its page
+ * from then on (page_redirect); a redirect at a new path goes.
+ */
+export async function movePages(moves: PageMove[]): Promise<void> {
+	sqlite.transaction((tx) => {
+		tx.delete(pageRedirect)
+			.where(
+				inArray(
+					pageRedirect.path,
+					moves.map((m) => m.to)
+				)
+			)
+			.run();
+		for (const move of moves) {
+			tx.update(page).set({ path: move.to }).where(eq(page.id, move.pageId)).run();
+			tx.insert(pageRedirect)
+				.values({ path: move.from, pageId: move.pageId })
+				.onConflictDoUpdate({ target: pageRedirect.path, set: { pageId: move.pageId } })
+				.run();
+		}
+	});
+}
+
+/** The page an old path leads to, if one was moved away from it. */
+export async function redirectFor(path: string): Promise<string | null> {
+	const found = await sqlite.query.pageRedirect.findFirst({ where: eq(pageRedirect.path, path) });
+	return found?.pageId ?? null;
+}
+
+export async function deleteRedirect(path: string): Promise<void> {
+	await sqlite.delete(pageRedirect).where(eq(pageRedirect.path, path));
 }
