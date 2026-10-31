@@ -14,7 +14,8 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
 - **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
-- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]` – unter jeder Seite steht, welche Seiten auf sie verlinken (Backlinks).
+- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`, mit Vorschlägen beim Tippen. Sie bleiben gültig, wenn die Seite umbenannt oder verschoben wird; unter jeder Seite steht, welche Seiten auf sie verlinken (Backlinks).
+- **Seiten verschieben** samt Unterseiten, mit Weiterleitung von alten Adressen und einem festen Link pro Seite.
 - **Tags** an Seiten, mit Übersicht unter `/tags`.
 - **Inbox** pro Person für schnelle Notizen, die später in eine Seite einsortiert werden.
 - **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
@@ -91,6 +92,13 @@ Geeignet ist jeder Dienst mit der Embeddings-Schnittstelle von OpenAI (siehe `EM
 Lokal oder Cloud lässt sich jederzeit wechseln: Nach einem Modellwechsel erfasst ownWiki alle Seiten im Hintergrund neu, bis dahin sucht es mit der Volltextsuche.
 
 Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
+
+### Links und Verschieben
+
+- **Vorschläge:** Tippt man im Editor `[[` – oder wählt im „/“-Menü „Seite verlinken“ –, schlägt eine Liste passende Seiten vor (Titel und Pfad) – mit den Pfeiltasten wählen, Enter oder Tab fügt den Link ein, Escape schließt die Liste. Für einen Namen, den noch keine Seite hat, gibt es „… verlinken (neue Seite)“. Haben zwei Seiten denselben Titel, wird der Pfad eingefügt (`[[hr/urlaub|Urlaub]]`), damit klar ist, welche gemeint ist.
+- **Links bleiben gültig:** Beim Speichern merkt sich das Wiki zu jedem Link, welche Seite er meint. Wird sie umbenannt oder verschoben, führt der Link weiter dorthin und zeigt ihren aktuellen Titel; bekommt danach eine andere Seite den alten Namen, übernimmt sie bestehende Links nicht. Im Text steht weiter, was geschrieben wurde – öffnet man die Seite im Editor, steht dort schon der aktuelle Name.
+- **Verschieben:** „Verschieben“ bei einer Seite oder einem Ordner wählt den neuen Ordner und Namen. Vorher zeigt der Dialog die neue Adresse, wie viele Unterseiten mitwandern, wie viele Seiten hierher verlinken – und wer am neuen Ort neu lesen darf oder nicht mehr, denn dort gelten dessen Rechte. Alte Adressen leiten weiter, der Verlauf vermerkt den Umzug.
+- **Fester Link:** „Link kopieren“ kopiert eine Adresse der Form `/p/…`, die immer zur Seite führt, wohin sie auch verschoben wird – gut für E-Mails und Tickets.
 
 ### Backlinks, Tags und Inbox
 

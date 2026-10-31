@@ -22,6 +22,7 @@
 			existingTitle={data.prefillTitle}
 			existingContent={data.version?.content ?? ''}
 			existingTags={data.tags}
+			linkPages={data.pages}
 			nextVersionNumber={(data.version?.versionNumber ?? 0) + 1}
 			attachments={data.attachments}
 			errorMessage={form?.message}
