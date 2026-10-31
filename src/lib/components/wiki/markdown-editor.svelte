@@ -18,6 +18,10 @@
 	import EditorToolbar from './editor-toolbar.svelte';
 	import { collectHeadings, pageToc } from '$lib/page-toc.svelte';
 	import { guardSlashMenuHover } from '$lib/slash-menu-hover';
+	import LinkSuggestions, { type LinkSuggestion } from './link-suggestions.svelte';
+	import { linkTextFor, suggestLinkTargets } from '$lib/link-suggestions';
+	import type { OpenLink, SuggestKey } from '$lib/editor-link-suggest';
+	import type { WikiLinkTarget } from '$lib/wiki-links';
 
 	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
 	const PAPERCLIP_ICON =
@@ -34,7 +38,8 @@
 		onerror,
 		onupload,
 		frame,
-		virtualCursor = true
+		virtualCursor = true,
+		linkPages
 	}: {
 		value?: string;
 		readonly?: boolean;
@@ -62,6 +67,8 @@
 		 * the browser's own cursor then shows instead.
 		 */
 		virtualCursor?: boolean;
+		/** Pages to suggest while a `[[wiki link]]` is typed. */
+		linkPages?: WikiLinkTarget[];
 	} = $props();
 
 	let container: HTMLDivElement;
@@ -70,6 +77,46 @@
 	let commands: typeof import('$lib/editor-commands') | undefined;
 
 	let toolbarActive = $state<Partial<Record<ToolbarItemKey, boolean>>>({});
+
+	// While a `[[wiki link]]` is typed: the pages to link, see editor-link-suggest.ts.
+	let openLink = $state<OpenLink | null>(null);
+	let activeSuggestion = $state(0);
+	let finishLink: typeof import('$lib/editor-link-suggest').finishLink | undefined;
+
+	const suggestions = $derived.by((): LinkSuggestion[] => {
+		if (!openLink || !linkPages) return [];
+		const query = openLink.query.trim();
+		const pages: LinkSuggestion[] = suggestLinkTargets(query, linkPages).map((page) => ({
+			kind: 'page',
+			path: page.path,
+			title: page.title
+		}));
+		const exists = linkPages.some((page) => page.title.toLowerCase() === query.toLowerCase());
+		return query && !exists ? [...pages, { kind: 'new', name: query }] : pages;
+	});
+
+	const linkSuggestHandlers = {
+		onChange(next: OpenLink | null) {
+			if (next?.query !== openLink?.query) activeSuggestion = 0;
+			openLink = next;
+		},
+		onKey(key: SuggestKey) {
+			if (suggestions.length === 0) return false;
+			if (key === 'choose') {
+				chooseSuggestion(suggestions[activeSuggestion]);
+			} else {
+				const step = key === 'down' ? 1 : -1;
+				activeSuggestion = (activeSuggestion + step + suggestions.length) % suggestions.length;
+			}
+			return true;
+		}
+	};
+
+	function chooseSuggestion(item: LinkSuggestion | undefined) {
+		if (!item || !openLink || !getView || !finishLink) return;
+		const text = item.kind === 'page' ? linkTextFor(item, linkPages ?? []) : item.name;
+		finishLink(getView(), openLink, text);
+	}
 	let headingLevel = $state<number | null>(null);
 
 	/** Recomputes which toolbar items are active at the cursor. */
@@ -279,13 +326,15 @@
 				{ editorViewCtx },
 				editorCommands,
 				{ codeHighlighting },
-				{ editorInputRules }
+				{ editorInputRules },
+				editorLinkSuggest
 			] = await Promise.all([
 				import('@milkdown/crepe'),
 				import('@milkdown/kit/core'),
 				import('$lib/editor-commands'),
 				import('$lib/code-highlight'),
 				import('$lib/editor-input-rules'),
+				import('$lib/editor-link-suggest'),
 				import('@milkdown/crepe/theme/common/style.css'),
 				import('@milkdown/crepe/theme/classic.css')
 			]);
@@ -378,6 +427,10 @@
 			});
 
 			instance.editor.use(editorInputRules);
+			if (linkPages) {
+				finishLink = editorLinkSuggest.finishLink;
+				instance.editor.use(editorLinkSuggest.linkSuggest(linkSuggestHandlers));
+			}
 			instance.setReadonly(readonly);
 			await instance.create();
 
@@ -432,6 +485,17 @@
 	{@render frame(text)}
 {:else}
 	{@render text()}
+{/if}
+
+{#if openLink && suggestions.length > 0}
+	<LinkSuggestions
+		items={suggestions}
+		active={activeSuggestion}
+		left={openLink.left}
+		top={openLink.top}
+		bottom={openLink.bottom}
+		onchoose={chooseSuggestion}
+	/>
 {/if}
 
 <input

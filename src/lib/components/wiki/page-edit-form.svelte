@@ -24,6 +24,7 @@
 		existingTitle,
 		existingContent,
 		existingTags,
+		linkPages,
 		nextVersionNumber,
 		attachments,
 		errorMessage,
@@ -36,6 +37,8 @@
 		existingTitle: string;
 		existingContent: string;
 		existingTags: string[];
+		/** The pages to suggest while typing a `[[wiki link]]`. */
+		linkPages: { path: string; title: string }[];
 		/** Version number this save will create — shown in the PDF page header. */
 		nextVersionNumber: number;
 		attachments: AttachmentMeta[];
@@ -139,6 +142,7 @@
 				{pageId}
 				toolbar={toolbarSetting.layout}
 				tocPath={path}
+				{linkPages}
 				onready={() => (initialMarkdown = editor?.getMarkdown())}
 				onupload={() => invalidateAll()}
 			/>
