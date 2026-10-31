@@ -21,6 +21,7 @@ import { titleFromMarkdown } from '$lib/page-title';
 import { slugifyPath } from '$lib/slug';
 import { linkedPagePaths, refreshWikiLinks } from '$lib/wiki-links';
 import { withBase } from '$lib/base-path';
+import { checkDiagrams } from '$lib/server/diagram-check';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 // Writes never lose anything: every change is a new version in the history.
@@ -49,6 +50,17 @@ async function notFoundOrMoved(path: string, access: PageAccess) {
 
 const notAllowed = (path: string) =>
 	failure(`Du darfst "${path}" nicht bearbeiten – dafür fehlen die Rechte in diesem Bereich.`);
+
+/** A failure if a diagram new in `content` (not in `before`) wouldn't show. */
+async function brokenDiagrams(content: string, before = '') {
+	const problems = await checkDiagrams(content, before);
+	if (problems.length === 0) return null;
+	return failure(
+		'Nicht gespeichert – ein Diagramm ist fehlerhaft und würde nicht angezeigt:\n' +
+			problems.map((problem) => `- ${problem}`).join('\n') +
+			'\nKorrigiere es und versuche es noch einmal.'
+	);
+}
 
 const conflict = (latest: number) =>
 	failure(
@@ -96,7 +108,16 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 				'Die erste Zeile einer Seite ist eine Überschrift (`# Titel`) und ihr Titel. ' +
 				'Seiten haben Tags (`list_tags`, `list_pages` mit `tag`). Was noch keinen Platz ' +
 				'hat, kommt in die persönliche Inbox (`add_to_inbox`). ' +
-				'Jede Änderung wird als neue Version gespeichert und lässt sich wiederherstellen.'
+				'Jede Änderung wird als neue Version gespeichert und lässt sich wiederherstellen. ' +
+				'Diagramme stehen als Codeblock im Text und werden im Wiki gezeichnet: ' +
+				'```mermaid für Flussdiagramme, Abläufe, Sequenzen, Zeitpläne und Mindmaps – ' +
+				'das ist für neue Diagramme fast immer die beste Wahl. ' +
+				'```bpmn für Geschäftsprozesse als BPMN-2.0-XML, nur vollständig mit Layout ' +
+				'(bpmndi:BPMNDiagram mit einer Position für jedes Element), sonst wird nichts gezeichnet. ' +
+				'```excalidraw ist eine Handskizze als Excalidraw-JSON ({"type":"excalidraw", ' +
+				'"elements":[…]}); vorhandene nur behutsam ändern, neue lieber als Mermaid. ' +
+				'Neue oder geänderte Diagramme werden beim Speichern geprüft; ist eins fehlerhaft, ' +
+				'wird nichts gespeichert und die Meldung sagt, was nicht stimmt.'
 		}
 	);
 	const pageUrl = (path: string) => `${origin}${withBase(`/w/${path}`)}`;
@@ -257,6 +278,8 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			if (!actor.access.canEdit(path)) return notAllowed(path);
 			const title = titleFromMarkdown(content).slice(0, 200);
 			if (!title) return failure('Beginne den Text mit einer Überschrift (`# Titel`).');
+			const broken = await brokenDiagrams(content);
+			if (broken) return broken;
 
 			try {
 				const pageId = await createPage({
@@ -303,6 +326,8 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			if (!actor.access.canEdit(id)) return notAllowed(id);
 			// As in the editor: without a heading on top, the page keeps its title.
 			const title = titleFromMarkdown(content).slice(0, 200) || found.version.title;
+			const broken = await brokenDiagrams(content, found.version.content);
+			if (broken) return broken;
 
 			try {
 				const version = await addPageVersion({
@@ -341,6 +366,8 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
 			if (!found) return notFound(id);
 			if (!actor.access.canEdit(id)) return notAllowed(id);
+			const broken = await brokenDiagrams(content);
+			if (broken) return broken;
 
 			try {
 				const version = await addPageVersion({
