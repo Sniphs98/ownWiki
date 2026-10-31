@@ -38,7 +38,8 @@ COPY --from=build /app/scripts ./scripts
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN node node_modules/playwright/cli.js install --with-deps chromium \
 	&& rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /app/data && chown node:node /app/data
+# .runtime: where scripts/start.js puts the build with BASE_PATH written in.
+RUN mkdir -p /app/data /app/.runtime && chown node:node /app/data /app/.runtime
 VOLUME ["/app/data"]
 EXPOSE 3000
 # Drops to the "node" user, see the script.

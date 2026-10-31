@@ -4,6 +4,8 @@ import { getCover } from '$lib/server/repo/covers';
 import type { Cover } from '$lib/cover';
 import { resolveWikiLinks } from '$lib/wiki-links';
 import { linkBindings } from '$lib/server/backlinks';
+import { basePath } from '$lib/base-path';
+import { addBasePath } from '$lib/content-paths';
 import type { PageAccess } from '$lib/server/access';
 
 export interface PrintablePage {
@@ -86,7 +88,7 @@ export async function resolvePrintablePages(
 		pages.push({
 			title: found.version.title,
 			path: found.page.path,
-			content: withImages,
+			content: addBasePath(withImages, basePath),
 			versionNumber: found.version.versionNumber,
 			updatedAt: found.page.updatedAt
 		});
@@ -99,7 +101,10 @@ export async function resolvePrintablePages(
 		cover: cover
 			? {
 					...cover,
-					content: await inlineAttachmentImages(resolveWikiLinks(cover.content, allPages))
+					content: addBasePath(
+						await inlineAttachmentImages(resolveWikiLinks(cover.content, allPages)),
+						basePath
+					)
 				}
 			: undefined
 	};
@@ -119,7 +124,7 @@ export async function resolveAllPrintablePages(access: PageAccess): Promise<Prin
 		pages.push({
 			title: found.version.title,
 			path: found.page.path,
-			content: withImages,
+			content: addBasePath(withImages, basePath),
 			versionNumber: found.version.versionNumber,
 			updatedAt: found.page.updatedAt
 		});

@@ -1,5 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
+import { withBase } from '$lib/base-path';
 
 /**
  * Guards a route that lets the user create or edit content. Unlike the
@@ -11,6 +12,6 @@ import type { RequestEvent } from '@sveltejs/kit';
 export function requireEditAccess(event: RequestEvent) {
 	if (event.locals.authMode !== 'disabled' && !event.locals.user) {
 		const redirectTo = event.url.pathname + event.url.search;
-		redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+		redirect(303, withBase(`/login?redirectTo=${encodeURIComponent(redirectTo)}`));
 	}
 }

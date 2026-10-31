@@ -4,6 +4,7 @@ import { getPagePath } from '$lib/server/repo/pages';
 import { requireEdit } from '$lib/server/access';
 import { MAX_ATTACHMENT_SIZE } from '$lib/server/attachment-limits';
 import type { RequestHandler } from './$types';
+import { withBase } from '$lib/base-path';
 
 export const POST: RequestHandler = async (event) => {
 	const formData = await event.request.formData();
@@ -32,7 +33,13 @@ export const POST: RequestHandler = async (event) => {
 			uploadedBy: event.locals.user?.id
 		});
 
-		return json({ id, url: `/api/files/${id}`, filename: file.name, mimeType, size: file.size });
+		return json({
+			id,
+			url: withBase(`/api/files/${id}`),
+			filename: file.name,
+			mimeType,
+			size: file.size
+		});
 	} catch {
 		error(400, 'Seite nicht gefunden — speichere sie zuerst.');
 	}

@@ -16,6 +16,7 @@
 		type CoverAlignY
 	} from '$lib/cover';
 	import { cn } from '$lib/utils';
+	import { withBase } from '$lib/base-path';
 
 	/**
 	 * Export options for a page's PDF: subpages, contents page and a title
@@ -113,7 +114,7 @@
 				(!!savedCover &&
 					(cover.alignX !== savedCover.alignX || cover.alignY !== savedCover.alignY));
 			if (canEdit && withCover && changed) {
-				const saved = await fetch(`/api/cover/${path}`, {
+				const saved = await fetch(withBase(`/api/cover/${path}`), {
 					method: 'PUT',
 					headers: { 'content-type': 'application/json' },
 					body: JSON.stringify(cover)
@@ -126,7 +127,9 @@
 				withSubpages ? 'scope=subtree' : '',
 				withCover && content.trim() ? 'cover=1' : ''
 			].filter(Boolean);
-			const response = await fetch(pdfTocSetting.href(`/api/pdf/${path}?${query.join('&')}`));
+			const response = await fetch(
+				pdfTocSetting.href(withBase(`/api/pdf/${path}?${query.join('&')}`))
+			);
 			if (!response.ok) throw new Error(await responseError(response));
 
 			const filename =

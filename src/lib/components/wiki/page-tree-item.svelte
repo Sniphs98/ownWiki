@@ -14,6 +14,7 @@
 	import type { PageTreeNode } from '$lib/page-tree';
 	import { untrack } from 'svelte';
 	import { cn } from '$lib/utils';
+	import { withBase } from '$lib/base-path';
 
 	let {
 		node,
@@ -46,7 +47,7 @@
 	async function togglePin() {
 		pinning = true;
 		try {
-			await fetch('/api/pins', {
+			await fetch(withBase('/api/pins'), {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ path: node.fullPath, pinned: !node.pinned })

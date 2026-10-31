@@ -9,6 +9,7 @@
 	import PageBreakToggle from './page-break-toggle.svelte';
 	import { resolve } from '$app/paths';
 	import { cn } from '$lib/utils';
+	import { withBase } from '$lib/base-path';
 
 	let {
 		path,
@@ -35,7 +36,7 @@
 	let copied = $state(false);
 
 	async function copyLink() {
-		await navigator.clipboard.writeText(`${location.origin}/p/${pageId}`);
+		await navigator.clipboard.writeText(`${location.origin}${withBase(`/p/${pageId}`)}`);
 		copied = true;
 		setTimeout(() => (copied = false), 2000);
 	}

@@ -17,6 +17,7 @@
 	import PageTocAside from '$lib/components/wiki/page-toc-aside.svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { basePath, withBase } from '$lib/base-path';
 
 	let { data, children } = $props();
 
@@ -36,7 +37,7 @@
 	});
 
 	const crumbs = $derived.by(() => {
-		const match = page.url.pathname.match(/^\/w\/(.+)$/);
+		const match = page.url.pathname.slice(basePath.length).match(/^\/w\/(.+)$/);
 		if (!match) return [];
 
 		const path = match[1].replace(/\/(edit|history)$/, '');
@@ -80,7 +81,7 @@
 			</div>
 
 			<!-- On the search page itself, its own (bigger) field is enough. -->
-			{#if page.url.pathname !== '/suche'}
+			{#if page.url.pathname !== withBase('/suche')}
 				<form method="GET" action={resolve('/(app)/suche')} role="search" class="relative">
 					<SearchIcon
 						class="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"

@@ -7,6 +7,7 @@
 	import { buildPageTree } from '$lib/page-tree';
 	import PdfTocSwitch from '$lib/components/wiki/pdf-toc-switch.svelte';
 	import { pdfTocSetting } from '$lib/pdf-toc-setting.svelte';
+	import { withBase } from '$lib/base-path';
 
 	let { data } = $props();
 
@@ -40,7 +41,7 @@
 			<h1 class="text-2xl font-semibold">Seiten</h1>
 			<div class="flex items-center gap-2">
 				<PdfTocSwitch />
-				<Button href={pdfTocSetting.href('/api/pdf')} variant="outline" size="sm">
+				<Button href={pdfTocSetting.href(withBase('/api/pdf'))} variant="outline" size="sm">
 					<FileDownIcon data-icon="inline-start" />
 					Ganzes Wiki als PDF
 				</Button>
