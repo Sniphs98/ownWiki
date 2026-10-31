@@ -17,8 +17,13 @@ async function save(request: APIRequestContext, baseURL: string, path: string, c
 
 async function openMoveDialog(page: Page, path: string) {
 	await page.goto(`/w/${path}`);
-	await page.getByRole('main').getByRole('button', { name: 'Verschieben' }).first().click();
-	return page.getByRole('dialog');
+	const dialog = page.getByRole('dialog');
+	// Clicked before the page has hydrated, the button does nothing yet: again until it opens.
+	await expect(async () => {
+		await page.getByRole('main').getByRole('button', { name: 'Verschieben' }).first().click();
+		await expect(dialog).toBeVisible({ timeout: 1_000 });
+	}).toPass();
+	return dialog;
 }
 
 async function chooseFolder(page: Page, folder: string, option: string) {
