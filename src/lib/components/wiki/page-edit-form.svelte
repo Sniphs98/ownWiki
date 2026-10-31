@@ -62,6 +62,16 @@
 	/** Without a heading on top, the page keeps the title it has. */
 	const title = $derived(titleFromMarkdown(content) || existingTitle);
 	let saving = $state(false);
+	let formElement: HTMLFormElement | undefined = $state();
+
+	/** Ctrl+S (⌘S on a Mac) saves, as in any editor — instead of the browser saving the page. */
+	function onKeydown(event: KeyboardEvent) {
+		if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's') {
+			return;
+		}
+		event.preventDefault();
+		if (!saving) formElement?.requestSubmit();
+	}
 	let deleting = $state(false);
 	let editor: MarkdownEditor | undefined = $state();
 
@@ -107,7 +117,10 @@
 	<title>{title || 'Neue Seite'} bearbeiten · ownWiki</title>
 </svelte:head>
 
+<svelte:window onkeydown={onKeydown} />
+
 <form
+	bind:this={formElement}
 	method="post"
 	action="?/save"
 	use:enhance={({ formData }) => {
@@ -162,7 +175,11 @@
 		<span id="page-tags-hint" class="text-xs text-muted-foreground">Durch Kommas getrennt.</span>
 	</div>
 
-	<div class="mt-4 flex items-center justify-between gap-2">
+	<!-- Stays at the bottom of the window while the text scrolls, so saving
+		 never needs a trip to the end of a long page. -->
+	<div
+		class="sticky bottom-0 z-10 mt-4 flex items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur"
+	>
 		{#if pageExists}
 			<AlertDialog.Root>
 				<AlertDialog.Trigger>
@@ -214,7 +231,9 @@
 			>
 				Abbrechen
 			</Button>
-			<Button type="submit" disabled={saving}>{saving ? 'Speichert …' : 'Speichern'}</Button>
+			<Button type="submit" disabled={saving} title="Speichern (Strg+S)">
+				{saving ? 'Speichert …' : 'Speichern'}
+			</Button>
 			{#if conflictVersion !== undefined}
 				<!-- Overrides the hidden baseVersion: a submit button's value wins as it comes last. -->
 				<Button
