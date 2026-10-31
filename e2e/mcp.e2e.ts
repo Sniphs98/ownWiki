@@ -295,6 +295,38 @@ test('an assistant may do no more than the person who connected it', async ({
 	);
 });
 
+test('an assistant hears about a broken diagram instead of saving it', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const token = await connectAssistant({ page, playwright, request }, 'Mia Diagramm');
+	const id = `e2e/ki-diagramm-${Date.now()}`;
+	const call = async (name: string, args: object) =>
+		(await (await rpc(request, 'tools/call', { name, arguments: args }, token)).json()).result;
+
+	const broken = await call('create_page', {
+		id,
+		content: '# Ablauf\n\n```mermaid\nflowchart TD\n  A[Start] -->\n```\n'
+	});
+	expect(broken.isError).toBe(true);
+	expect(broken.content[0].text).toMatch(/Mermaid-Diagramm 1: Parse error/);
+	expect((await call('fetch', { id })).isError).toBe(true);
+
+	const flow = '```mermaid\nflowchart TD\n  A[Start] --> B[Ende]\n```';
+	expect(
+		await callTool(request, token, 'create_page', { id, content: `# Ablauf\n\n${flow}\n` })
+	).toMatchObject({ version: 1 });
+
+	const sketch = await call('append_to_page', {
+		id,
+		content: '```excalidraw\n{"elements": 1}\n```'
+	});
+	expect(sketch.isError).toBe(true);
+	expect(sketch.content[0].text).toContain('Excalidraw-Zeichnung 1');
+	expect((await callTool(request, token, 'fetch', { id })).metadata.version).toBe(1);
+});
+
 test("an assistant notes in the person's inbox and sorts notes into pages", async ({
 	page,
 	playwright,
