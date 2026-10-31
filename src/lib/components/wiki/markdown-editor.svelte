@@ -27,6 +27,10 @@
 	const PAPERCLIP_ICON =
 		'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551"/></svg>';
 
+	// lucide "link", likewise.
+	const LINK_ICON =
+		'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+
 	let {
 		value = $bindable(''),
 		readonly = false,
@@ -402,6 +406,19 @@
 									pickFiles();
 								}
 							});
+							if (linkPages) {
+								// Starts a [[wiki link]]; the page suggestions take it from there.
+								builder.getGroup('advanced').addItem('wikiLink', {
+									label: 'Seite verlinken',
+									icon: LINK_ICON,
+									onRun: (ctx) => {
+										editorCommands.clearSlashText(ctx);
+										const view = ctx.get(editorViewCtx);
+										view.dispatch(view.state.tr.insertText('[['));
+										view.focus();
+									}
+								});
+							}
 							const group = builder.addGroup('diagrams', 'Diagramme');
 							for (const kind of DIAGRAM_KINDS) {
 								group.addItem(kind, {

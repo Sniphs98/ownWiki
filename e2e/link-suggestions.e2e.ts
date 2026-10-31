@@ -82,3 +82,22 @@ test('of two pages with the same title, the chosen one is linked by its path', a
 	await suggestion(page, new RegExp(first)).click();
 	await expectMarkdown(page, link(`${first}|${title}`));
 });
+
+test('“Seite verlinken” in the / menu starts a link with suggestions', async ({
+	page,
+	baseURL
+}) => {
+	await startEditing(page, baseURL!, 'Start.');
+	await press(page, 'Enter');
+	await type(page, '/verlinken');
+	const menu = page.locator('.milkdown-slash-menu[data-show="true"]');
+	await expect(menu.locator('.menu-groups li.hover')).toHaveText('Seite verlinken');
+	await press(page, 'Enter');
+	await expect(menu).toBeHidden();
+
+	await expect(suggestion(page, /Betrieb/)).toBeVisible();
+	await type(page, 'Betri');
+	await press(page, 'Enter');
+	await expectMarkdown(page, link('Betrieb'));
+	await expect.poll(() => markdown(page).inputValue()).not.toContain('/verlinken');
+});
