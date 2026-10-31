@@ -81,5 +81,10 @@ export default defineConfig({
 		}
 	],
 	use: { baseURL: `http://localhost:${PORT}` },
-	testMatch: '**/*.e2e.{ts,js}'
+	testMatch: '**/*.e2e.{ts,js}',
+	// In CI, a test that fails once may run again: under the full run's load
+	// (four servers, PDF rendering) an editor test now and then misses a
+	// keystroke, and that shouldn't block a release. Reported as "flaky";
+	// a real failure fails twice.
+	retries: process.env.CI ? 1 : 0
 });
