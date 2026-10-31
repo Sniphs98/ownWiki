@@ -16,7 +16,9 @@ export const embeddingsConfigured = Boolean(baseUrl && embeddingModel);
 /** How similar a passage must be to the query to count as a hit (cosine, -1 to 1). */
 export const minScore = Number(env.EMBEDDINGS_MIN_SCORE) || 0.3;
 
-const BATCH_SIZE = 64;
+// Small enough that a model on a CPU (Ollama without GPU) answers each
+// request well within the timeout.
+const BATCH_SIZE = 16;
 
 /** Embeds the texts, as normalized vectors in the same order. */
 export async function embed(texts: string[], timeoutMs: number): Promise<Float32Array[]> {
