@@ -158,3 +158,71 @@ export const accessRule = sqliteTable(
 		uniqueIndex('access_rule_subject_uidx').on(table.path, table.subjectType, table.subjectId)
 	]
 );
+
+/**
+ * What each page's latest version links to, as written (see linkTargets in
+ * $lib/wiki-links.ts) — resolved to pages only when asked, so a link to a
+ * page created later counts once it exists. Kept in step on every save.
+ */
+export const pageLink = sqliteTable(
+	'page_link',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		target: text('target').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.target] }),
+		index('page_link_target_idx').on(table.target)
+	]
+);
+
+/** A page's tags (see $lib/tags.ts) — not part of its versions. */
+export const pageTag = sqliteTable(
+	'page_tag',
+	{
+		pageId: text('page_id')
+			.notNull()
+			.references(() => page.id, { onDelete: 'cascade' }),
+		tag: text('tag').notNull()
+	},
+	(table) => [
+		primaryKey({ columns: [table.pageId, table.tag] }),
+		index('page_tag_tag_idx').on(table.tag)
+	]
+);
+
+/**
+ * A person's inbox: quick notes, from the /inbox page or an AI assistant,
+ * not yet sorted into a page. Only the person sees them.
+ */
+export const inboxNote = sqliteTable(
+	'inbox_note',
+	{
+		id: text('id').primaryKey(),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		content: text('content').notNull(),
+		/** The AI assistant that wrote it (its OAuth client name); null when written by hand. */
+		via: text('via'),
+		createdAt: timestampMs('created_at').notNull()
+	},
+	(table) => [index('inbox_note_user_id_idx').on(table.userId)]
+);
+
+/**
+ * What a person pinned in the page tree: a page or a folder, by path —
+ * shown first in its level, for them only (see $lib/page-tree.ts).
+ */
+export const pagePin = sqliteTable(
+	'page_pin',
+	{
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }),
+		path: text('path').notNull()
+	},
+	(table) => [primaryKey({ columns: [table.userId, table.path] })]
+);

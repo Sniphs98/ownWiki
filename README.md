@@ -14,7 +14,9 @@ Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit
 - **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
 - **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
 - **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
-- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`.
+- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]` – unter jeder Seite steht, welche Seiten auf sie verlinken (Backlinks).
+- **Tags** an Seiten, mit Übersicht unter `/tags`.
+- **Inbox** pro Person für schnelle Notizen, die später in eine Seite einsortiert werden.
 - **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
 - **Inhaltsverzeichnis** der geöffneten Seite rechts neben dem Text.
 - **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki –, dazu **Rechte pro Bereich** für Gruppen und einzelne Personen.
@@ -90,6 +92,12 @@ Lokal oder Cloud lässt sich jederzeit wechseln: Nach einem Modellwechsel erfass
 
 Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
 
+### Backlinks, Tags und Inbox
+
+- **Backlinks:** Unter jeder Seite steht „Verlinkt von“ mit den Seiten, die per `[[Wiki-Link]]` oder `/w/…`-Link auf sie verweisen – soweit man sie lesen darf. Auch Links, die schon vor der Seite da waren, zählen, sobald es sie gibt.
+- **Tags:** Unter dem Editor setzt man Tags, durch Kommas getrennt („hr, urlaub“). Sie stehen unter dem Seitentitel; das Tag-Symbol oben rechts führt zur Übersicht aller Tags und ihrer Seiten. Tags gehören nicht zum Versionsverlauf.
+- **Inbox:** Über das Inbox-Symbol oben rechts (mit der Zahl offener Notizen) notiert man schnell etwas, das noch keinen Platz hat – nur man selbst sieht die eigene Inbox. Mit „Einsortieren“ landet eine Notiz in einer Seite: angehängt, wenn es die Seite gibt, sonst als neue Seite.
+
 ### Versionsverlauf
 
 Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
@@ -115,9 +123,9 @@ Was jemand nicht lesen darf, gibt es für ihn nicht: Die Seite fehlt in Seitenle
 
 ### KI-Anbindung (MCP)
 
-ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern oder etwas an sie anhängen. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
+ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche und Tags auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern, taggen oder etwas an sie anhängen. Außerdem notiert sie auf Zuruf in der persönlichen Inbox („notier dir das“) und sortiert Notizen mit einem ins Wiki ein. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
 
-Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration).
+Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration). Unter **Einstellungen → KI-Verbindungen** sieht jede Person ihre verbundenen Assistenten und kann sie trennen – der Zugriff endet sofort.
 
 Voraussetzung ist, dass `ORIGIN` gesetzt ist – ohne gibt es die Anbindung nicht.
 

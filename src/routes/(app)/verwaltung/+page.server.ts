@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { ACCESS_LEVELS, type AccessLevel, type SubjectType } from '$lib/access';
 import { slugifyPath } from '$lib/slug';
+import { withAreas } from '$lib/page-paths';
 import { listPages } from '$lib/server/repo/pages';
 import {
 	addMember,
@@ -32,7 +33,7 @@ export const load: PageServerLoad = async (event) => {
 		listRules(),
 		listPages()
 	]);
-	return { users, groups, rules, paths: pages.map((p) => p.path) };
+	return { users, groups, rules, paths: withAreas(pages.map((p) => p.path)) };
 };
 
 const field = (form: FormData, name: string) => form.get(name)?.toString().trim() ?? '';

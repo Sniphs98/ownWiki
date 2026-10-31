@@ -4,6 +4,7 @@
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import EditorToolbar, { TOOLBAR_ICONS } from '$lib/components/wiki/editor-toolbar.svelte';
@@ -17,6 +18,8 @@
 	} from '$lib/toolbar';
 
 	let { data } = $props();
+
+	const connectedFormat = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium' });
 
 	// Edited locally, saved with the button below.
 	let draft = $state<ToolbarEntry[]>([...toolbarSetting.layout]);
@@ -183,4 +186,39 @@
 			</div>
 		</Card.Footer>
 	</Card.Root>
+
+	{#if data.user}
+		<Card.Root class="mt-6">
+			<Card.Header>
+				<Card.Title>KI-Verbindungen</Card.Title>
+				<Card.Description>
+					KI-Assistenten wie ChatGPT, denen du Zugriff auf das Wiki erlaubt hast. Sie handeln als
+					du. Trennst du eine Verbindung, verliert der Assistent sofort den Zugriff, bis du ihn neu
+					erlaubst.
+				</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				{#if data.connections.length === 0}
+					<p class="text-sm text-muted-foreground">Kein Assistent verbunden.</p>
+				{:else}
+					<ul class="flex flex-col gap-2" aria-label="Verbundene Assistenten">
+						{#each data.connections as connection (connection.clientId)}
+							<li class="flex items-center justify-between gap-2 rounded-md border px-3 py-2">
+								<span class="text-sm">
+									<span class="font-medium">{connection.name}</span>
+									<span class="text-muted-foreground">
+										· verbunden seit {connectedFormat.format(connection.connectedAt)}
+									</span>
+								</span>
+								<form method="post" action="?/disconnect" use:enhance>
+									<input type="hidden" name="clientId" value={connection.clientId} />
+									<Button type="submit" variant="outline" size="sm">Trennen</Button>
+								</form>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</Card.Content>
+		</Card.Root>
+	{/if}
 </div>

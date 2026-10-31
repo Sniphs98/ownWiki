@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linkedPagePaths, resolveWikiLinks } from './wiki-links';
+import { linkedPagePaths, linkTargetResolver, linkTargets, resolveWikiLinks } from './wiki-links';
 
 const pages = [
 	{ title: 'Kündigung', path: 'personal/kuendigung' },
@@ -76,5 +76,31 @@ describe('linkedPagePaths', () => {
 	it('ignores missing pages and links in code', () => {
 		const markdown = '[[Neue Seite]] `[[Kündigung]]`\n\n```\n[x](/w/personal/onboarding)\n```\n';
 		expect(linkedPagePaths(markdown, pages)).toEqual([]);
+	});
+});
+
+describe('linkTargets', () => {
+	it('keeps what links point to as written, so pages created later count', () => {
+		const markdown = [
+			'\\[\\[Neue Seite#Teil]], [[personal/onboarding|Start]] und [x](/w/Personal/Kuendigung#a).',
+			'`[[im Code]]` und nochmal [[neue seite]].'
+		].join('\n');
+		expect(linkTargets(markdown)).toEqual([
+			'neue seite',
+			'personal/onboarding',
+			'/personal/kuendigung'
+		]);
+	});
+});
+
+describe('linkTargetResolver', () => {
+	it('resolves wiki links by path or title, /w/ links by path only', () => {
+		const resolve = linkTargetResolver([...pages, { title: 'personal/x', path: 'andere' }]);
+		expect(resolve('kündigung')).toBe('personal/kuendigung');
+		expect(resolve('personal/onboarding')).toBe('personal/onboarding');
+		expect(resolve('personal/x')).toBe('andere');
+		expect(resolve('/personal/kuendigung')).toBe('personal/kuendigung');
+		expect(resolve('/kündigung')).toBeUndefined();
+		expect(resolve('fehlt')).toBeUndefined();
 	});
 });

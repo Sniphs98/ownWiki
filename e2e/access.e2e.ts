@@ -58,11 +58,13 @@ test('admins close an area, open it for a group, and everything else follows', a
 	await admin.page.goto('/verwaltung');
 	await admin.page.getByLabel('Gruppenname').fill(groupName);
 	await admin.page.getByRole('button', { name: 'Gruppe anlegen' }).click();
+	await admin.page.getByRole('combobox', { name: `Person zu ${groupName} hinzufügen` }).click();
+	await admin.page.getByPlaceholder('Name oder E-Mail …').fill(member.email);
+	await admin.page.getByRole('option', { name: new RegExp(`^Mia`) }).click();
 	await admin.page
-		.getByLabel(`Person zu ${groupName} hinzufügen`)
-		.selectOption({ label: `Mia (${member.email})` });
-	await admin.page
-		.locator('form', { has: admin.page.getByLabel(`Person zu ${groupName} hinzufügen`) })
+		.locator('form', {
+			has: admin.page.getByRole('combobox', { name: `Person zu ${groupName} hinzufügen` })
+		})
 		.getByRole('button', { name: 'Hinzufügen' })
 		.click();
 	await expect(
@@ -70,9 +72,14 @@ test('admins close an area, open it for a group, and everything else follows', a
 	).toBeVisible();
 
 	const setRule = async (subject: string, level: string) => {
-		await admin.page.getByLabel('Bereich').fill(secret);
-		await admin.page.getByLabel('Für').selectOption({ label: subject });
-		await admin.page.getByLabel('Recht').selectOption({ label: level });
+		await admin.page.getByRole('combobox', { name: 'Bereich' }).click();
+		await admin.page.getByPlaceholder('Pfad suchen oder eingeben …').fill(secret);
+		await admin.page.getByRole('option', { name: secret, exact: true }).click();
+		await admin.page.getByRole('combobox', { name: 'Für' }).click();
+		await admin.page.getByPlaceholder('Gruppe oder Person suchen …').fill(subject);
+		await admin.page.getByRole('option', { name: new RegExp(`^${subject}`) }).click();
+		await admin.page.getByRole('combobox', { name: 'Recht' }).click();
+		await admin.page.getByRole('option', { name: level, exact: true }).click();
 		await admin.page.getByRole('button', { name: 'Regel setzen' }).click();
 		await expect(admin.page.getByText(`: ${level}`).first()).toBeVisible();
 	};

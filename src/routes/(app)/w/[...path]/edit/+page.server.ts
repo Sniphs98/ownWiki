@@ -10,6 +10,8 @@ import {
 } from '$lib/server/repo/pages';
 import { listAttachmentsForPage } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
+import { setTags, tagsOf } from '$lib/server/repo/tags';
+import { parseTags } from '$lib/tags';
 import { slugifyPath } from '$lib/slug';
 import { titleFromMarkdown } from '$lib/page-title';
 import type { Actions, PageServerLoad } from './$types';
@@ -35,6 +37,7 @@ export const load: PageServerLoad = async (event) => {
 		page: existing?.page ?? null,
 		version: existing?.version ?? null,
 		prefillTitle: existing?.version.title ?? event.url.searchParams.get('title') ?? '',
+		tags: existing ? await tagsOf(existing.page.id) : [],
 		// Files shown on the PDF title page aren't "unlinked" (unlinked-files.svelte).
 		attachments: existing ? await attachmentsOutsideCover(existing.page.id) : []
 	};
@@ -78,6 +81,7 @@ export const actions: Actions = {
 		}
 
 		try {
+			let pageId = existing?.page.id;
 			if (existing) {
 				await addPageVersion({
 					pageId: existing.page.id,
@@ -87,8 +91,11 @@ export const actions: Actions = {
 					baseVersion
 				});
 			} else {
-				await createPage({ path, title, content, authorId });
+				pageId = await createPage({ path, title, content, authorId });
 			}
+			// Left as they are by a form without the field.
+			const tags = formData.get('tags');
+			if (pageId && tags !== null) await setTags(pageId, parseTags(tags.toString()));
 		} catch (err) {
 			if (!(err instanceof PageConflictError)) throw err;
 			return fail(409, {
