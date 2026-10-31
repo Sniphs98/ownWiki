@@ -64,6 +64,16 @@
 	let saving = $state(false);
 	let formElement: HTMLFormElement | undefined = $state();
 
+	// Whether the save row is held at the bottom of the window (see below).
+	let endOfForm: HTMLDivElement | undefined = $state();
+	let stuck = $state(false);
+	$effect(() => {
+		if (!endOfForm) return;
+		const observer = new IntersectionObserver(([entry]) => (stuck = !entry.isIntersecting));
+		observer.observe(endOfForm);
+		return () => observer.disconnect();
+	});
+
 	/** Ctrl+S (⌘S on a Mac) saves, as in any editor — instead of the browser saving the page. */
 	function onKeydown(event: KeyboardEvent) {
 		if (!(event.ctrlKey || event.metaKey) || event.altKey || event.key.toLowerCase() !== 's') {
@@ -176,9 +186,14 @@
 	</div>
 
 	<!-- Stays at the bottom of the window while the text scrolls, so saving
-		 never needs a trip to the end of a long page. -->
+		 never needs a trip to the end of a long page. While it does, the text
+		 fades out behind it — there's more below. Reaches up over the text for
+		 the fade (-mt/pt), letting clicks through there. -->
 	<div
-		class="sticky bottom-0 z-10 mt-4 flex items-center justify-between gap-2 border-t bg-background/95 py-3 backdrop-blur"
+		class={[
+			'pointer-events-none sticky bottom-0 z-10 -mt-12 flex items-end justify-between gap-2 pt-16 pb-3 *:pointer-events-auto',
+			stuck && 'bg-linear-to-t from-background from-40% to-transparent'
+		]}
 	>
 		{#if pageExists}
 			<AlertDialog.Root>
@@ -248,6 +263,8 @@
 			{/if}
 		</div>
 	</div>
+	<!-- In view only when the row above sits where it belongs, at the end. -->
+	<div bind:this={endOfForm} aria-hidden="true"></div>
 </form>
 
 {#if pageId}
