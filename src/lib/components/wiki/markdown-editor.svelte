@@ -22,6 +22,7 @@
 	import { linkTextFor, suggestLinkTargets } from '$lib/link-suggestions';
 	import type { OpenLink, SuggestKey } from '$lib/editor-link-suggest';
 	import type { WikiLinkTarget } from '$lib/wiki-links';
+	import { withBase } from '$lib/base-path';
 
 	// lucide "paperclip", as an SVG string for Crepe's "/" menu.
 	const PAPERCLIP_ICON =
@@ -255,7 +256,7 @@
 		body.set('file', file);
 		body.set('pageId', pageId);
 
-		const response = await fetch('/api/files', { method: 'POST', body });
+		const response = await fetch(withBase('/api/files'), { method: 'POST', body });
 		if (!response.ok) {
 			const message = await response.text().catch(() => '');
 			throw new Error(message || 'Upload fehlgeschlagen.');

@@ -1,5 +1,6 @@
 import { browser } from '$app/environment';
 import { DEFAULT_TOOLBAR, normalizeToolbar, type ToolbarEntry } from '$lib/toolbar';
+import { withBase } from '$lib/base-path';
 
 const STORAGE_KEY = 'editor-toolbar';
 
@@ -38,7 +39,7 @@ class ToolbarSetting {
 	async save(layout: ToolbarEntry[] | null) {
 		const next = layout ? normalizeToolbar(layout) : [...DEFAULT_TOOLBAR];
 		if (this.#signedIn) {
-			const response = await fetch('/api/preferences', {
+			const response = await fetch(withBase('/api/preferences'), {
 				method: 'PUT',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({ toolbar: layout ? next : null })

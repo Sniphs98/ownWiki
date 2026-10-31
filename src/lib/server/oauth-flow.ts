@@ -1,5 +1,6 @@
 import { verifyOAuthQueryParams } from '@better-auth/oauth-provider';
 import { auth } from '$lib/server/auth';
+import { withBase } from '$lib/base-path';
 
 /** What the OAuth provider adds to sign the query it hands to /login and /consent. */
 const SIGNING_PARAMS = ['sig', 'exp', 'ba_iat', 'ba_pl', 'ba_param'];
@@ -30,5 +31,5 @@ export async function oauthContinuation(url: URL): Promise<string | null> {
 	if (!query) return null;
 	const params = new URLSearchParams(query);
 	for (const name of SIGNING_PARAMS) params.delete(name);
-	return `/api/auth/oauth2/authorize?${params}`;
+	return withBase(`/api/auth/oauth2/authorize?${params}`);
 }

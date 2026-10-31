@@ -5,6 +5,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Alert from '$lib/components/ui/alert';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
+	import { withBase } from '$lib/base-path';
 
 	/**
 	 * Files belong in the text, inserted via "/" → Datei. This lists the
@@ -38,7 +39,7 @@
 			`„${file.filename}“ endgültig löschen? Ältere Versionen der Seite, die die Datei verlinken, verlieren sie dann ebenfalls.`
 		);
 		if (!confirmed) return;
-		await fetch(`/api/files/${file.id}`, { method: 'DELETE' });
+		await fetch(withBase(`/api/files/${file.id}`), { method: 'DELETE' });
 		await invalidateAll();
 	}
 </script>
@@ -58,7 +59,7 @@
 						<span class="min-w-0 truncate text-foreground">
 							<!-- Lets you check what the file is before deciding. -->
 							<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- file download -->
-							<a href="/api/files/{file.id}" target="_blank" class="hover:underline">
+							<a href={withBase(`/api/files/${file.id}`)} target="_blank" class="hover:underline">
 								{file.filename}
 							</a>
 							<span class="ml-1 text-xs text-muted-foreground">{formatSize(file.size)}</span>

@@ -15,6 +15,7 @@
 	import { titleFromMarkdown } from '$lib/page-title';
 	import { parseTags } from '$lib/tags';
 	import type { AttachmentMeta } from '$lib/server/repo/attachments';
+	import { withBase } from '$lib/base-path';
 
 	let {
 		path,
@@ -272,7 +273,7 @@
 		<UnlinkedFiles
 			{attachments}
 			{content}
-			oninsert={(file) => editor?.insertFileLink(`/api/files/${file.id}`, file.filename)}
+			oninsert={(file) => editor?.insertFileLink(withBase(`/api/files/${file.id}`), file.filename)}
 		/>
 	</div>
 {:else}

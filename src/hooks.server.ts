@@ -14,6 +14,7 @@ import { getUserRole } from '$lib/server/repo/access';
 import { startSemanticIndex } from '$lib/server/search';
 import { rebuildLinks } from '$lib/server/backlinks';
 import { svelteKitHandler } from 'better-auth/svelte-kit';
+import { basePath, withBase } from '$lib/base-path';
 
 // Always reachable, regardless of AUTH_MODE — otherwise nobody could ever
 // log in on a `full` (private) wiki.
@@ -21,6 +22,11 @@ import { svelteKitHandler } from 'better-auth/svelte-kit';
 // /.well-known/ tells assistants where to get one.
 const PUBLIC_PATHS = new Set(['/login', '/mcp']);
 const PUBLIC_PATH_PREFIXES = ['/api/auth/', '/.well-known/'];
+
+/** The path within the wiki: without BASE_PATH in front. */
+function wikiPath(pathname: string) {
+	return pathname.slice(basePath.length) || '/';
+}
 
 function isPublicPath(pathname: string) {
 	return (
@@ -60,14 +66,14 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 		event.locals.access = await accessFor(viewer, authMode);
 	}
 
-	if (!building && !isPublicPath(event.url.pathname)) {
+	if (!building && !isPublicPath(wikiPath(event.url.pathname))) {
 		const requiresAuth =
 			authMode === 'full' || (authMode === 'read-only' && WRITE_METHODS.has(event.request.method));
 
 		if (requiresAuth && !session && !hasInternalToken) {
 			if (event.request.headers.get('accept')?.includes('text/html')) {
 				const redirectTo = event.url.pathname + event.url.search;
-				redirect(303, `/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+				redirect(303, withBase(`/login?redirectTo=${encodeURIComponent(redirectTo)}`));
 			}
 			error(401, 'Authentication required');
 		}

@@ -1,3 +1,5 @@
+import { basePath } from '$lib/base-path';
+
 const FORM_CONTENT_TYPES = [
 	'application/x-www-form-urlencoded',
 	'multipart/form-data',
@@ -24,7 +26,8 @@ const SERVER_TO_SERVER_PATHS = new Set([
  * that would change something.
  */
 export function isCrossSiteForm(request: Request, url: URL): boolean {
-	if (!WRITE_METHODS.has(request.method) || SERVER_TO_SERVER_PATHS.has(url.pathname)) return false;
+	const path = url.pathname.slice(basePath.length);
+	if (!WRITE_METHODS.has(request.method) || SERVER_TO_SERVER_PATHS.has(path)) return false;
 	const contentType = request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? '';
 	if (!FORM_CONTENT_TYPES.includes(contentType)) return false;
 	return request.headers.get('origin') !== url.origin;

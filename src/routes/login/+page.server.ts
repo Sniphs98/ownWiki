@@ -7,12 +7,13 @@ import { safeRedirectPath } from '$lib/safe-redirect';
 import { oauthContinuation } from '$lib/server/oauth-flow';
 import { createRateLimiter } from '$lib/server/rate-limit';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
+import { withBase } from '$lib/base-path';
 
 /** Where to go after logging in: back into an AI assistant's authorization, or redirectTo. */
 async function redirectTarget(url: URL) {
 	return (
 		(await oauthContinuation(url)) ??
-		safeRedirectPath(url.searchParams.get('redirectTo'), url.origin)
+		safeRedirectPath(url.searchParams.get('redirectTo'), url.origin, withBase('/'))
 	);
 }
 
@@ -36,7 +37,7 @@ const TOO_MANY = 'Zu viele Versuche. Bitte warte eine Minute.';
 
 export const load: PageServerLoad = async (event) => {
 	// No way to log in at all: everyone may edit anyway (AUTH_MODE=disabled).
-	if (!loginEnabled) redirect(303, '/');
+	if (!loginEnabled) redirect(303, withBase('/'));
 	if (event.locals.user) {
 		redirect(303, await redirectTarget(event.url));
 	}
@@ -61,7 +62,7 @@ export const actions: Actions = {
 				provider: 'microsoft',
 				// Also back into an AI assistant's authorization, if that brought us here.
 				callbackURL: await redirectTarget(event.url),
-				errorCallbackURL: '/login'
+				errorCallbackURL: withBase('/login')
 			}
 		});
 		if (!url) error(500, 'Microsoft-Anmeldung konnte nicht gestartet werden.');

@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { auth } from '$lib/server/auth';
 import { signedOAuthQuery } from '$lib/server/oauth-flow';
 import type { Actions, PageServerLoad } from './$types';
+import { withBase } from '$lib/base-path';
 
 /**
  * Where an AI assistant's authorization asks the person whether it may act
@@ -12,7 +13,7 @@ export const load: PageServerLoad = async (event) => {
 	const query = await signedOAuthQuery(event.url);
 	if (!query)
 		error(400, 'Die Anfrage ist ungültig oder abgelaufen. Bitte starte die Verbindung neu.');
-	if (!event.locals.user) redirect(303, `/login${event.url.search}`);
+	if (!event.locals.user) redirect(303, withBase(`/login${event.url.search}`));
 
 	const clientId = new URLSearchParams(query).get('client_id') ?? '';
 	const client = await auth.api
@@ -34,7 +35,7 @@ async function answer(event: Parameters<Actions[string]>[0], accept: boolean) {
 	// the consent endpoint finishes the authorization itself, and that needs
 	// the request.
 	const response = await auth.handler(
-		new Request(new URL('/api/auth/oauth2/consent', event.url), {
+		new Request(new URL(withBase('/api/auth/oauth2/consent'), event.url), {
 			method: 'POST',
 			headers: {
 				'content-type': 'application/json',

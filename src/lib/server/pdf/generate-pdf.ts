@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { chromium, type Browser } from 'playwright';
 import { internalOrigin } from '$lib/server/internal-origin';
+import { basePath } from '$lib/base-path';
 import {
 	PDF_INTERNAL_TOKEN,
 	PDF_INTERNAL_TOKEN_HEADER,
@@ -54,7 +55,7 @@ export function generatePdf(
 	requestUrl: URL,
 	userId?: string
 ): Promise<Buffer> {
-	const url = new URL(printPathAndQuery, internalOrigin(requestUrl));
+	const url = new URL(basePath + printPathAndQuery, internalOrigin(requestUrl));
 	return limitExports(() => renderPdf(url, userId));
 }
 

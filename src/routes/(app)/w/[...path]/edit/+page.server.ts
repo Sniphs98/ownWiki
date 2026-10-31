@@ -19,6 +19,8 @@ import { movedPath } from '$lib/server/move';
 import { slugifyPath } from '$lib/slug';
 import { titleFromMarkdown } from '$lib/page-title';
 import type { Actions, PageServerLoad } from './$types';
+import { basePath, withBase } from '$lib/base-path';
+import { addBasePath, removeBasePath } from '$lib/content-paths';
 
 export const load: PageServerLoad = async (event) => {
 	requireEditAccess(event);
@@ -28,7 +30,7 @@ export const load: PageServerLoad = async (event) => {
 	const existing = await getPageWithLatestVersion(path);
 	if (!existing) {
 		const movedTo = await movedPath(path);
-		if (movedTo) redirect(303, `/w/${movedTo}/edit`);
+		if (movedTo) redirect(303, withBase(`/w/${movedTo}/edit`));
 	}
 
 	// New pages only get the canonical path the "Neue Seite" dialog and
@@ -37,7 +39,7 @@ export const load: PageServerLoad = async (event) => {
 	if (!existing && slug !== path) {
 		if (!slug) error(400, 'Ungültiger Seitenpfad');
 		const title = event.url.searchParams.get('title') ?? path.split('/').at(-1) ?? '';
-		redirect(303, `/w/${slug}/edit?title=${encodeURIComponent(title)}`);
+		redirect(303, withBase(`/w/${slug}/edit?title=${encodeURIComponent(title)}`));
 	}
 
 	return {
@@ -60,7 +62,7 @@ async function withCurrentLinks(
 	const bindings = await linkBindings(existing.page.id, pages);
 	return {
 		...existing.version,
-		content: refreshWikiLinks(existing.version.content, pages, bindings)
+		content: addBasePath(refreshWikiLinks(existing.version.content, pages, bindings), basePath)
 	};
 }
 
@@ -79,7 +81,7 @@ export const actions: Actions = {
 		const path = event.params.path;
 		requireEdit(event.locals.access, path);
 		const formData = await event.request.formData();
-		const content = formData.get('content')?.toString() ?? '';
+		const content = removeBasePath(formData.get('content')?.toString() ?? '', basePath);
 		// The editor has no title field: the heading on the text's first line
 		// is the title; without one the page keeps its title.
 		const existing = await getPageWithLatestVersion(path);
@@ -136,7 +138,7 @@ export const actions: Actions = {
 			});
 		}
 
-		redirect(303, `/w/${path}`);
+		redirect(303, withBase(`/w/${path}`));
 	},
 
 	delete: async (event) => {
@@ -148,6 +150,6 @@ export const actions: Actions = {
 
 		await deletePage(existing.page.id);
 
-		redirect(303, '/');
+		redirect(303, withBase('/'));
 	}
 };

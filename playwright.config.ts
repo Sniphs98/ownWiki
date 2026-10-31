@@ -10,6 +10,8 @@ export const MICROSOFT_PORT = 4176;
 export const FAKE_MICROSOFT_PORT = 4181;
 /** An open wiki with no login at all: PASSWORD_LOGIN=false and no Microsoft. */
 export const NO_LOGIN_PORT = 4177;
+/** The wiki under a path, as behind a reverse proxy: BASE_PATH=/wiki. */
+export const BASE_PATH_PORT = 4178;
 
 /** A stand-in for OpenAI's embeddings API (e2e/fake-embeddings.js). */
 const EMBEDDINGS_PORT = 4180;
@@ -45,13 +47,13 @@ export default defineConfig({
 		{
 			// The real production server (adapter-node, as in the Docker image) —
 			// not `vite preview` — so the PDF export runs exactly as deployed.
-			command: 'node e2e/setup-db.js && npm run build && node build',
+			command: 'node e2e/setup-db.js && npm run build && node scripts/start.js',
 			port: PORT,
 			timeout: 300_000,
 			env: serverEnv(PORT, 'disabled')
 		},
 		{
-			command: 'node e2e/setup-db.js && node build',
+			command: 'node e2e/setup-db.js && node scripts/start.js',
 			port: READ_ONLY_PORT,
 			// An embeddings service that isn't there: the search must still work.
 			env: serverEnv(READ_ONLY_PORT, 'read-only', {
@@ -60,7 +62,7 @@ export default defineConfig({
 			})
 		},
 		{
-			command: 'node e2e/setup-db.js && node build',
+			command: 'node e2e/setup-db.js && node scripts/start.js',
 			port: FULL_PORT,
 			// With semantic search (semantic-search.e2e.ts).
 			env: serverEnv(FULL_PORT, 'full', {
@@ -69,7 +71,7 @@ export default defineConfig({
 			})
 		},
 		{
-			command: 'node e2e/setup-db.js && node build',
+			command: 'node e2e/setup-db.js && node scripts/start.js',
 			port: MICROSOFT_PORT,
 			// Its own database, though private like the full server's.
 			env: serverEnv(MICROSOFT_PORT, 'full', {
@@ -82,11 +84,19 @@ export default defineConfig({
 			})
 		},
 		{
-			command: 'node e2e/setup-db.js && node build',
+			command: 'node e2e/setup-db.js && node scripts/start.js',
 			port: NO_LOGIN_PORT,
 			env: serverEnv(NO_LOGIN_PORT, 'disabled', {
 				DATABASE_URL: './.data/e2e/no-login/wiki.db',
 				PASSWORD_LOGIN: 'false'
+			})
+		},
+		{
+			command: 'node e2e/setup-db.js && node scripts/start.js',
+			port: BASE_PATH_PORT,
+			env: serverEnv(BASE_PATH_PORT, 'disabled', {
+				DATABASE_URL: './.data/e2e/base-path/wiki.db',
+				BASE_PATH: '/wiki'
 			})
 		}
 	],

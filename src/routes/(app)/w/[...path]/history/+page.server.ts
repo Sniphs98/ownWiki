@@ -9,6 +9,8 @@ import { resolveWikiLinks } from '$lib/wiki-links';
 import { linkBindings } from '$lib/server/backlinks';
 import { requireEdit, requireRead } from '$lib/server/access';
 import type { Actions, PageServerLoad } from './$types';
+import { basePath, withBase } from '$lib/base-path';
+import { addBasePath } from '$lib/content-paths';
 
 export const load: PageServerLoad = async (event) => {
 	const path = event.params.path;
@@ -28,7 +30,7 @@ export const load: PageServerLoad = async (event) => {
 		canEdit: access.canEdit(path),
 		versions: versions.map((version) => ({
 			...version,
-			content: resolveWikiLinks(version.content, pages, bindings)
+			content: addBasePath(resolveWikiLinks(version.content, pages, bindings), basePath)
 		}))
 	};
 };
@@ -55,6 +57,6 @@ export const actions: Actions = {
 			authorId: event.locals.user?.id
 		});
 
-		redirect(303, `/w/${path}`);
+		redirect(303, withBase(`/w/${path}`));
 	}
 };
