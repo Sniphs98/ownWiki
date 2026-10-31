@@ -52,7 +52,8 @@ test('links and files in a page work under the path, and are stored without it',
 	page,
 	request
 }) => {
-	const id = Date.now().toString(36);
+	// Unique even when repeated runs start in the same millisecond.
+	const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 	const path = `e2e/pfad-${id}`;
 
 	const upload = await request.post('api/files', {
@@ -100,7 +101,7 @@ test('links and files in a page work under the path, and are stored without it',
 });
 
 test('logging in comes back to the page under the path', async ({ page }) => {
-	const email = `pfad-${Date.now().toString(36)}@example.test`;
+	const email = `pfad-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@example.test`;
 	const signUp = await page.request.post('api/auth/sign-up/email', {
 		data: { email, password: 'ein-langes-passwort-123', name: 'Paula Pfad' },
 		headers: { origin }
@@ -174,7 +175,7 @@ test('an AI assistant connects all the way through, under the path', async ({
 	expect(registration.ok()).toBe(true);
 	const { client_id: clientId } = await registration.json();
 
-	const email = `assistent-${Date.now().toString(36)}@example.test`;
+	const email = `assistent-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}@example.test`;
 	const person = await playwright.request.newContext({ baseURL });
 	expect(
 		(

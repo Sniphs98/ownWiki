@@ -2,7 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { auth } from '$lib/server/auth';
 import { isSignupAllowed } from '$lib/server/signup';
-import { microsoftLogin, passwordLogin } from '$lib/server/microsoft';
+import { loginEnabled, microsoftLogin, passwordLogin } from '$lib/server/login';
 import { safeRedirectPath } from '$lib/safe-redirect';
 import { oauthContinuation } from '$lib/server/oauth-flow';
 import { createRateLimiter } from '$lib/server/rate-limit';
@@ -36,6 +36,8 @@ function allowAttempt(event: RequestEvent, email: string) {
 const TOO_MANY = 'Zu viele Versuche. Bitte warte eine Minute.';
 
 export const load: PageServerLoad = async (event) => {
+	// No way to log in at all: everyone may edit anyway (AUTH_MODE=disabled).
+	if (!loginEnabled) redirect(303, withBase('/'));
 	if (event.locals.user) {
 		redirect(303, await redirectTarget(event.url));
 	}

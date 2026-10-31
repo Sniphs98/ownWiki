@@ -8,6 +8,8 @@ export const FULL_PORT = 4175;
 /** A private wiki that logs in with Microsoft (e2e/fake-microsoft.js), registration closed. */
 export const MICROSOFT_PORT = 4176;
 export const FAKE_MICROSOFT_PORT = 4181;
+/** An open wiki with no login at all: PASSWORD_LOGIN=false and no Microsoft. */
+export const NO_LOGIN_PORT = 4177;
 /** The wiki under a path, as behind a reverse proxy: BASE_PATH=/wiki. */
 export const BASE_PATH_PORT = 4178;
 
@@ -83,6 +85,14 @@ export default defineConfig({
 		},
 		{
 			command: 'node e2e/setup-db.js && node scripts/start.js',
+			port: NO_LOGIN_PORT,
+			env: serverEnv(NO_LOGIN_PORT, 'disabled', {
+				DATABASE_URL: './.data/e2e/no-login/wiki.db',
+				PASSWORD_LOGIN: 'false'
+			})
+		},
+		{
+			command: 'node e2e/setup-db.js && node scripts/start.js',
 			port: BASE_PATH_PORT,
 			env: serverEnv(BASE_PATH_PORT, 'disabled', {
 				DATABASE_URL: './.data/e2e/base-path/wiki.db',
@@ -93,7 +103,7 @@ export default defineConfig({
 	use: { baseURL: `http://localhost:${PORT}` },
 	testMatch: '**/*.e2e.{ts,js}',
 	// In CI, a test that fails once may run again: under the full run's load
-	// (four servers, PDF rendering) an editor test now and then misses a
+	// (several servers, PDF rendering) an editor test now and then misses a
 	// keystroke, and that shouldn't block a release. Reported as "flaky";
 	// a real failure fails twice.
 	retries: process.env.CI ? 1 : 0

@@ -133,7 +133,7 @@ With your company's Microsoft account (Entra ID), people log in with **Mit Micro
 - Whoever logs in with Microsoft for the first time gets an account — even if registration is otherwise closed (`ALLOW_SIGNUP` only governs email and password).
 - If an account with the same email address exists, it's taken over: the same person, the same permissions, no second account.
 - As before, the very first account is an admin.
-- With `PASSWORD_LOGIN=false`, logging in with Microsoft is the only way in.
+- With `PASSWORD_LOGIN=false`, logging in with Microsoft is the only way in (see [Configuration](#configuration) for no login at all).
 
 **Setting it up (once, in the [Microsoft Entra admin center](https://entra.microsoft.com)):**
 
@@ -261,7 +261,7 @@ On a domain of its own, a single router with `Host(`wiki.example.org`)` is enoug
 | `MICROSOFT_CLIENT_ID`     | Log in with Microsoft: the app registration's application ID (see above). All three `MICROSOFT_*` together turn it on                                                                 |
 | `MICROSOFT_CLIENT_SECRET` | The app registration's client secret                                                                                                                                                  |
 | `MICROSOFT_TENANT_ID`     | Your company's directory (tenant) ID — only accounts from it get in                                                                                                                   |
-| `PASSWORD_LOGIN`          | `false`: log in with Microsoft only, no passwords. Default: both                                                                                                                      |
+| `PASSWORD_LOGIN`          | `false`: no email and password. With Microsoft set up, only Microsoft; without it and with `AUTH_MODE=disabled`, no login at all (see below). Default: on                             |
 | `BASE_PATH`               | The path the wiki is served under behind a reverse proxy, e.g. `/wiki` (see above). Set at start, no new build needed. Default: the root                                              |
 | `XFF_DEPTH`               | With `ADDRESS_HEADER=X-Forwarded-For`: how many proxies sit in front of the wiki, usually `1`                                                                                         |
 | `PORT`                    | The server's port, default `3000`                                                                                                                                                     |
@@ -284,6 +284,17 @@ On a domain of its own, a single router with `Host(`wiki.example.org`)` is enoug
 - unset (default) — only the first account can register; after that, registration is closed.
 - `true` — anyone may register.
 - `false` — nobody may register.
+
+**Logging in:**
+
+| `PASSWORD_LOGIN` | Microsoft set up | Ways to log in                        |
+| ---------------- | ---------------- | ------------------------------------- |
+| unset (default)  | no               | email and password                    |
+| unset            | yes              | both                                  |
+| `false`          | yes              | Microsoft only                        |
+| `false`          | no               | none — only with `AUTH_MODE=disabled` |
+
+Without any login, there's no login page and no account menu; everyone reads and edits. Features that belong to a person — the inbox, pins, the administration and the AI connection — aren't there either. With `AUTH_MODE=read-only` or `full`, nobody could get in that way, admins included, so the wiki keeps the password login and says so in its log on start.
 
 With `AUTH_MODE=full`, registration should stay closed — otherwise anyone can let themselves into the private wiki. Logging in with Microsoft is the usual way to let a whole company in.
 

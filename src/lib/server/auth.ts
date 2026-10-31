@@ -9,13 +9,15 @@ import { getRequestEvent } from '$app/server';
 import { withBase } from '$lib/base-path';
 import { db, dbDialect } from '$lib/server/db';
 import { hasUsers, isSignupAllowed } from '$lib/server/signup';
-import { microsoftLogin, passwordLogin } from '$lib/server/microsoft';
+import { loginEnabled, microsoftLogin, passwordLogin } from '$lib/server/login';
 
 /**
  * The MCP endpoint's address, which AI assistants' access tokens are bound
- * to. Needs ORIGIN — without it, there's no MCP endpoint.
+ * to. Needs ORIGIN — and a login, since an assistant acts as the person who
+ * connected it. Without either, there's no MCP endpoint.
  */
-export const mcpResource = env.ORIGIN ? new URL(withBase('/mcp'), env.ORIGIN).href : undefined;
+export const mcpResource =
+	env.ORIGIN && loginEnabled ? new URL(withBase('/mcp'), env.ORIGIN).href : undefined;
 
 export const auth = betterAuth({
 	baseURL: env.ORIGIN,
