@@ -7,7 +7,7 @@ import { jwt } from 'better-auth/plugins';
 import { mcp } from '@better-auth/mcp';
 import { getRequestEvent } from '$app/server';
 import { db, dbDialect } from '$lib/server/db';
-import { isSignupAllowed } from '$lib/server/signup';
+import { hasUsers, isSignupAllowed } from '$lib/server/signup';
 
 /**
  * The MCP endpoint's address, which AI assistants' access tokens are bound
@@ -23,15 +23,24 @@ export const auth = betterAuth({
 	// The JWT plugin's own /token endpoint isn't needed: access tokens come
 	// from the OAuth provider's /oauth2/token.
 	disabledPaths: ['/token'],
+	user: {
+		additionalFields: {
+			// 'admin' may edit everything and manage groups and access rules
+			// ($lib/access.ts); everyone else is a 'member'.
+			role: { type: 'string', defaultValue: 'member', input: false }
+		}
+	},
 	databaseHooks: {
 		user: {
 			create: {
 				// Enforced here rather than in the login form, so the public
 				// /api/auth/sign-up endpoint is covered as well.
-				before: async () => {
+				before: async (user) => {
 					if (!(await isSignupAllowed())) {
 						throw new APIError('FORBIDDEN', { message: 'Die Registrierung ist deaktiviert.' });
 					}
+					// The first account sets the wiki up, so it administers it.
+					if (!(await hasUsers())) return { data: { ...user, role: 'admin' } };
 				}
 			}
 		}

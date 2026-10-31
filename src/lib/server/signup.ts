@@ -23,7 +23,7 @@ const schema =
 		? await import('$lib/server/db/schema/pg')
 		: await import('$lib/server/db/schema/sqlite');
 
-async function hasUsers(): Promise<boolean> {
+export async function hasUsers(): Promise<boolean> {
 	return (await db.$count(schema.user)) > 0;
 }
 

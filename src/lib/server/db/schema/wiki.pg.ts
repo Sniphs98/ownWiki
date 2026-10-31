@@ -6,7 +6,8 @@ import {
 	timestamp,
 	customType,
 	uniqueIndex,
-	index
+	index,
+	primaryKey
 } from 'drizzle-orm/pg-core';
 import { user } from './auth.pg';
 
@@ -115,3 +116,50 @@ export const pdfCover = pgTable('pdf_cover', {
 		.$onUpdate(() => new Date())
 		.notNull()
 });
+
+/** A named group of people, e.g. "HR" — access rules can name it (see $lib/access.ts). */
+export const userGroup = pgTable('user_group', {
+	id: text('id').primaryKey(),
+	name: text('name').notNull().unique(),
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
+export const userGroupMember = pgTable(
+	'user_group_member',
+	{
+		groupId: text('group_id')
+			.notNull()
+			.references(() => userGroup.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		primaryKey({ columns: [table.groupId, table.userId] }),
+		index('user_group_member_user_id_idx').on(table.userId)
+	]
+);
+
+/**
+ * Who may do what in an area of the wiki, see $lib/access.ts. Deleting a
+ * group or person doesn't remove their rules here; rules for subjects that
+ * no longer exist simply never match.
+ */
+export const accessRule = pgTable(
+	'access_rule',
+	{
+		id: text('id').primaryKey(),
+		/** A page path and everything below it; '' for the whole wiki. */
+		path: text('path').notNull(),
+		/** 'everyone', 'group' or 'user'. */
+		subjectType: text('subject_type').notNull(),
+		/** The group's or person's id; '' for everyone. */
+		subjectId: text('subject_id').notNull().default(''),
+		/** 'none', 'read' or 'edit'. */
+		level: text('level').notNull(),
+		createdAt: timestamp('created_at').defaultNow().notNull()
+	},
+	(table) => [
+		uniqueIndex('access_rule_subject_uidx').on(table.path, table.subjectType, table.subjectId)
+	]
+);

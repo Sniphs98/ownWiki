@@ -5,6 +5,7 @@
 	import UserMenu from '$lib/components/wiki/user-menu.svelte';
 	import ThemeToggle from '$lib/components/wiki/theme-toggle.svelte';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
+	import ShieldIcon from '@lucide/svelte/icons/shield';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
@@ -98,6 +99,17 @@
 			{/if}
 
 			<div class="flex items-center justify-end gap-1">
+				{#if data.isAdmin}
+					<Button
+						href={resolve('/(app)/verwaltung')}
+						variant="ghost"
+						size="icon"
+						title="Verwaltung: Gruppen und Zugriffsrechte"
+						aria-label="Verwaltung"
+					>
+						<ShieldIcon />
+					</Button>
+				{/if}
 				<Button
 					href={resolve('/(app)/settings')}
 					variant="ghost"

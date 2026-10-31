@@ -2,11 +2,13 @@ import { error } from '@sveltejs/kit';
 import { getPageWithLatestVersion } from '$lib/server/repo/pages';
 import { generatePdfOrFail } from '$lib/server/pdf/generate-pdf';
 import { wantsToc } from '$lib/pdf-toc-setting.svelte';
+import { requireRead } from '$lib/server/access';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async (event) => {
 	const path = event.params.path;
 	const scope = event.url.searchParams.get('scope');
+	requireRead(event.locals.access, path);
 
 	const result = await getPageWithLatestVersion(path);
 	if (!result) error(404, 'Seite nicht gefunden');
@@ -16,7 +18,8 @@ export const GET: RequestHandler = async (event) => {
 	if (wantsToc(event.url)) query.set('toc', '1');
 	if (event.url.searchParams.get('cover') === '1') query.set('cover', '1');
 	const printUrl = `/print/${path}${query.size > 0 ? `?${query}` : ''}`;
-	const pdf = await generatePdfOrFail(printUrl, event.url);
+	// Rendered as the person asking: with exactly the pages they may read.
+	const pdf = await generatePdfOrFail(printUrl, event.url, event.locals.user?.id);
 	const filename = `${result.page.path.replace(/\//g, '-')}.pdf`;
 
 	return new Response(new Uint8Array(pdf), {

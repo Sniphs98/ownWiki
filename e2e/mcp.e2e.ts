@@ -1,4 +1,5 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import Database from 'better-sqlite3';
 import { expect, test, type APIRequestContext, type Page, type Playwright } from '@playwright/test';
 import { FULL_PORT } from '../playwright.config';
 
@@ -8,6 +9,7 @@ const baseURL = `http://localhost:${FULL_PORT}`;
 test.use({ baseURL });
 
 const RESOURCE = `${baseURL}/mcp`;
+const DATABASE = './.data/e2e/full/wiki.db';
 // The assistant's address for the authorization code; never really reached.
 const REDIRECT_URI = 'http://localhost:9/callback';
 
@@ -219,4 +221,46 @@ test('an assistant writes as the person, and the history says so', async ({
 	await page.goto(`/w/${id}/history`);
 	await expect(page.getByText('Max Notiz über E2E-Assistent')).toHaveCount(3);
 	await expect(page.getByText('Gedanken ergänzt')).toBeVisible();
+});
+
+test('an assistant may do no more than the person who connected it', async ({
+	page,
+	playwright,
+	request
+}) => {
+	const name = `Lea ${Date.now().toString(36)}`;
+	const token = await connectAssistant({ page, playwright, request }, name);
+	const area = `e2e/ki-zugriff-${Date.now().toString(36)}`;
+	await callTool(request, token, 'create_page', { id: `${area}/offen`, content: '# Offen' });
+	await callTool(request, token, 'create_page', { id: `${area}/zu`, content: '# Zu' });
+
+	// As an admin would set it on /verwaltung: Lea may only read "offen", not see "zu".
+	const db = new Database(DATABASE);
+	try {
+		const { id: userId } = db.prepare('SELECT id FROM user WHERE name = ?').get(name) as {
+			id: string;
+		};
+		const rule = db.prepare(
+			`INSERT INTO access_rule (id, path, subject_type, subject_id, level) VALUES (?, ?, 'user', ?, ?)`
+		);
+		rule.run(randomUUID(), `${area}/offen`, userId, 'read');
+		rule.run(randomUUID(), `${area}/zu`, userId, 'none');
+	} finally {
+		db.close();
+	}
+
+	const call = async (name: string, args: object) =>
+		(await (await rpc(request, 'tools/call', { name, arguments: args }, token)).json()).result;
+
+	const { pages } = await callTool(request, token, 'list_pages', { prefix: area });
+	expect(pages.map((p: { id: string }) => p.id)).toEqual([`${area}/offen`]);
+	expect((await call('fetch', { id: `${area}/zu` })).isError).toBe(true);
+	expect((await call('fetch', { id: `${area}/offen` })).isError).toBeUndefined();
+
+	const append = await call('append_to_page', { id: `${area}/offen`, content: 'Mehr' });
+	expect(append.isError).toBe(true);
+	expect(append.content[0].text).toContain('nicht bearbeiten');
+	expect((await call('create_page', { id: `${area}/zu/neu`, content: '# Neu' })).isError).toBe(
+		true
+	);
 });

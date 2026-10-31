@@ -6,18 +6,23 @@ import {
 	listVersions
 } from '$lib/server/repo/pages';
 import { resolveWikiLinks } from '$lib/wiki-links';
+import { requireEdit, requireRead } from '$lib/server/access';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
 	const path = event.params.path;
+	const { access } = event.locals;
+	requireRead(access, path);
 	const result = await getPageWithLatestVersion(path);
 	if (!result) error(404, 'Seite nicht gefunden');
 
-	const [versions, pages] = await Promise.all([listVersions(result.page.id), listPages()]);
+	const [versions, allPages] = await Promise.all([listVersions(result.page.id), listPages()]);
+	const pages = access.readable(allPages);
 
 	return {
 		path,
 		page: result.page,
+		canEdit: access.canEdit(path),
 		versions: versions.map((version) => ({
 			...version,
 			content: resolveWikiLinks(version.content, pages)
@@ -28,6 +33,7 @@ export const load: PageServerLoad = async (event) => {
 export const actions: Actions = {
 	restore: async (event) => {
 		const path = event.params.path;
+		requireEdit(event.locals.access, path);
 		const formData = await event.request.formData();
 		const versionNumber = Number(formData.get('versionNumber'));
 

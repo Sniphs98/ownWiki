@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { requireEditAccess } from '$lib/server/require-edit-access';
+import { requireEdit } from '$lib/server/access';
 import {
 	addPageVersion,
 	createPage,
@@ -17,6 +18,7 @@ export const load: PageServerLoad = async (event) => {
 	requireEditAccess(event);
 
 	const path = event.params.path;
+	requireEdit(event.locals.access, path);
 	const existing = await getPageWithLatestVersion(path);
 
 	// New pages only get the canonical path the "Neue Seite" dialog and
@@ -51,6 +53,7 @@ export const actions: Actions = {
 		requireEditAccess(event);
 
 		const path = event.params.path;
+		requireEdit(event.locals.access, path);
 		const formData = await event.request.formData();
 		const content = formData.get('content')?.toString() ?? '';
 		// The editor has no title field: the heading on the text's first line
@@ -101,6 +104,7 @@ export const actions: Actions = {
 
 	delete: async (event) => {
 		requireEditAccess(event);
+		requireEdit(event.locals.access, event.params.path);
 
 		const existing = await getPageWithLatestVersion(event.params.path);
 		if (!existing) error(404, 'Seite nicht gefunden');

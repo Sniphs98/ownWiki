@@ -8,6 +8,8 @@ export interface AttachmentMeta {
 
 export interface AttachmentFile extends AttachmentMeta {
 	data: Buffer;
+	/** The page it belongs to — whoever may read the page may read the file. */
+	pageId: string | null;
 }
 
 export interface CreateAttachmentInput {

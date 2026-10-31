@@ -1,7 +1,11 @@
 import { error } from '@sveltejs/kit';
 import { chromium, type Browser } from 'playwright';
 import { internalOrigin } from '$lib/server/internal-origin';
-import { PDF_INTERNAL_TOKEN, PDF_INTERNAL_TOKEN_HEADER } from './internal-token';
+import {
+	PDF_INTERNAL_TOKEN,
+	PDF_INTERNAL_TOKEN_HEADER,
+	PDF_INTERNAL_USER_HEADER
+} from './internal-token';
 import { createLimiter, QueueFullError } from './concurrency';
 
 /** How long the print view may take to render and paginate. */
@@ -45,12 +49,17 @@ function getBrowser(): Promise<Browser> {
  * real Milkdown Crepe editor (readonly) laid out by pagedjs, not a
  * reimplementation of the markdown rendering.
  */
-export function generatePdf(printPathAndQuery: string, requestUrl: URL): Promise<Buffer> {
+export function generatePdf(
+	printPathAndQuery: string,
+	requestUrl: URL,
+	userId?: string
+): Promise<Buffer> {
 	const url = new URL(printPathAndQuery, internalOrigin(requestUrl));
-	return limitExports(() => renderPdf(url));
+	return limitExports(() => renderPdf(url, userId));
 }
 
-async function renderPdf(url: URL): Promise<Buffer> {
+/** Renders `url` as `userId` would see it — or as a visitor without login. */
+async function renderPdf(url: URL, userId?: string): Promise<Buffer> {
 	const browser = await getBrowser();
 	const context = await browser.newContext();
 	try {
@@ -58,7 +67,11 @@ async function renderPdf(url: URL): Promise<Buffer> {
 		// anywhere, and whoever has the token gets past the AUTH_MODE gate.
 		await context.route(`${url.origin}/**`, (route) =>
 			route.continue({
-				headers: { ...route.request().headers(), [PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN }
+				headers: {
+					...route.request().headers(),
+					[PDF_INTERNAL_TOKEN_HEADER]: PDF_INTERNAL_TOKEN,
+					...(userId ? { [PDF_INTERNAL_USER_HEADER]: userId } : {})
+				}
 			})
 		);
 		const page = await context.newPage();
@@ -115,9 +128,13 @@ async function renderPdf(url: URL): Promise<Buffer> {
  * generatePdf for request handlers: logs the cause and answers with a
  * readable 500 instead of SvelteKit's generic "Internal Error".
  */
-export async function generatePdfOrFail(printPathAndQuery: string, requestUrl: URL) {
+export async function generatePdfOrFail(
+	printPathAndQuery: string,
+	requestUrl: URL,
+	userId?: string
+) {
 	try {
-		return await generatePdf(printPathAndQuery, requestUrl);
+		return await generatePdf(printPathAndQuery, requestUrl, userId);
 	} catch (cause) {
 		if (cause instanceof QueueFullError) {
 			error(503, 'Gerade laufen zu viele PDF-Exporte. Bitte versuche es gleich noch einmal.');

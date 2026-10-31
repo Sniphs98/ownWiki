@@ -10,7 +10,7 @@
 
 	let { data } = $props();
 
-	const canEdit = $derived(data.authMode === 'disabled' || !!data.user);
+	const canEdit = $derived(data.canEdit);
 	const hasChildren = $derived(data.pages.some((p) => p.path.startsWith(`${data.page.path}/`)));
 
 	let exportOpen = $state(false);
