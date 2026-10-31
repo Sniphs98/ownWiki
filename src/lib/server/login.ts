@@ -1,4 +1,6 @@
 import { env } from '$env/dynamic/private';
+import { authMode } from '$lib/server/auth-mode';
+import { loginMethods } from '$lib/login-methods';
 
 /**
  * Login with Microsoft (Entra ID), for a company's own tenant. On with all
@@ -34,5 +36,14 @@ function microsoftConfig() {
 
 export const microsoftLogin = microsoftConfig();
 
-/** Email and password, unless PASSWORD_LOGIN=false (with Microsoft, to log in only through it). */
-export const passwordLogin = env.PASSWORD_LOGIN !== 'false' || !microsoftLogin;
+const methods = loginMethods(env.PASSWORD_LOGIN, !!microsoftLogin, authMode);
+if (methods.warning) console.error(`[auth] ${methods.warning}`);
+
+/** Email and password, unless PASSWORD_LOGIN=false (see loginMethods). */
+export const passwordLogin = methods.password;
+
+/**
+ * Whether anyone can log in at all. Not with PASSWORD_LOGIN=false and no
+ * Microsoft, in a wiki everyone may edit anyway (AUTH_MODE=disabled).
+ */
+export const loginEnabled = methods.any;

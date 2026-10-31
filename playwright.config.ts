@@ -8,6 +8,8 @@ export const FULL_PORT = 4175;
 /** A private wiki that logs in with Microsoft (e2e/fake-microsoft.js), registration closed. */
 export const MICROSOFT_PORT = 4176;
 export const FAKE_MICROSOFT_PORT = 4181;
+/** An open wiki with no login at all: PASSWORD_LOGIN=false and no Microsoft. */
+export const NO_LOGIN_PORT = 4177;
 
 /** A stand-in for OpenAI's embeddings API (e2e/fake-embeddings.js). */
 const EMBEDDINGS_PORT = 4180;
@@ -78,12 +80,20 @@ export default defineConfig({
 				MICROSOFT_TENANT_ID: 'e2e-tenant',
 				MICROSOFT_AUTHORITY: `http://localhost:${FAKE_MICROSOFT_PORT}`
 			})
+		},
+		{
+			command: 'node e2e/setup-db.js && node build',
+			port: NO_LOGIN_PORT,
+			env: serverEnv(NO_LOGIN_PORT, 'disabled', {
+				DATABASE_URL: './.data/e2e/no-login/wiki.db',
+				PASSWORD_LOGIN: 'false'
+			})
 		}
 	],
 	use: { baseURL: `http://localhost:${PORT}` },
 	testMatch: '**/*.e2e.{ts,js}',
 	// In CI, a test that fails once may run again: under the full run's load
-	// (four servers, PDF rendering) an editor test now and then misses a
+	// (several servers, PDF rendering) an editor test now and then misses a
 	// keystroke, and that shouldn't block a release. Reported as "flaky";
 	// a real failure fails twice.
 	retries: process.env.CI ? 1 : 0

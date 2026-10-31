@@ -148,7 +148,9 @@
 					<SettingsIcon />
 				</Button>
 				<ThemeToggle />
-				<UserMenu user={data.user} />
+				{#if data.loginEnabled}
+					<UserMenu user={data.user} />
+				{/if}
 			</div>
 		</header>
 		<!-- overflow-x-hidden: page-break labels sit in the margin beside the
