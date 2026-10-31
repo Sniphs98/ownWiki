@@ -10,4 +10,4 @@ if [ "$(id -u)" = "0" ]; then
 fi
 
 node scripts/migrate.js
-exec node build
+exec node scripts/start.js

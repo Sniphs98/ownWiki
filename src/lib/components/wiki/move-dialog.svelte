@@ -19,6 +19,7 @@
 	import { slugifyPath } from '$lib/slug';
 	import type { ReadersChange } from '$lib/access';
 	import type { ActionResult } from '@sveltejs/kit';
+	import { withBase } from '$lib/base-path';
 
 	let {
 		open = $bindable(false),
@@ -73,7 +74,9 @@
 		const controller = new AbortController();
 		const timer = setTimeout(async () => {
 			try {
-				const response = await fetch(`/api/move?${query}`, { signal: controller.signal });
+				const response = await fetch(withBase(`/api/move?${query}`), {
+					signal: controller.signal
+				});
 				preview = (await response.json()) as Preview;
 			} catch {
 				// Superseded by the next keystroke, or offline: no preview.

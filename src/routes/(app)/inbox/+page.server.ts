@@ -3,11 +3,12 @@ import { addNote, deleteNote, listNotes } from '$lib/server/repo/inbox';
 import { listPages } from '$lib/server/repo/pages';
 import { fileNote, MAX_NOTE_LENGTH } from '$lib/server/inbox';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
+import { withBase } from '$lib/base-path';
 
 /** The inbox is a person's own: without login there is none. */
 function requireUser(event: RequestEvent | Parameters<PageServerLoad>[0]) {
 	const user = event.locals.user;
-	if (!user) redirect(303, `/login?redirectTo=${encodeURIComponent(event.url.pathname)}`);
+	if (!user) redirect(303, withBase(`/login?redirectTo=${encodeURIComponent(event.url.pathname)}`));
 	return user;
 }
 
@@ -44,7 +45,7 @@ export const actions: Actions = {
 			field(form, 'path')
 		);
 		if (!result.ok) return fail(400, { message: result.message });
-		redirect(303, `/w/${result.path}`);
+		redirect(303, withBase(`/w/${result.path}`));
 	},
 
 	delete: async (event) => {

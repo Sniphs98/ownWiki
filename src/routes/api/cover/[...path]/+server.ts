@@ -4,6 +4,8 @@ import { setCover } from '$lib/server/repo/covers';
 import { coverAlignX, coverAlignY } from '$lib/cover';
 import { requireEdit } from '$lib/server/access';
 import type { RequestHandler } from './$types';
+import { basePath } from '$lib/base-path';
+import { removeBasePath } from '$lib/content-paths';
 
 /** A title page is markdown with image links, not the images themselves. */
 const MAX_COVER_LENGTH = 100_000;
@@ -15,7 +17,8 @@ export const PUT: RequestHandler = async (event) => {
 	}
 	requireEdit(event.locals.access, event.params.path);
 	const body = await event.request.json().catch(() => null);
-	const content = typeof body?.content === 'string' ? body.content : null;
+	// Stored without the base path the dialog's editor shows its links with.
+	const content = typeof body?.content === 'string' ? removeBasePath(body.content, basePath) : null;
 	if (content === null) error(400, 'content fehlt.');
 	if (content.length > MAX_COVER_LENGTH) error(413, 'Die Titelseite ist zu lang.');
 

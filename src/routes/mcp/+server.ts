@@ -9,6 +9,7 @@ import { getUserRole } from '$lib/server/repo/access';
 import { internalOrigin } from '$lib/server/internal-origin';
 import { createWikiMcpServer, type McpActor } from '$lib/server/mcp/server';
 import type { RequestHandler } from './$types';
+import { withBase } from '$lib/base-path';
 
 /**
  * The person an access token was issued to (`sub`), with their rights, and
@@ -45,7 +46,8 @@ async function answer(request: Request, origin: string, actor: McpActor) {
 
 /** As for a missing token: the assistant has to be allowed again. */
 function disconnected(origin: string) {
-	const metadata = `${origin}/.well-known/oauth-protected-resource/mcp`;
+	// At the root, with the base path after it — as Better Auth names it for a missing token.
+	const metadata = `${origin}/.well-known/oauth-protected-resource${withBase('/mcp')}`;
 	return new Response('Diese Verbindung wurde getrennt.', {
 		status: 401,
 		headers: {
@@ -68,7 +70,7 @@ const protectedHandlers = new Map<string, (request: Request) => Promise<Response
 export const POST: RequestHandler = async ({ request, url }) => {
 	if (!mcpResource) error(404, 'Not found');
 
-	const jwksUrl = `${internalOrigin(url)}/api/auth/jwks`;
+	const jwksUrl = `${internalOrigin(url)}${withBase('/api/auth/jwks')}`;
 	let handler = protectedHandlers.get(jwksUrl);
 	if (!handler) {
 		handler = requireMcpAuth(

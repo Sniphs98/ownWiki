@@ -20,6 +20,7 @@ import { searchPages, semanticSearchEnabled } from '$lib/server/search';
 import { titleFromMarkdown } from '$lib/page-title';
 import { slugifyPath } from '$lib/slug';
 import { linkedPagePaths, refreshWikiLinks } from '$lib/wiki-links';
+import { withBase } from '$lib/base-path';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 // Writes never lose anything: every change is a new version in the history.
@@ -98,7 +99,7 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 				'Jede Änderung wird als neue Version gespeichert und lässt sich wiederherstellen.'
 		}
 	);
-	const pageUrl = (path: string) => `${origin}/w/${path}`;
+	const pageUrl = (path: string) => `${origin}${withBase(`/w/${path}`)}`;
 
 	server.registerTool(
 		'search',

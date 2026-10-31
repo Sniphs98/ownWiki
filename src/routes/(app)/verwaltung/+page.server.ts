@@ -16,11 +16,12 @@ import {
 	setUserRole
 } from '$lib/server/repo/access';
 import type { Actions, PageServerLoad, RequestEvent } from './$types';
+import { withBase } from '$lib/base-path';
 
 /** Groups, people and access rules are for admins only. */
 function requireAdmin(event: RequestEvent | Parameters<PageServerLoad>[0]) {
 	if (!event.locals.user) {
-		redirect(303, `/login?redirectTo=${encodeURIComponent(event.url.pathname)}`);
+		redirect(303, withBase(`/login?redirectTo=${encodeURIComponent(event.url.pathname)}`));
 	}
 	if (!event.locals.access.isAdmin) error(403, 'Nur für Admins.');
 }

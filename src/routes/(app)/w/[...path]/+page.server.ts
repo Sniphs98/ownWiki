@@ -7,6 +7,8 @@ import { requireEdit, requireRead } from '$lib/server/access';
 import { findBacklinks, linkBindings } from '$lib/server/backlinks';
 import { tagsOf } from '$lib/server/repo/tags';
 import type { Actions, PageServerLoad } from './$types';
+import { basePath, withBase } from '$lib/base-path';
+import { addBasePath } from '$lib/content-paths';
 
 export const load: PageServerLoad = async (event) => {
 	const { access } = event.locals;
@@ -19,7 +21,8 @@ export const load: PageServerLoad = async (event) => {
 		if (!pages.some((p) => p.path.startsWith(below))) {
 			// A page that was moved away from here: on to where it is now.
 			const movedTo = await movedPath(event.params.path);
-			if (movedTo && access.canRead(movedTo)) redirect(301, `/w/${movedTo}${event.url.search}`);
+			if (movedTo && access.canRead(movedTo))
+				redirect(301, withBase(`/w/${movedTo}${event.url.search}`));
 			error(404, 'Seite nicht gefunden');
 		}
 		return {
@@ -44,10 +47,10 @@ export const load: PageServerLoad = async (event) => {
 		page: result.page,
 		version: {
 			...result.version,
-			content: resolveWikiLinks(result.version.content, pages, bindings)
+			content: addBasePath(resolveWikiLinks(result.version.content, pages, bindings), basePath)
 		},
 		/** The page's PDF title page (pdf-export-dialog.svelte), if it has one. */
-		cover,
+		cover: cover && { ...cover, content: addBasePath(cover.content, basePath) },
 		tags,
 		/** The pages linking here, as far as the visitor may see them. */
 		backlinks: backlinks.map(({ path, title }) => ({ path, title })),
@@ -68,6 +71,6 @@ export const actions: Actions = {
 			event.locals.authMode
 		);
 		if (!result.ok) return fail(400, { moveError: result.message });
-		redirect(303, `/w/${result.plan.to}`);
+		redirect(303, withBase(`/w/${result.plan.to}`));
 	}
 };
