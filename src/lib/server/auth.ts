@@ -8,6 +8,7 @@ import { mcp } from '@better-auth/mcp';
 import { getRequestEvent } from '$app/server';
 import { db, dbDialect } from '$lib/server/db';
 import { hasUsers, isSignupAllowed } from '$lib/server/signup';
+import { microsoftLogin, passwordLogin } from '$lib/server/microsoft';
 
 /**
  * The MCP endpoint's address, which AI assistants' access tokens are bound
@@ -19,7 +20,27 @@ export const auth = betterAuth({
 	baseURL: env.ORIGIN,
 	secret: env.BETTER_AUTH_SECRET,
 	database: drizzleAdapter(db, { provider: dbDialect === 'postgresql' ? 'pg' : 'sqlite' }),
-	emailAndPassword: { enabled: true },
+	emailAndPassword: { enabled: passwordLogin },
+	socialProviders: microsoftLogin
+		? {
+				microsoft: {
+					...microsoftLogin,
+					// Always asks which account, so a shared computer doesn't log the wrong person in.
+					prompt: 'select_account',
+					// Would be fetched from Graph and stored in the user row on every login.
+					disableProfilePhoto: true
+				}
+			}
+		: undefined,
+	account: {
+		accountLinking: {
+			// Someone who had an account with a password logs in with Microsoft
+			// under the same address: the same account, not a second one. The
+			// tenant controls those addresses.
+			enabled: true,
+			trustedProviders: ['microsoft']
+		}
+	},
 	// The JWT plugin's own /token endpoint isn't needed: access tokens come
 	// from the OAuth provider's /oauth2/token.
 	disabledPaths: ['/token'],
@@ -35,8 +56,11 @@ export const auth = betterAuth({
 			create: {
 				// Enforced here rather than in the login form, so the public
 				// /api/auth/sign-up endpoint is covered as well.
-				before: async (user) => {
-					if (!(await isSignupAllowed())) {
+				before: async (user, context) => {
+					// Microsoft logins come from the company's own tenant: everyone
+					// there may have an account, whatever ALLOW_SIGNUP says.
+					const viaMicrosoft = !!microsoftLogin && context?.params?.id === 'microsoft';
+					if (!viaMicrosoft && !(await isSignupAllowed())) {
 						throw new APIError('FORBIDDEN', { message: 'Die Registrierung ist deaktiviert.' });
 					}
 					// The first account sets the wiki up, so it administers it.
