@@ -1,177 +1,194 @@
 # ownWiki
 
-Ein selbst gehostetes Wiki für technische Dokumentation und Anleitungen – mit einem PDF-Export, der genau so aussieht wie die Seite im Browser.
+A self-hosted wiki for technical documentation, how-tos and a team's shared knowledge — with a PDF export that looks exactly like the page in the browser, and a connection to AI assistants such as ChatGPT that can search, read and write the wiki as the person using them.
 
-![Eine Wiki-Seite mit Seitenleiste, Checkliste und Tabelle](docs/screenshots/seite.png)
+The user interface is in German. Where this README names a button or menu, it gives the German label as you see it in the app, e.g. **Verschieben** (Move).
 
-## Funktionen
+![A wiki page with the sidebar, a checklist and a table](docs/screenshots/seite.png)
 
-- **WYSIWYG-Editor auf Markdown-Basis** ([Milkdown Crepe](https://milkdown.dev)): Überschriften, Listen, Checklisten, Tabellen, Code mit Syntax-Hervorhebung, Formeln, Bilder.
-- **Titel aus der ersten Zeile**: Die Überschrift in der ersten Zeile einer Seite ist ihr Titel – ein eigenes Titelfeld gibt es nicht. Seiten ohne Überschrift oben behalten ihren bisherigen Titel.
-- **PDF-Export, der dem Bildschirm entspricht** – einzelne Seiten, ganze Bereiche mit Unterseiten oder das komplette Wiki.
-- **Seitenumbruch-Vorschau**: Schon beim Schreiben zeigt eine Linie, wo im PDF eine neue Seite beginnt.
-- **Diagramme direkt im Text**: Mermaid, BPMN (bpmn-js) und Excalidraw.
-- **Dateien im Text**: hochladen und als Download-Link an der passenden Stelle einfügen.
-- **Volltextsuche** über Titel, Pfade und Text aller Seiten, mit hervorgehobenen Treffern.
-- **Versionsverlauf**: Jede Änderung wird gespeichert; alte Stände lassen sich ansehen und wiederherstellen.
-- **Wiki-Links** im Obsidian-Stil: `[[Seitenname]]` oder `[[Seitenname|Linktext]]`, mit Vorschlägen beim Tippen. Sie bleiben gültig, wenn die Seite umbenannt oder verschoben wird; unter jeder Seite steht, welche Seiten auf sie verlinken (Backlinks).
-- **Seiten verschieben** samt Unterseiten, mit Weiterleitung von alten Adressen und einem festen Link pro Seite.
-- **Tags** an Seiten, mit Übersicht unter `/tags`.
-- **Inbox** pro Person für schnelle Notizen, die später in eine Seite einsortiert werden.
-- **Seitenhierarchie** über Pfade (`personal/kuendigung`), als einklappbare Seitenleiste.
-- **Inhaltsverzeichnis** der geöffneten Seite rechts neben dem Text.
-- **Anpassbare Werkzeugleiste**, **Hell- und Dunkelmodus**, **drei Zugriffsmodi** – vom offenen Team-Wiki bis zum privaten Wiki –, dazu **Rechte pro Bereich** für Gruppen und einzelne Personen.
-- **SQLite oder PostgreSQL**, komplett in Docker betreibbar.
+## Features
 
-### Inhaltsverzeichnis
+- **WYSIWYG editor on top of Markdown** ([Milkdown Crepe](https://milkdown.dev)): headings, lists, checklists, tables, code with syntax highlighting, formulas, images.
+- **The first line is the title**: the heading on a page's first line is its title — there's no separate title field. A page without a heading on top keeps its title.
+- **PDF export that matches the screen** — single pages, whole areas with their subpages, or the entire wiki.
+- **Page break preview**: while you write, a line shows where the PDF starts a new page.
+- **Diagrams in the text**: Mermaid, BPMN (bpmn-js) and Excalidraw.
+- **Files in the text**: upload them and insert a download link where they belong.
+- **Full-text search** across titles, paths and text, with the matches highlighted — and optionally a **semantic search** that finds pages by meaning.
+- **Version history**: every save is kept; older versions can be viewed and restored.
+- **Wiki links** in Obsidian style, `[[Page name]]` or `[[Page name|label]]`, with suggestions while you type. They keep working when the linked page is renamed or moved, and every page lists the pages linking to it (backlinks).
+- **Moving pages** with their subpages, with redirects from the old addresses and a permanent link per page.
+- **Tags** on pages, gathered under `/tags`.
+- **An inbox** per person for quick notes, to be sorted into pages later.
+- **Page hierarchy** by path (`hr/onboarding`), shown as a collapsible sidebar; folders open as a list of what's in them, and everyone can **pin** pages and folders to the top.
+- **Table of contents** of the open page, next to the text.
+- **Customizable toolbar**, **light and dark mode**, a save bar that stays in reach on long pages (and **Ctrl+S**).
+- **Three access modes** — from an open team wiki to a private one — plus **permissions per area** for groups and individual people.
+- **Log in with Microsoft** (Entra ID) or with email and password.
+- **AI assistants** (ChatGPT, Claude …) connect over the Model Context Protocol, each person with their own login.
+- **SQLite or PostgreSQL**, runs entirely in Docker.
 
-Rechts neben dem Text listet „Auf dieser Seite“ die Überschriften der geöffneten Seite, nach Ebenen eingerückt, und bleibt beim Scrollen sichtbar. Ein Klick springt zur Überschrift; der Abschnitt, in dem man gerade liest, ist markiert. Beim Bearbeiten aktualisiert sich das Verzeichnis sofort mit. Es erscheint, sobald neben der Textspalte genug Platz ist (Inhaltsbereich ab 1360 px, z. B. Full HD mit geöffneter Seitenleiste).
+### Table of contents
 
-### Schreiben
+To the right of the text, **Auf dieser Seite** (On this page) lists the headings of the open page, indented by level, and stays visible while you scroll. A click jumps to the heading; the section you're reading is highlighted. While editing, it follows every change right away. It appears once there's enough room beside the text column (a content area of at least 1360 px, e.g. Full HD with the sidebar open).
 
-Formatiert wird über die Werkzeugleiste, über Markdown-Kürzel (`## `, `- `, `**fett**` …) oder über das **„/“-Menü**: In einer leeren Zeile `/` tippen.
+### Writing
 
-![Editor mit Werkzeugleiste und geöffnetem „/“-Menü](docs/screenshots/editor.png)
+Format with the toolbar, with Markdown shortcuts (`## `, `- `, `**bold**` …) or with the **"/" menu**: type `/` in an empty line.
 
-Welche Werkzeuge in der Leiste stehen und in welcher Reihenfolge, stellt jede Person unter **Einstellungen** (Zahnrad oben rechts) selbst ein. Mit Konto wird das im Konto gespeichert, sonst im Browser.
+![The editor with its toolbar and the "/" menu open](docs/screenshots/editor.png)
 
-![Einstellungen der Werkzeugleiste](docs/screenshots/einstellungen.png)
+Which tools the toolbar shows, and in which order, everyone sets for themselves under **Einstellungen** (Settings, the gear at the top right). With an account it's stored in the account, otherwise in the browser.
 
-### PDF-Export
+![Toolbar settings](docs/screenshots/einstellungen.png)
 
-„PDF“ auf einer Seite öffnet die Export-Einstellungen: mit Unterseiten (der ganze Bereich), mit Inhaltsverzeichnis und mit eigener Titelseite. „Ganzes Wiki als PDF“ auf der Startseite exportiert alles inklusive Deckblatt. Die Knöpfe einer Seite (PDF, Seitenumbrüche, Verlauf, Bearbeiten) stehen links neben dem Text, in schmalen Fenstern über dem Text.
+While editing, the row with **Löschen**, **Abbrechen** and **Speichern** (Delete, Cancel, Save) stays at the bottom of the window, with the text fading out behind it; **Ctrl+S** (⌘S on a Mac) saves too.
 
-Die **Titelseite** gestaltest du direkt im Export-Fenster auf einem A4-Blatt – mit dem normalen Editor: Überschrift, Text, Logo oder andere Bilder (Größe an der Ecke ziehen), alles wie auf einer Wiki-Seite. Das Blatt zeigt Ränder und Proportionen wie im PDF; der Inhalt lässt sich waagerecht (links/mittig) und senkrecht (oben/mittig/unten) ausrichten, z. B. für ein Logo in der Seitenmitte. „Ganze Seite“ zeigt das Blatt komplett, „100 %“ in Originalgröße. Passt der Inhalt nicht auf eine Seite, weist das Fenster darauf hin. Die Titelseite wird beim Export mit der Seite gespeichert und ist beim nächsten Mal wieder da; im PDF ersetzt sie das automatische Deckblatt als Seite 1. Ist „Eigene Titelseite“ aus, bleibt das Blatt ausgegraut sichtbar.
+### PDF export
 
-Das PDF wird nicht nachgebaut, sondern aus der echten Seite erzeugt: dieselbe Textbreite (A4 mit Rändern), dieselben eingebetteten Schriften, derselbe Editor. Zeilen brechen deshalb an exakt denselben Stellen um. Tabellen und lange Codeblöcke werden zeilenweise auf mehrere Seiten verteilt, der Tabellenkopf wiederholt sich auf jeder Seite.
+**PDF** on a page opens the export settings: with subpages (the whole area), with a table of contents, and with a title page of your own. **Ganzes Wiki als PDF** (Whole wiki as PDF) on the start page exports everything, cover included. A page's buttons (PDF, page breaks, history, edit) sit to the left of the text, or above it in narrow windows.
 
-Jedes PDF hat Lesezeichen für die Seitenleiste des PDF-Betrachters: jede Wiki-Seite mit ihren Abschnitten darunter. Mit dem Haken „Inhaltsverzeichnis“ (im Export-Fenster bzw. auf der Startseite) folgt auf das Deckblatt bzw. die Titelseite außerdem eine gedruckte Inhaltsseite mit Seitenzahlen – Seiten und ihre Überschriften der ersten beiden Ebenen, im PDF anklickbar. Einzelne Seiten bekommen dafür ebenfalls ein Deckblatt, sodass das Verzeichnis immer auf Seite 2 steht. Der Browser merkt sich die Einstellung.
+You design the **title page** right in the export dialog, on an A4 sheet, with the regular editor: heading, text, a logo or other images (drag a corner to resize) — just like on a wiki page. The sheet shows margins and proportions as in the PDF; the content can be aligned horizontally (left/center) and vertically (top/center/bottom), e.g. for a logo in the middle of the page. **Ganze Seite** shows the whole sheet, **100 %** its actual size. If the content doesn't fit on one page, the dialog says so. The title page is saved with the page on export and is there again next time; in the PDF it replaces the generated cover as page 1. With the title page switched off, the sheet stays visible, greyed out.
+
+The PDF isn't rebuilt from the content but produced from the real page: the same text width (A4 with margins), the same embedded fonts, the same editor. Lines therefore break at exactly the same places. Tables and long code blocks are split across pages row by row, and a table's header repeats on every page.
+
+Every PDF has bookmarks for the PDF viewer's sidebar: each wiki page, with its sections below it. With **Inhaltsverzeichnis** (Table of contents) checked — in the export dialog or on the start page — a printed contents page with page numbers follows the cover or title page: pages and their headings of the first two levels, clickable in the PDF. Single pages then get a cover too, so the contents always start on page 2. The browser remembers the setting.
 
 <p align="center">
-  <img src="docs/screenshots/pdf-seite.png" alt="Erste Seite eines exportierten PDFs" width="420">
+  <img src="docs/screenshots/pdf-seite.png" alt="First page of an exported PDF" width="420">
 </p>
 
-Damit man schon beim Schreiben sieht, wo eine Seite endet, markiert eine gestrichelte Linie jeden Seitenumbruch – auch mitten in einem Absatz, einer Tabelle oder einem Codeblock. Ein- und ausschalten lässt sie sich über „Seitenumbrüche“.
+So you can see while writing where a page ends, a dashed line marks every page break — also in the middle of a paragraph, a table or a code block. **Seitenumbrüche** (Page breaks) turns it on and off.
 
-![Gestrichelte Linie „Seite 2“ zwischen zwei Abschnitten](docs/screenshots/seitenumbrueche.png)
+![A dashed "Seite 2" line between two sections](docs/screenshots/seitenumbrueche.png)
 
-### Diagramme
+### Diagrams
 
-Diagramme werden über das „/“-Menü (Gruppe „Diagramme“) oder die Werkzeugleiste eingefügt. Sie stehen als Codeblock im Markdown der Seite (` ```mermaid `, ` ```bpmn `, ` ```excalidraw `) – werden also mit der Seite versioniert und landen im PDF. Angezeigt wird die fertige Grafik:
+Diagrams are inserted with the "/" menu (group **Diagramme**) or the toolbar. They live as code blocks in the page's Markdown (` ```mermaid `, ` ```bpmn `, ` ```excalidraw `) — so they're versioned with the page and end up in the PDF. What you see is the rendered diagram:
 
-![Ein BPMN-Prozess und ein Mermaid-Sequenzdiagramm auf einer Seite](docs/screenshots/diagramme.png)
+![A BPMN process and a Mermaid sequence diagram on one page](docs/screenshots/diagramme.png)
 
-„Bearbeiten“ an einem Diagramm öffnet den passenden Editor groß im Dialog: Mermaid-Code mit Live-Vorschau, den bpmn-js-Modeler oder die Excalidraw-Zeichenfläche.
+**Bearbeiten** (Edit) on a diagram opens the matching editor in a large dialog: Mermaid code with a live preview, the bpmn-js modeler or the Excalidraw canvas.
 
-| BPMN                                                       | Excalidraw                                                             |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| ![BPMN-Editor im Dialog](docs/screenshots/bpmn-editor.png) | ![Excalidraw-Zeichenfläche im Dialog](docs/screenshots/excalidraw.png) |
+| BPMN                                                           | Excalidraw                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------- |
+| ![BPMN editor in the dialog](docs/screenshots/bpmn-editor.png) | ![Excalidraw canvas in the dialog](docs/screenshots/excalidraw.png) |
 
-Alle Diagramm-Bibliotheken – auch die Schriften von Excalidraw – liefert der eigene Server aus; es werden keine externen Dienste angefragt. Geladen werden sie erst, wenn eine Seite sie braucht.
+All diagram libraries — Excalidraw's fonts included — are served by the wiki itself; no external services are contacted. They're loaded only when a page needs them.
 
-### Dateien
+### Files
 
-„Datei“ im „/“-Menü oder in der Werkzeugleiste lädt eine oder mehrere Dateien hoch (je bis 10 MB) und fügt sie als Download-Link an der Cursor-Stelle ein. Bilder, die im Text erscheinen sollen, fügst du über „Bild“ ein. Dateien, die im Text nicht (mehr) verlinkt sind, listet die Bearbeiten-Ansicht auf – zum erneuten Einfügen oder endgültigen Löschen.
+**Datei** (File) in the "/" menu or the toolbar uploads one or more files (up to 10 MB each) and inserts a download link at the cursor. Images that should appear in the text go in with **Bild** (Image). Files no longer linked in the text are listed in the edit view — to insert again or to delete for good.
 
-### Suche
+### Search
 
-Das Suchfeld oben in der Mitte durchsucht Titel, Pfade und Text aller Seiten (Diagramm-Quelltexte nicht). Treffer sind nach Relevanz sortiert – Treffer im Titel zählen mehr –, die gefundenen Wörter sind im Textausschnitt markiert. Es müssen alle Suchwörter vorkommen; andere Formen eines Wortes werden mitgefunden („Kündigungen“ findet „Kündigung“).
+The search field at the top center searches the titles, paths and text of all pages (not diagram sources). Results are sorted by relevance — matches in the title count more — and the matched words are highlighted in the snippet. Every search word must occur; other forms of a word are found too ("Kündigungen" finds "Kündigung").
 
-![Suchergebnis mit markiertem Treffer](docs/screenshots/suche.png)
+![Search results with a highlighted match](docs/screenshots/suche.png)
 
-Unter SQLite sucht ownWiki mit FTS5, unter PostgreSQL mit der deutschen Volltextsuche der Datenbank (mit echter Wortstamm-Erkennung). Der Suchindex wird bei jedem Speichern aktualisiert und beim ersten Start automatisch aufgebaut.
+On SQLite, ownWiki searches with FTS5; on PostgreSQL, with the database's German full-text configuration (with real stemming). The index is updated on every save and built automatically on first start.
 
-**Semantische Suche (optional):** Mit einem Embedding-Dienst findet die Suche Seiten auch über ihre Bedeutung – „Datensicherung“ findet den Abschnitt „Backup“, die Frage „wie beantrage ich Urlaub?“ die Seite zum Urlaubsantrag. Solche Treffer stehen zwischen den Volltext-Treffern und sind als „inhaltlich ähnlich“ markiert; die KI-Anbindung sucht genauso. Dafür wird jede Seite in Abschnitte zerlegt, und der Dienst berechnet zu jedem einen Vektor (Embedding). Neue und geänderte Seiten kommen nach wenigen Sekunden dazu, bestehende beim ersten Start. Ist der Dienst nicht erreichbar, sucht ownWiki weiter mit der Volltextsuche.
+**Semantic search (optional):** with an embeddings service, the search also finds pages by meaning — "Datensicherung" (data backup) finds the section "Backup", the question "wie beantrage ich Urlaub?" (how do I request leave?) the page about leave requests. Such results appear among the full-text ones, marked **inhaltlich ähnlich** (similar in content); AI assistants search the same way. For this, every page is cut into sections and the service computes a vector (embedding) for each. New and changed pages are added within seconds, existing ones on first start. If the service can't be reached, ownWiki keeps searching by full text.
 
-Geeignet ist jeder Dienst mit der Embeddings-Schnittstelle von OpenAI (siehe `EMBEDDINGS_URL` unten), z. B.:
+Any service with OpenAI's embeddings API works (see `EMBEDDINGS_URL` below), for example:
 
-- **OpenAI:** `EMBEDDINGS_URL=https://api.openai.com/v1`, `EMBEDDINGS_MODEL=text-embedding-3-small` und ein API-Schlüssel. Kostet für ein ganzes Firmen-Wiki Cent-Beträge.
-- **Azure OpenAI** (Daten in der EU): `EMBEDDINGS_URL=https://<ressource>.openai.azure.com/openai/v1`, als Modell der Name des Deployments.
-- **Lokal mit [Ollama](https://ollama.com)**, ohne dass Text den Server verlässt und ohne Grafikkarte – am einfachsten mit dem mitgelieferten Container, siehe [Schnellstart](#schnellstart-mit-docker). Ohne Docker: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (vorher `ollama pull bge-m3`).
+- **OpenAI:** `EMBEDDINGS_URL=https://api.openai.com/v1`, `EMBEDDINGS_MODEL=text-embedding-3-small` and an API key. A whole company wiki costs cents.
+- **Azure OpenAI** (data in the EU): `EMBEDDINGS_URL=https://<resource>.openai.azure.com/openai/v1`, with your deployment's name as the model.
+- **Locally with [Ollama](https://ollama.com)**, without text leaving the server and without a GPU — easiest with the bundled container, see [Quick start](#quick-start-with-docker). Without Docker: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (after `ollama pull bge-m3`).
 
-Lokal oder Cloud lässt sich jederzeit wechseln: Nach einem Modellwechsel erfasst ownWiki alle Seiten im Hintergrund neu, bis dahin sucht es mit der Volltextsuche.
+You can switch between local and cloud at any time: after a model change, ownWiki embeds all pages again in the background and uses full-text search until then.
 
-Der Dienst bekommt den Text aller Seiten zu sehen, auch von Bereichen, die nur wenige lesen dürfen – sonst könnten diese Personen sie nicht finden. Wer was in den Ergebnissen sieht, regeln weiterhin die Rechte. Die Vektoren liegen in der eigenen Datenbank (Tabelle `page_search_chunk`); verglichen wird im Arbeitsspeicher, eine Datenbank-Erweiterung wie pgvector ist nicht nötig.
+The service sees the text of all pages, including areas only a few people may read — otherwise those people couldn't find them. Who sees what in the results is still governed by the permissions. The vectors are kept in the wiki's own database (table `page_search_chunk`) and compared in memory; no database extension such as pgvector is needed.
 
-### Links und Verschieben
+### Links and moving pages
 
-- **Vorschläge:** Tippt man im Editor `[[` – oder wählt im „/“-Menü „Seite verlinken“ –, schlägt eine Liste passende Seiten vor (Titel und Pfad) – mit den Pfeiltasten wählen, Enter oder Tab fügt den Link ein, Escape schließt die Liste. Für einen Namen, den noch keine Seite hat, gibt es „… verlinken (neue Seite)“. Haben zwei Seiten denselben Titel, wird der Pfad eingefügt (`[[hr/urlaub|Urlaub]]`), damit klar ist, welche gemeint ist.
-- **Links bleiben gültig:** Beim Speichern merkt sich das Wiki zu jedem Link, welche Seite er meint. Wird sie umbenannt oder verschoben, führt der Link weiter dorthin und zeigt ihren aktuellen Titel; bekommt danach eine andere Seite den alten Namen, übernimmt sie bestehende Links nicht. Im Text steht weiter, was geschrieben wurde – öffnet man die Seite im Editor, steht dort schon der aktuelle Name.
-- **Verschieben:** „Verschieben“ bei einer Seite oder einem Ordner wählt den neuen Ordner und Namen. Vorher zeigt der Dialog die neue Adresse, wie viele Unterseiten mitwandern, wie viele Seiten hierher verlinken – und wer am neuen Ort neu lesen darf oder nicht mehr, denn dort gelten dessen Rechte. Alte Adressen leiten weiter, der Verlauf vermerkt den Umzug.
-- **Fester Link:** „Link kopieren“ kopiert eine Adresse der Form `/p/…`, die immer zur Seite führt, wohin sie auch verschoben wird – gut für E-Mails und Tickets.
+- **Suggestions:** type `[[` in the editor — or pick **Seite verlinken** (Link a page) in the "/" menu — and a list suggests matching pages (title and path). Choose with the arrow keys; Enter or Tab inserts the link, Escape closes the list. For a name no page has yet, there's "„…" verlinken (neue Seite)" to link a page that doesn't exist yet. If two pages share a title, the path is inserted (`[[hr/leave|Leave]]`) so it's clear which one is meant.
+- **Links keep working:** when a page is saved, the wiki records which page each of its links means. If that page is renamed or moved, the link still leads there and shows its current title; if another page later gets the old name, it doesn't take over existing links. The text keeps what was written — but opened in the editor, it already reads the current name.
+- **Moving:** **Verschieben** (Move) on a page or folder picks the new folder and name. Beforehand, the dialog shows the new address, how many subpages go along, how many pages link here — and who would gain or lose read access at the new place, because that area's rules apply there. Old addresses redirect, and the history notes the move.
+- **Permanent link:** **Link kopieren** (Copy link) copies an address of the form `/p/…` that always leads to the page wherever it's moved — handy for emails and tickets.
 
-### Backlinks, Tags und Inbox
+### Backlinks, tags, inbox and pins
 
-- **Backlinks:** Unter jeder Seite steht „Verlinkt von“ mit den Seiten, die per `[[Wiki-Link]]` oder `/w/…`-Link auf sie verweisen – soweit man sie lesen darf. Auch Links, die schon vor der Seite da waren, zählen, sobald es sie gibt.
-- **Tags:** Unter dem Editor setzt man Tags, durch Kommas getrennt („hr, urlaub“). Sie stehen unter dem Seitentitel; das Tag-Symbol oben rechts führt zur Übersicht aller Tags und ihrer Seiten. Tags gehören nicht zum Versionsverlauf.
-- **Inbox:** Über das Inbox-Symbol oben rechts (mit der Zahl offener Notizen) notiert man schnell etwas, das noch keinen Platz hat – nur man selbst sieht die eigene Inbox. Mit „Einsortieren“ landet eine Notiz in einer Seite: angehängt, wenn es die Seite gibt, sonst als neue Seite.
+- **Backlinks:** below every page, **Verlinkt von** (Linked from) lists the pages that link to it with a `[[wiki link]]` or a `/w/…` link — as far as you may read them. Links written before the page existed count as soon as it does.
+- **Tags:** set them below the editor, separated by commas ("hr, leave"). They appear below the page title; the tag icon at the top right leads to all tags and their pages. Tags aren't part of the version history.
+- **Inbox:** the inbox icon at the top right (with the number of open notes) takes a quick note that has no place yet — only you see your inbox. **Einsortieren** (Sort in) moves a note into a page: appended if the page exists, otherwise as a new page.
+- **Pins and folders:** hovering a page or folder in the sidebar shows a pin; pinned items move to the top of their level, for you only. A folder — a path with pages below it but none of its own — opens as a list of what's in it.
 
-### Versionsverlauf
+### Version history
 
-Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version ansehen und wiederherstellen.
+Every save creates a new version. In the history, every version can be viewed and restored.
 
-![Versionsverlauf mit zwei Versionen](docs/screenshots/verlauf.png)
+![Version history with two versions](docs/screenshots/verlauf.png)
 
-### Dunkelmodus
+### Dark mode
 
-Über das Symbol oben rechts wählst du hell, dunkel oder die Systemeinstellung. Diagramme bleiben auf weißem Grund, damit sie genauso aussehen wie im (immer hellen) PDF.
+The icon at the top right switches between light, dark and the system setting. Diagrams stay on a white background, so they look just like in the (always light) PDF.
 
-![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
+![A diagram page in dark mode](docs/screenshots/dunkelmodus.png)
 
-### Anmeldung mit Microsoft
+### Log in with Microsoft
 
-Mit eurem Microsoft-Firmenkonto (Entra ID) meldet man sich über „Mit Microsoft anmelden“ an – auch beim Verbinden von ChatGPT. Nur Konten eures Tenants kommen herein, kein beliebiges Microsoft-Konto.
+With your company's Microsoft account (Entra ID), people log in with **Mit Microsoft anmelden** (Sign in with Microsoft) — also when connecting ChatGPT. Only accounts of your tenant get in, not any Microsoft account.
 
-- Wer sich zum ersten Mal mit Microsoft anmeldet, bekommt ein Konto – auch wenn die Registrierung sonst geschlossen ist (`ALLOW_SIGNUP` gilt nur für E-Mail und Passwort).
-- Gibt es schon ein Konto mit derselben E-Mail-Adresse, wird es übernommen: dieselbe Person, dieselben Rechte, kein zweites Konto.
-- Wie bisher ist das allererste Konto Admin.
-- Mit `PASSWORD_LOGIN=false` gibt es nur noch die Anmeldung mit Microsoft.
+- Whoever logs in with Microsoft for the first time gets an account — even if registration is otherwise closed (`ALLOW_SIGNUP` only governs email and password).
+- If an account with the same email address exists, it's taken over: the same person, the same permissions, no second account.
+- As before, the very first account is an admin.
+- With `PASSWORD_LOGIN=false`, logging in with Microsoft is the only way in.
 
-**Einrichten (einmalig, im [Microsoft Entra Admin Center](https://entra.microsoft.com)):**
+**Setting it up (once, in the [Microsoft Entra admin center](https://entra.microsoft.com)):**
 
-1. _Anwendungen → App-Registrierungen → Neue Registrierung_: Name z. B. „ownWiki“, Kontotypen _Nur Konten in diesem Organisationsverzeichnis_ (Single Tenant), Umleitungs-URI vom Typ _Web_: `https://dein-wiki.example.org/api/auth/callback/microsoft` (die Adresse aus `ORIGIN`).
-2. Auf der Übersichtsseite die _Anwendungs-ID (Client)_ als `MICROSOFT_CLIENT_ID` und die _Verzeichnis-ID (Mandant)_ als `MICROSOFT_TENANT_ID` eintragen.
-3. _Zertifikate & Geheimnisse → Neuer geheimer Clientschlüssel_: den **Wert** als `MICROSOFT_CLIENT_SECRET` eintragen. Er läuft ab (höchstens 24 Monate) – rechtzeitig einen neuen anlegen.
-4. Optional: _API-Berechtigungen → Administratorzustimmung erteilen_, damit niemand beim ersten Anmelden einzeln zustimmen muss (nötig sind nur `openid`, `profile`, `email`, `offline_access` und `User.Read`).
-5. Optional, wenn nicht alle im Tenant ins Wiki sollen: unter _Unternehmensanwendungen → ownWiki → Eigenschaften_ „Zuweisung erforderlich“ einschalten und unter _Benutzer und Gruppen_ festlegen, wer darf.
+1. _Applications → App registrations → New registration_: a name such as "ownWiki", supported account types _Accounts in this organizational directory only_ (single tenant), a redirect URI of type _Web_: `https://your-wiki.example.org/api/auth/callback/microsoft` (the address in `ORIGIN`).
+2. On the overview page, set the _Application (client) ID_ as `MICROSOFT_CLIENT_ID` and the _Directory (tenant) ID_ as `MICROSOFT_TENANT_ID`.
+3. _Certificates & secrets → New client secret_: set its **value** as `MICROSOFT_CLIENT_SECRET`. It expires (after at most 24 months): create a new one in time — the app can have two at once, so the switch needs no downtime.
+4. Optional: _API permissions → Grant admin consent_, so nobody has to consent individually on their first login (only `openid`, `profile`, `email`, `offline_access` and `User.Read` are needed).
+5. Optional, if not everyone in the tenant should get in: under _Enterprise applications → ownWiki → Properties_, turn on _Assignment required_ and choose who may under _Users and groups_.
 
-### Rechte pro Bereich
+### Permissions per area
 
-Admins legen unter **Verwaltung** (Schild-Symbol oben rechts) Gruppen an, z. B. „HR“, und vergeben Rechte: für einen Bereich – einen Seitenpfad mit allem darunter, oder das ganze Wiki – an alle, eine Gruppe oder eine einzelne Person, jeweils _kein Zugriff_, _lesen_ oder _bearbeiten_.
+Admins create groups such as "HR" under **Verwaltung** (Administration, the shield icon at the top right) and grant rights: for an area — a page path with everything below it, or the whole wiki — to everyone, a group or a single person, each either _kein Zugriff_ (no access), _lesen_ (read) or _bearbeiten_ (edit).
 
-- Ohne Regel darf jede Person alles lesen und bearbeiten.
-- Eine Regel auf `personal` gilt auch für `personal/kuendigung`; eine Regel auf einem Unterbereich geht für dieselbe Gruppe oder Person vor.
-- Die Regel für eine Person geht vor der ihrer Gruppen (von mehreren Gruppen zählt die großzügigste), die einer Gruppe vor der für alle.
-- Admins dürfen immer alles. Das erste Konto eines Wikis ist Admin; weitere ernennt man in der Verwaltung.
+- Without a rule, everyone may read and edit everything.
+- A rule on `hr` also applies to `hr/onboarding`; a rule on a sub-area takes precedence for the same group or person.
+- A person's own rule takes precedence over their groups' (of several groups, the most generous counts), a group's over the one for everyone.
+- Admins may always do everything. A wiki's first account is an admin; more are appointed under Verwaltung.
 
-Was jemand nicht lesen darf, gibt es für ihn nicht: Die Seite fehlt in Seitenleiste, Suche, PDF-Export, Links und Backlinks, auch Dateien darauf sind nicht abrufbar. Das gilt genauso für KI-Assistenten – sie dürfen genau, was die Person darf, die sie verbunden hat. `AUTH_MODE` begrenzt weiterhin, was ohne Anmeldung möglich ist.
+What someone may not read doesn't exist for them: the page is missing from the sidebar, the search, PDF exports, links and backlinks, and its files can't be fetched. The same goes for AI assistants — they may do exactly what the person who connected them may do. `AUTH_MODE` still limits what's possible without logging in.
 
-### KI-Anbindung (MCP)
+### AI assistants (MCP)
 
-ownWiki lässt sich als „Second Brain“ an KI-Assistenten wie ChatGPT oder Claude anbinden – über das [Model Context Protocol](https://modelcontextprotocol.io). Die KI kann dann im Wiki suchen, Seiten lesen, Bereiche und Tags auflisten und Backlinks abfragen (welche Seiten auf eine Seite verlinken) – und Seiten anlegen, ändern, taggen oder etwas an sie anhängen. Außerdem notiert sie auf Zuruf in der persönlichen Inbox („notier dir das“) und sortiert Notizen mit einem ins Wiki ein. Jede Änderung ist eine neue Version; im Verlauf steht, wer sie über welche KI gemacht hat (z. B. „Erika Muster über ChatGPT“). Löschen kann die KI nicht.
+ownWiki can serve as a "second brain" for AI assistants such as ChatGPT or Claude, over the [Model Context Protocol](https://modelcontextprotocol.io). The assistant can then search the wiki, read pages, list areas and tags, look up backlinks — and create, change, tag, move or append to pages. It also takes notes in the person's inbox on request ("notier dir das" — take a note of this) and sorts notes into the wiki together with them. Every change is a new version; the history shows who made it through which assistant (e.g. "Erika Muster über ChatGPT"). Assistants can't delete pages.
 
-Die Adresse für den Assistenten ist `https://dein-wiki.example.org/mcp`. Angemeldet wird per **OAuth**: Jede Person verbindet den Assistenten einmal mit ihrem eigenen Wiki-Konto – Anmelden, dann „Erlauben“ – und der Assistent handelt danach als diese Person. So ist nachvollziehbar, wer was getan hat, und es gibt kein gemeinsames Passwort. Assistenten registrieren sich dabei selbst (Dynamic Client Registration). Unter **Einstellungen → KI-Verbindungen** sieht jede Person ihre verbundenen Assistenten und kann sie trennen – der Zugriff endet sofort.
+| Tool                                                                 | What it does                                                           |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `search`, `fetch`                                                    | Search (by words, and by meaning if set up) and read a page in full    |
+| `list_pages`, `list_tags`, `get_backlinks`                           | Browse areas and tags, find related pages                              |
+| `create_page`, `update_page`, `append_to_page`, `move_page`          | Write; `update_page` refuses to overwrite a newer version than it read |
+| `add_to_inbox`, `list_inbox`, `file_inbox_note`, `delete_inbox_note` | The person's inbox                                                     |
 
-Voraussetzung ist, dass `ORIGIN` gesetzt ist – ohne gibt es die Anbindung nicht.
+The address for the assistant is `https://your-wiki.example.org/mcp`. It logs in with **OAuth**: everyone connects the assistant once to their own wiki account — log in, then **Erlauben** (Allow) — and from then on the assistant acts as that person. So it's clear who did what, and there's no shared password. Assistants register themselves (dynamic client registration). Under **Einstellungen → KI-Verbindungen** (Settings → AI connections), everyone sees their connected assistants and can disconnect them; access ends at once.
 
-- **ChatGPT Business/Enterprise:** Ein Admin schaltet in den Workspace-Einstellungen den Entwicklermodus ein, legt einen Connector mit der Adresse oben und Authentifizierung „OAuth“ an und veröffentlicht ihn für den Workspace. Danach verbindet sich jede Person beim ersten Benutzen selbst.
-- **Claude Code und andere MCP-Clients:** die Adresse als HTTP-MCP-Server eintragen, z. B. `claude mcp add --transport http ownwiki https://dein-wiki.example.org/mcp`.
+This needs `ORIGIN` to be set — without it, there's no MCP endpoint.
 
-ChatGPT ruft das Wiki von OpenAIs Servern aus auf, nicht vom eigenen Rechner. Das Wiki muss dafür nicht öffentlich erreichbar sein: OpenAIs [Secure MCP Tunnel](https://github.com/openai/tunnel-client) baut aus dem eigenen Netz eine ausgehende Verbindung auf.
+- **ChatGPT Business/Enterprise:** an admin turns on developer mode in the workspace settings, creates a connector with the address above and "OAuth" authentication, and publishes it to the workspace. After that, everyone connects themselves on first use.
+- **Claude Code and other MCP clients:** add the address as an HTTP MCP server, e.g. `claude mcp add --transport http ownwiki https://your-wiki.example.org/mcp`.
 
-## Schnellstart mit Docker
+ChatGPT calls the wiki from OpenAI's servers, not from your computer. The wiki doesn't have to be publicly reachable for that: OpenAI's [Secure MCP Tunnel](https://github.com/openai/tunnel-client) opens an outgoing connection from your own network.
+
+## Quick start with Docker
 
 ```sh
 cp .env.example .env
-# In .env mindestens setzen:
-#   BETTER_AUTH_SECRET – zufälliger Wert, z. B. aus: openssl rand -base64 32
-#   ORIGIN            – die Adresse, unter der das Wiki erreichbar ist, z. B. http://localhost:3000
+# In .env, set at least:
+#   BETTER_AUTH_SECRET – a random value, e.g. from: openssl rand -base64 32
+#   ORIGIN             – the address the wiki is reached at, e.g. http://localhost:3000
 docker compose up -d
 ```
 
-Das Wiki läuft dann auf Port 3000. Die Datenbank (SQLite) liegt im Docker-Volume `wikidata`; Migrationen laufen beim Start automatisch. Für PostgreSQL in `.env` `DATABASE_DIALECT=postgresql` und die passende `DATABASE_URL` setzen und mit `docker compose --profile postgresql up -d` starten.
+The wiki then runs on port 3000. The database (SQLite) lives in the Docker volume `wikidata`; migrations run automatically on start. For PostgreSQL, set `DATABASE_DIALECT=postgresql` and the matching `DATABASE_URL` in `.env` and start with `docker compose --profile postgresql up -d`.
 
-**Semantische Suche auf eigener Hardware:** In `.env` zusätzlich
+**Back up the database before updating** to a new version — migrations change it on start.
+
+**Semantic search on your own hardware:** additionally set
 
 ```sh
 EMBEDDINGS_URL=http://ollama:11434/v1
@@ -179,108 +196,112 @@ EMBEDDINGS_MODEL=bge-m3
 EMBEDDINGS_MIN_SCORE=0.5
 ```
 
-setzen und mit `docker compose --profile ollama up -d` starten. Das startet [Ollama](https://ollama.com) als eigenen Container und lädt beim ersten Mal das Modell herunter (bge-m3, etwa 1,2 GB; versteht Deutsch gut). Eine Grafikkarte ist nicht nötig, das Modell braucht rund 2 GB Arbeitsspeicher. Sobald es da ist, erfasst das Wiki alle Seiten im Hintergrund. Gemessen auf einem Prozessor mit 12 Threads ohne Grafikkarte: eine Suche rund 30 ms, das Erfassen etwa 0,3 s pro Abschnitt – für 1.000 Seiten beim ersten Start also grob eine halbe Stunde, danach pro gespeicherter Seite ein, zwei Sekunden. Reicht die Hardware nicht, trägt man stattdessen einen Cloud-Dienst wie Azure OpenAI ein (siehe [Suche](#suche)) und startet ohne `--profile ollama`.
+in `.env` and start with `docker compose --profile ollama up -d`. This runs [Ollama](https://ollama.com) as a container of its own and downloads the model on first start (bge-m3, about 1.2 GB; it understands German well). No GPU is needed; the model takes about 2 GB of memory. Once it's there, the wiki embeds all pages in the background. Measured on a 12-thread CPU without a GPU: about 30 ms per search and about 0.3 s per section to embed — roughly half an hour for 1,000 pages on first start, then a second or two per saved page. If the hardware isn't enough, set a cloud service such as Azure OpenAI instead (see [Search](#search)) and start without `--profile ollama`.
 
-Das Image enthält Chromium für den PDF-Export.
+The image includes Chromium for the PDF export.
 
-Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container Registry nehmen – dafür in `compose.yaml` `build: .` durch `image: ghcr.io/sniphs98/ownwiki:latest` (oder eine feste Version wie `:1.2.0`) ersetzen.
+Instead of building it yourself, you can use the ready-made image from the GitHub Container Registry: in `compose.yaml`, replace `build: .` with `image: ghcr.io/sniphs98/ownwiki:latest` (or a fixed version such as `:1.4.0`).
 
-## Konfiguration
+## Configuration
 
-| Variable                  | Bedeutung                                                                                                                                                                                                        |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`        | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                            |
-| `DATABASE_URL`            | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                     |
-| `ORIGIN`                  | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                         |
-| `BETTER_AUTH_SECRET`      | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                         |
-| `AUTH_MODE`               | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                 |
-| `ALLOW_SIGNUP`            | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                           |
-| `MICROSOFT_CLIENT_ID`     | Anmeldung mit Microsoft: Anwendungs-ID der App-Registrierung (siehe oben). Alle drei `MICROSOFT_*` zusammen schalten sie ein                                                                                     |
-| `MICROSOFT_CLIENT_SECRET` | Geheimer Clientschlüssel der App-Registrierung                                                                                                                                                                   |
-| `MICROSOFT_TENANT_ID`     | Verzeichnis-ID (Mandant) eurer Firma – nur Konten daraus kommen herein                                                                                                                                           |
-| `PASSWORD_LOGIN`          | `false`: nur Anmeldung mit Microsoft, kein Passwort. Standard: beides                                                                                                                                            |
-| `PORT`                    | Port des Servers, Standard `3000`                                                                                                                                                                                |
-| `ADDRESS_HEADER`          | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                             |
-| `BODY_SIZE_LIMIT`         | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                     |
-| `EMBEDDINGS_URL`          | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                       |
-| `EMBEDDINGS_MODEL`        | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                       |
-| `EMBEDDINGS_API_KEY`      | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                               |
-| `EMBEDDINGS_DIMENSIONS`   | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                      |
-| `EMBEDDINGS_MIN_SCORE`    | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); für `bge-m3` `0.5`. Andere Modelle: höher setzen, wenn zu viel Unpassendes gefunden wird |
+| Variable                  | Meaning                                                                                                                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`        | `sqlite` (default) or `postgresql`                                                                                                                                                    |
+| `DATABASE_URL`            | SQLite: path to the file, e.g. `./data/wiki.db` · PostgreSQL: connection URL                                                                                                          |
+| `ORIGIN`                  | The wiki's public address. Used for logging in, the AI connection and absolute links in PDFs.                                                                                         |
+| `BETTER_AUTH_SECRET`      | Secret for sessions (at least 32 characters)                                                                                                                                          |
+| `AUTH_MODE`               | Who may do what, see below. Default: `read-only`                                                                                                                                      |
+| `ALLOW_SIGNUP`            | Who may create an account with email and password, see below. Default: only the first account                                                                                         |
+| `MICROSOFT_CLIENT_ID`     | Log in with Microsoft: the app registration's application ID (see above). All three `MICROSOFT_*` together turn it on                                                                 |
+| `MICROSOFT_CLIENT_SECRET` | The app registration's client secret                                                                                                                                                  |
+| `MICROSOFT_TENANT_ID`     | Your company's directory (tenant) ID — only accounts from it get in                                                                                                                   |
+| `PASSWORD_LOGIN`          | `false`: log in with Microsoft only, no passwords. Default: both                                                                                                                      |
+| `PORT`                    | The server's port, default `3000`                                                                                                                                                     |
+| `ADDRESS_HEADER`          | Behind a reverse proxy: the header with the client's real IP, e.g. `X-Forwarded-For`                                                                                                  |
+| `BODY_SIZE_LIMIT`         | The largest request the server accepts. `11M` in the Docker image, so uploads of up to 10 MB work                                                                                     |
+| `EMBEDDINGS_URL`          | An embeddings service with OpenAI's API, for the semantic search (see above). Without it: full-text search only                                                                       |
+| `EMBEDDINGS_MODEL`        | The embedding model's name, e.g. `text-embedding-3-small`                                                                                                                             |
+| `EMBEDDINGS_API_KEY`      | The service's API key, if it needs one                                                                                                                                                |
+| `EMBEDDINGS_DIMENSIONS`   | Optional: ask for shorter vectors, e.g. `512` with `text-embedding-3-*` — saves memory                                                                                                |
+| `EMBEDDINGS_MIN_SCORE`    | How similar (0–1) a page must be to count as a match by meaning. Default `0.3` (fits `text-embedding-3-*`); `0.5` for `bge-m3`. Other models: raise it if too much unrelated is found |
 
-**Zugriffsmodi (`AUTH_MODE`):**
+**Access modes (`AUTH_MODE`):**
 
-- `disabled` – ohne Anmeldung: alle dürfen lesen und schreiben.
-- `read-only` – alle dürfen lesen, Bearbeiten erfordert eine Anmeldung.
-- `full` – ohne Anmeldung kein Zugriff (privates Wiki).
+- `disabled` — no login needed: everyone may read and write.
+- `read-only` — everyone may read; editing needs a login.
+- `full` — no access at all without a login (private wiki).
 
-**Registrierung (`ALLOW_SIGNUP`):**
+**Registration (`ALLOW_SIGNUP`):**
 
-- nicht gesetzt (Standard) – nur das erste Konto kann sich registrieren, danach ist die Registrierung geschlossen.
-- `true` – alle dürfen sich registrieren.
-- `false` – niemand darf sich registrieren.
+- unset (default) — only the first account can register; after that, registration is closed.
+- `true` — anyone may register.
+- `false` — nobody may register.
 
-Bei `AUTH_MODE=full` sollte die Registrierung geschlossen bleiben, sonst kann sich jede Person selbst Zugang zum privaten Wiki verschaffen.
+With `AUTH_MODE=full`, registration should stay closed — otherwise anyone can let themselves into the private wiki. Logging in with Microsoft is the usual way to let a whole company in.
 
-## Entwicklung
+## Development
 
-Voraussetzung: Node.js 24.
+Requires Node.js 24.
 
 ```sh
 npm install
-cp .env.example .env     # BETTER_AUTH_SECRET und ORIGIN=http://localhost:5173 setzen
-npm run db:push          # Datenbankschema anlegen bzw. aktualisieren
-npx playwright install chromium   # einmalig, für den PDF-Export
+cp .env.example .env                       # set BETTER_AUTH_SECRET and ORIGIN=http://localhost:5173
+node --env-file=.env scripts/migrate.js    # create or update the database
+npx playwright install chromium            # once, for the PDF export
 npm run dev
 ```
 
-| Befehl                            | Zweck                                                                                                                  |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `npm run dev`                     | Entwicklungsserver auf http://localhost:5173                                                                           |
-| `npm run check`                   | Typprüfung (svelte-check)                                                                                              |
-| `npm run lint` / `npm run format` | Prettier und ESLint                                                                                                    |
-| `npm run test:unit`               | Unit-Tests mit Vitest                                                                                                  |
-| `npm run test:e2e`                | Ende-zu-Ende-Tests mit Playwright                                                                                      |
-| `npm run build`                   | Produktions-Build (`node build` startet ihn)                                                                           |
-| `npm run db:generate`             | Migration aus Schemaänderungen erzeugen (für SQLite und PostgreSQL jeweils mit passendem `DATABASE_DIALECT` ausführen) |
+Use the migrations rather than `npm run db:push`: some of them carry hand-written steps (making the oldest account an admin, keeping link bindings when a page is deleted) that `db:push` skips.
 
-Die Ende-zu-Ende-Tests bauen die App und starten sie wie im Docker-Image (`node build`), mit einer eigenen, jedes Mal neu befüllten Datenbank unter `.data/e2e/` – die Entwicklungsdatenbank bleibt unberührt. Sie prüfen unter anderem, dass Web-Ansicht und PDF an denselben Stellen umbrechen, dass keine leeren Seiten entstehen und dass die Seitenumbruch-Linien mit dem echten PDF übereinstimmen.
+| Command                           | Purpose                                                                                                                      |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                     | Development server at http://localhost:5173                                                                                  |
+| `npm run check`                   | Type check (svelte-check)                                                                                                    |
+| `npm run lint` / `npm run format` | Prettier and ESLint                                                                                                          |
+| `npm run test:unit`               | Unit tests with Vitest                                                                                                       |
+| `npm run test:e2e`                | End-to-end tests with Playwright                                                                                             |
+| `npm run build`                   | Production build (`node build` runs it)                                                                                      |
+| `npm run db:generate`             | Generate a migration from schema changes (run once for SQLite and once for PostgreSQL, with the matching `DATABASE_DIALECT`) |
 
-Bei jedem Pull Request und jedem Push auf `main` laufen Lint, Typprüfung, Unit- und Ende-zu-Ende-Tests sowie der Docker-Build in GitHub Actions (`.github/workflows/ci.yml`).
+The end-to-end tests build the app and run it as in the Docker image (`node build`), with databases of their own under `.data/e2e/`, seeded fresh on every run — the development database stays untouched. Next to the main server they start servers for the other access modes and stand-ins for an embeddings service (`e2e/fake-embeddings.js`) and for Microsoft's login (`e2e/fake-microsoft.js`). Among other things, they check that the web view and the PDF break at the same places, that no blank pages appear and that the page break lines match the real PDF.
 
-### Release erstellen
+On every pull request and every push to `main`, GitHub Actions runs lint, type check, unit and end-to-end tests and the Docker build (`.github/workflows/ci.yml`). There, an end-to-end test that fails once is retried once and reported as flaky.
 
-Jeder Merge nach `main` wird automatisch veröffentlicht (`.github/workflows/auto-release.yml`). Das Label am Pull Request bestimmt, wie die Version gegenüber dem letzten Tag steigt:
+### Releases
 
-| Label am PR    | Version                                      |
-| -------------- | -------------------------------------------- |
-| _keins_        | Patch: `1.2.3` → `1.2.4`                     |
-| `feature`      | Minor: `1.2.3` → `1.3.0`                     |
-| `breaking`     | Major: `1.2.3` → `2.0.0`                     |
-| `kein-release` | kein Release (z. B. nur Doku, Tests oder CI) |
+Every merge to `main` is released automatically (`.github/workflows/auto-release.yml`). The pull request's label decides how the version moves on from the last tag:
 
-Der Release lässt erst die komplette CI laufen, baut dann das Docker-Image und legt es als `ghcr.io/sniphs98/ownwiki` mit den Tags `1.2.0`, `1.2` und `latest` ab. Zum Schluss legt er den Versions-Tag und einen GitHub-Release mit automatisch erzeugten Release-Notes an.
+| Label on the PR | Version                                  |
+| --------------- | ---------------------------------------- |
+| _none_          | Patch: `1.2.3` → `1.2.4`                 |
+| `feature`       | Minor: `1.2.3` → `1.3.0`                 |
+| `breaking`      | Major: `1.2.3` → `2.0.0`                 |
+| `kein-release`  | No release (e.g. docs, tests or CI only) |
 
-Von Hand geht es weiterhin mit einem Versions-Tag (`.github/workflows/release.yml`):
+The release first runs the full CI, then builds the Docker image and publishes it as `ghcr.io/sniphs98/ownwiki` with the tags `1.2.0`, `1.2` and `latest`. Finally it creates the version tag and a GitHub release with generated release notes.
+
+Releasing by hand still works with a version tag (`.github/workflows/release.yml`):
 
 ```sh
 git tag v1.2.0
 git push origin v1.2.0
 ```
 
-Tags mit Zusatz wie `v1.2.0-rc.1` werden als Pre-Release veröffentlicht und verschieben `latest` nicht.
+Tags with a suffix such as `v1.2.0-rc.1` are published as pre-releases and don't move `latest`.
 
-### Aufbau
+### Architecture
 
-- **SvelteKit** (Svelte 5) mit **shadcn-svelte** und Tailwind CSS
-- **Drizzle ORM** für SQLite und PostgreSQL (`src/lib/server/db`, Repositories in `src/lib/server/repo`)
-- **Better Auth** für Konten; die Zugriffsmodi setzt `src/hooks.server.ts` durch
-- **Milkdown Crepe** als Editor (`src/lib/components/wiki/markdown-editor.svelte`)
-- **PDF-Export**: Die Route `/print/…` rendert die Seiten mit dem echten Editor, [pagedjs](https://pagedjs.org) teilt sie in A4-Seiten auf, und ein Chromium (Playwright) auf dem Server druckt das Ergebnis als PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). Die Seitenumbruch-Vorschau führt dieselbe Aufteilung unsichtbar im Browser aus (`src/lib/page-breaks.ts`).
-- Dateien liegen als BLOB in der Datenbank und werden über `/api/files/[id]` ausgeliefert.
-- **Suche** (`src/lib/server/search`): Volltext in der Datenbank, dazu optional semantisch – Seiten werden in Abschnitte zerlegt (`semantic/chunks.ts`), im Hintergrund eingebettet, im Arbeitsspeicher verglichen und mit den Volltext-Treffern per Reciprocal Rank Fusion gemischt.
-- **MCP-Server** für KI-Assistenten unter `/mcp` (`src/lib/server/mcp`, offizielles MCP-SDK, zustandslos über Streamable HTTP), geschützt per OAuth – Better Auth ist dafür mit dem `mcp()`-Plugin zugleich OAuth-Server (`src/lib/server/auth.ts`, Zustimmungsseite unter `/consent`).
+- **SvelteKit** (Svelte 5) with **shadcn-svelte** and Tailwind CSS
+- **Drizzle ORM** for SQLite and PostgreSQL (`src/lib/server/db`, repositories in `src/lib/server/repo`, migrations in `drizzle/`)
+- **Better Auth** for accounts, Microsoft login and as the OAuth server for AI assistants (`src/lib/server/auth.ts`); access modes and permissions are enforced via `src/hooks.server.ts` and `src/lib/server/access.ts`
+- **Milkdown Crepe** as the editor (`src/lib/components/wiki/markdown-editor.svelte`), with ProseMirror plugins of its own, e.g. for the `[[` suggestions (`src/lib/editor-link-suggest.ts`)
+- **PDF export**: the `/print/…` route renders the pages with the real editor, [pagedjs](https://pagedjs.org) splits them into A4 pages, and a Chromium (Playwright) on the server prints the result to PDF (`src/lib/server/pdf`, `src/lib/paginate.ts`). The page break preview runs the same pagination invisibly in the browser (`src/lib/page-breaks.ts`).
+- Files are stored as BLOBs in the database and served from `/api/files/[id]`.
+- **Links** (`src/lib/wiki-links.ts`, table `page_link`): every link is bound to the page id it meant when saved, so moves and renames don't break it; old paths of moved pages live in `page_redirect`.
+- **Search** (`src/lib/server/search`): full text in the database, plus optional semantic search — pages are cut into sections (`semantic/chunks.ts`), embedded in the background, compared in memory and merged with the full-text results by reciprocal rank fusion.
+- **MCP server** for AI assistants at `/mcp` (`src/lib/server/mcp`, the official MCP SDK, stateless over Streamable HTTP), protected by OAuth — Better Auth's `mcp()` plugin makes the wiki the OAuth server too (consent page at `/consent`).
 
-## Noch nicht umgesetzt
+## Not done yet
 
-- Speicherung von Dateien in S3-kompatiblem Speicher (z. B. MinIO) statt in der Datenbank
+- Storing files in S3-compatible storage (e.g. MinIO) instead of the database
+- Moving pages by drag and drop in the sidebar
