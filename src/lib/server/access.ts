@@ -1,7 +1,17 @@
 import { error } from '@sveltejs/kit';
-import { accessLevel, canEdit, canRead, type AccessLevel, type Viewer } from '$lib/access';
+import {
+	accessLevel,
+	canEdit,
+	canRead,
+	compareReaders,
+	type AccessLevel,
+	type ReadersChange,
+	type Viewer
+} from '$lib/access';
+
+export type { ReadersChange } from '$lib/access';
 import type { AuthMode } from '$lib/server/auth-mode';
-import { groupIdsOf, listRules } from '$lib/server/repo/access';
+import { groupIdsOf, listGroups, listRules, listUsers } from '$lib/server/repo/access';
 
 /** What one visitor may do, page by page. Made once per request (hooks.server.ts). */
 export interface PageAccess {
@@ -56,4 +66,25 @@ export function requireRead(access: PageAccess, path: string) {
 export function requireEdit(access: PageAccess, path: string) {
 	requireRead(access, path);
 	if (!access.canEdit(path)) error(403, 'Du darfst diese Seite nicht bearbeiten.');
+}
+
+/**
+ * Who would gain or lose reading a page moved from `before` to `after`,
+ * under the current rules, groups and AUTH_MODE (see compareReaders).
+ */
+export async function readersChange(
+	before: string,
+	after: string,
+	authMode: AuthMode
+): Promise<ReadersChange> {
+	const [rules, users, groups] = await Promise.all([listRules(), listUsers(), listGroups()]);
+	const people = users.map((user) => ({
+		name: user.name,
+		userId: user.id,
+		isAdmin: user.role === 'admin',
+		groupIds: groups.filter((g) => g.members.some((m) => m.id === user.id)).map((g) => g.id),
+		ceiling: 'edit' as const
+	}));
+	const visitor: Viewer = { isAdmin: false, groupIds: [], ceiling: ceilingFor(false, authMode) };
+	return compareReaders(before, after, rules, people, visitor);
 }

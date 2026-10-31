@@ -83,3 +83,38 @@ export function accessLevel(path: string, viewer: Viewer, rules: AccessRule[]): 
 
 export const canRead = (level: AccessLevel) => level !== 'none';
 export const canEdit = (level: AccessLevel) => level === 'edit';
+
+export interface ReadersChange {
+	/** People (by name) who may read the page at `after` but not at `before`. */
+	gained: string[];
+	/** People who may read it at `before` but no longer at `after`. */
+	lost: string[];
+	/** Whether visitors without login may read it at `after`, but not at `before` — or the reverse. */
+	withoutLogin: 'gained' | 'lost' | null;
+}
+
+/**
+ * Who may read a page at `after` that couldn't at `before`, and the other
+ * way round — for moving a page into another area, whose rules apply then.
+ * `people` are viewers with their names; admins may always read, so they're
+ * never in it. `visitor` is someone without login.
+ */
+export function compareReaders(
+	before: string,
+	after: string,
+	rules: AccessRule[],
+	people: (Viewer & { name: string })[],
+	visitor: Viewer
+): ReadersChange {
+	const reads = (viewer: Viewer, path: string) => canRead(accessLevel(path, viewer, rules));
+	const change: ReadersChange = { gained: [], lost: [], withoutLogin: null };
+	for (const person of people) {
+		if (person.isAdmin) continue;
+		const [then, now] = [reads(person, before), reads(person, after)];
+		if (!then && now) change.gained.push(person.name);
+		if (then && !now) change.lost.push(person.name);
+	}
+	const [then, now] = [reads(visitor, before), reads(visitor, after)];
+	if (then !== now) change.withoutLogin = now ? 'gained' : 'lost';
+	return change;
+}

@@ -37,3 +37,10 @@ export class PageConflictError extends Error {
 		super(`Page was changed meanwhile (now at version ${latestVersion})`);
 	}
 }
+
+/** One page of a move: from its path to the new one. */
+export interface PageMove {
+	pageId: string;
+	from: string;
+	to: string;
+}

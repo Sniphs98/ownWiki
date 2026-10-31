@@ -3,6 +3,7 @@ import { getAttachment } from '$lib/server/repo/attachments';
 import { getCover } from '$lib/server/repo/covers';
 import type { Cover } from '$lib/cover';
 import { resolveWikiLinks } from '$lib/wiki-links';
+import { linkBindings } from '$lib/server/backlinks';
 import type { PageAccess } from '$lib/server/access';
 
 export interface PrintablePage {
@@ -79,7 +80,8 @@ export async function resolvePrintablePages(
 		const found =
 			target.path === result.page.path ? result : await getPageWithLatestVersion(target.path);
 		if (!found) continue;
-		const withLinks = resolveWikiLinks(found.version.content, allPages);
+		const bindings = await linkBindings(found.page.id, allPages);
+		const withLinks = resolveWikiLinks(found.version.content, allPages, bindings);
 		const withImages = await inlineAttachmentImages(withLinks);
 		pages.push({
 			title: found.version.title,
@@ -111,7 +113,8 @@ export async function resolveAllPrintablePages(access: PageAccess): Promise<Prin
 	for (const target of [...allPages].sort((a, b) => a.path.localeCompare(b.path))) {
 		const found = await getPageWithLatestVersion(target.path);
 		if (!found) continue;
-		const withLinks = resolveWikiLinks(found.version.content, allPages);
+		const bindings = await linkBindings(found.page.id, allPages);
+		const withLinks = resolveWikiLinks(found.version.content, allPages, bindings);
 		const withImages = await inlineAttachmentImages(withLinks);
 		pages.push({
 			title: found.version.title,

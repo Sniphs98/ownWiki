@@ -78,6 +78,20 @@
       "when": 1793400110212,
       "tag": "0010_page_pins",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793402821766,
+      "tag": "0011_link_bindings",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793403318032,
+      "tag": "0012_page_redirects",
+      "breakpoints": true
     }
   ]
 }

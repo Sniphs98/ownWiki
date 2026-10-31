@@ -1,10 +1,12 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { findBacklinks } from '$lib/server/backlinks';
+import { findBacklinks, linkBindings } from '$lib/server/backlinks';
 import { listPageTags, setTags, tagsOf } from '$lib/server/repo/tags';
 import { readableTags } from '$lib/server/tags';
 import { addNote, deleteNote, listNotes } from '$lib/server/repo/inbox';
 import { fileNote, MAX_NOTE_LENGTH } from '$lib/server/inbox';
+import { movedPath, movePage } from '$lib/server/move';
+import { authMode } from '$lib/server/auth-mode';
 import { parseTags } from '$lib/tags';
 import type { PageAccess } from '$lib/server/access';
 import {
@@ -17,7 +19,7 @@ import {
 import { searchPages, semanticSearchEnabled } from '$lib/server/search';
 import { titleFromMarkdown } from '$lib/page-title';
 import { slugifyPath } from '$lib/slug';
-import { linkedPagePaths } from '$lib/wiki-links';
+import { linkedPagePaths, refreshWikiLinks } from '$lib/wiki-links';
 
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 // Writes never lose anything: every change is a new version in the history.
@@ -34,6 +36,15 @@ const failure = (text: string) => ({
 });
 
 const notFound = (path: string) => failure(`Keine Seite unter "${path}".`);
+
+/** Not found — or moved, then where to, if the assistant may know. */
+async function notFoundOrMoved(path: string, access: PageAccess) {
+	const movedTo = await movedPath(path);
+	if (movedTo && access.canRead(movedTo)) {
+		return failure(`Die Seite "${path}" wurde nach "${movedTo}" verschoben. Nutze diesen Pfad.`);
+	}
+	return notFound(path);
+}
 
 const notAllowed = (path: string) =>
 	failure(`Du darfst "${path}" nicht bearbeiten – dafür fehlen die Rechte in diesem Bereich.`);
@@ -134,18 +145,21 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 		},
 		async ({ id }) => {
 			const found = actor.access.canRead(id) ? await getPageWithLatestVersion(id) : null;
-			if (!found) return notFound(id);
-			const [pages, tags] = await Promise.all([listPages(), tagsOf(found.page.id)]);
+			if (!found) return notFoundOrMoved(id, actor.access);
+			const [allPages, tags] = await Promise.all([listPages(), tagsOf(found.page.id)]);
+			const pages = actor.access.readable(allPages);
+			const bindings = await linkBindings(found.page.id, pages);
 			return json({
 				id: found.page.path,
 				title: found.version.title,
-				text: found.version.content,
+				// Links to renamed or moved pages already read as those pages are called now.
+				text: refreshWikiLinks(found.version.content, pages, bindings),
 				url: pageUrl(found.page.path),
 				metadata: {
 					version: found.version.versionNumber,
 					updatedAt: found.page.updatedAt.toISOString(),
 					tags,
-					linksTo: linkedPagePaths(found.version.content, actor.access.readable(pages))
+					linksTo: linkedPagePaths(found.version.content, pages, bindings)
 				}
 			});
 		}
@@ -343,6 +357,34 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 				if (err instanceof PageConflictError) return conflict(err.latestVersion);
 				throw err;
 			}
+		}
+	);
+
+	server.registerTool(
+		'move_page',
+		{
+			title: 'Seite verschieben',
+			description:
+				'Verschiebt eine Seite samt Unterseiten an einen neuen Pfad – in einen anderen ' +
+				'Bereich oder unter einen anderen Namen in der Adresse. Links auf die Seite bleiben ' +
+				'gültig, alte Adressen leiten weiter. Am neuen Ort gelten dessen Leserechte; ' +
+				'`readers` sagt, wer dadurch neu lesen darf oder nicht mehr.',
+			inputSchema: {
+				id: z.string().min(1).describe('Jetziger Pfad der Seite'),
+				new_id: z.string().min(1).describe('Neuer Pfad, z. B. projekte/archiv/relaunch')
+			},
+			annotations: WRITES
+		},
+		async ({ id, new_id }) => {
+			const result = await movePage(id, new_id, actor, authMode);
+			if (!result.ok) return failure(result.message);
+			const { plan } = result;
+			return json({
+				id: plan.to,
+				url: pageUrl(plan.to),
+				pagesMoved: plan.moves.length,
+				readers: plan.readers
+			});
 		}
 	);
 

@@ -166,8 +166,8 @@ export const accessRule = pgTable(
 
 /**
  * What each page's latest version links to, as written (see linkTargets in
- * $lib/wiki-links.ts) — resolved to pages only when asked, so a link to a
- * page created later counts once it exists. Kept in step on every save.
+ * $lib/wiki-links.ts), and the page each link is bound to — so links
+ * survive moves and renames. Kept in step on every save.
  */
 export const pageLink = pgTable(
 	'page_link',
@@ -175,11 +175,14 @@ export const pageLink = pgTable(
 		pageId: text('page_id')
 			.notNull()
 			.references(() => page.id, { onDelete: 'cascade' }),
-		target: text('target').notNull()
+		target: text('target').notNull(),
+		/** The page the link meant when saved (see bindTargets); null until it exists. */
+		targetPageId: text('target_page_id').references(() => page.id, { onDelete: 'set null' })
 	},
 	(table) => [
 		primaryKey({ columns: [table.pageId, table.target] }),
-		index('page_link_target_idx').on(table.target)
+		index('page_link_target_idx').on(table.target),
+		index('page_link_target_page_id_idx').on(table.targetPageId)
 	]
 );
 
@@ -231,3 +234,15 @@ export const pagePin = pgTable(
 	},
 	(table) => [primaryKey({ columns: [table.userId, table.path] })]
 );
+
+/**
+ * Where moved pages used to be: an old path leads to the page now. A page
+ * created at such a path later takes it over (the redirect goes).
+ */
+export const pageRedirect = pgTable('page_redirect', {
+	path: text('path').primaryKey(),
+	pageId: text('page_id')
+		.notNull()
+		.references(() => page.id, { onDelete: 'cascade' }),
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
