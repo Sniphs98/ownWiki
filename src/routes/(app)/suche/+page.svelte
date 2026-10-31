@@ -2,6 +2,7 @@
 	import { resolve } from '$app/paths';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import FileTextIcon from '@lucide/svelte/icons/file-text';
+	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 
@@ -49,9 +50,20 @@
 							<FileTextIcon class="size-4 shrink-0 text-muted-foreground" />
 							{hit.title}
 						</span>
-						<span class="mt-0.5 block text-xs text-muted-foreground">/w/{hit.path}</span>
+						<span class="mt-0.5 block text-xs text-muted-foreground">
+							/w/{hit.path}
+							{#if hit.byMeaning}
+								<Badge
+									variant="secondary"
+									class="ml-1"
+									title="Gefunden über die Bedeutung, nicht über die Suchwörter"
+								>
+									inhaltlich ähnlich
+								</Badge>
+							{/if}
+						</span>
 						{#if hit.snippet.length > 0}
-							<span class="mt-2 block text-sm text-muted-foreground">
+							<span class="mt-2 line-clamp-3 text-sm text-muted-foreground">
 								{#each hit.snippet as part, i (i)}
 									{#if part.match}
 										<mark

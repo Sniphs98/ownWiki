@@ -160,6 +160,17 @@ test('an assistant connects through login and consent, then reads as that person
 		url: `${baseURL}/w/e2e/handbuch/betrieb`
 	});
 
+	// By meaning, without a shared word (e2e/fake-embeddings.js) — once embedded.
+	await expect
+		.poll(
+			async () =>
+				(await callTool(request, token, 'search', { query: 'Datensicherung' })).results.map(
+					(hit: { id: string }) => hit.id
+				),
+			{ timeout: 15_000 }
+		)
+		.toContain('e2e/handbuch/betrieb');
+
 	const fetched = await callTool(request, token, 'fetch', { id: 'e2e/handbuch/betrieb' });
 	expect(fetched.text).toContain('Täglich um 2 Uhr.');
 

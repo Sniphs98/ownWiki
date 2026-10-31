@@ -37,14 +37,14 @@ function ensureIndex() {
 	ready = true;
 }
 
-const LATEST_VERSIONS = `
+export const LATEST_VERSIONS = `
 	SELECT p.id, p.path, v.title, v.content
 	FROM page p
 	JOIN page_version v ON v.page_id = p.id
 	WHERE v.version_number = (SELECT max(version_number) FROM page_version WHERE page_id = p.id)
 `;
 
-type LatestVersion = { id: string; path: string; title: string; content: string };
+export type LatestVersion = { id: string; path: string; title: string; content: string };
 
 function rebuild() {
 	const rows = client.prepare(LATEST_VERSIONS).all() as LatestVersion[];

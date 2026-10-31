@@ -9,7 +9,7 @@ import {
 	listPages,
 	PageConflictError
 } from '$lib/server/repo/pages';
-import { searchPages } from '$lib/server/search';
+import { searchPages, semanticSearchEnabled } from '$lib/server/search';
 import { titleFromMarkdown } from '$lib/page-title';
 import { slugifyPath } from '$lib/slug';
 import { linkedPagePaths } from '$lib/wiki-links';
@@ -77,11 +77,20 @@ export function createWikiMcpServer(origin: string, actor: McpActor) {
 		'search',
 		{
 			title: 'Wiki durchsuchen',
-			description:
-				'Volltextsuche über Titel, Pfade und Text aller Wiki-Seiten. Alle Suchwörter müssen ' +
-				'vorkommen; Wortformen werden mitgefunden. Gibt die passendsten Seiten zurück, ' +
-				'mit Textausschnitt. Die `id` eines Treffers ist für `fetch`.',
-			inputSchema: { query: z.string().min(1).describe('Suchwörter') },
+			description: semanticSearchEnabled
+				? 'Durchsucht Titel, Pfade und Text aller Wiki-Seiten: nach den Suchwörtern und nach ' +
+					'der Bedeutung (semantische Suche) – auch Fragen und Umschreibungen finden passende ' +
+					'Seiten. Gibt die passendsten Seiten zurück, mit dem passendsten Textausschnitt. ' +
+					'Die `id` eines Treffers ist für `fetch`.'
+				: 'Volltextsuche über Titel, Pfade und Text aller Wiki-Seiten. Alle Suchwörter müssen ' +
+					'vorkommen; Wortformen werden mitgefunden. Gibt die passendsten Seiten zurück, ' +
+					'mit Textausschnitt. Die `id` eines Treffers ist für `fetch`.',
+			inputSchema: {
+				query: z
+					.string()
+					.min(1)
+					.describe(semanticSearchEnabled ? 'Suchwörter oder eine Frage' : 'Suchwörter')
+			},
 			annotations: READ_ONLY
 		},
 		async ({ query }) => {
