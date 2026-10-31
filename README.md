@@ -118,6 +118,23 @@ Jedes Speichern legt eine neue Version an. Im Verlauf lässt sich jede Version a
 
 ![Diagramm-Seite im Dunkelmodus](docs/screenshots/dunkelmodus.png)
 
+### Anmeldung mit Microsoft
+
+Mit eurem Microsoft-Firmenkonto (Entra ID) meldet man sich über „Mit Microsoft anmelden“ an – auch beim Verbinden von ChatGPT. Nur Konten eures Tenants kommen herein, kein beliebiges Microsoft-Konto.
+
+- Wer sich zum ersten Mal mit Microsoft anmeldet, bekommt ein Konto – auch wenn die Registrierung sonst geschlossen ist (`ALLOW_SIGNUP` gilt nur für E-Mail und Passwort).
+- Gibt es schon ein Konto mit derselben E-Mail-Adresse, wird es übernommen: dieselbe Person, dieselben Rechte, kein zweites Konto.
+- Wie bisher ist das allererste Konto Admin.
+- Mit `PASSWORD_LOGIN=false` gibt es nur noch die Anmeldung mit Microsoft.
+
+**Einrichten (einmalig, im [Microsoft Entra Admin Center](https://entra.microsoft.com)):**
+
+1. _Anwendungen → App-Registrierungen → Neue Registrierung_: Name z. B. „ownWiki“, Kontotypen _Nur Konten in diesem Organisationsverzeichnis_ (Single Tenant), Umleitungs-URI vom Typ _Web_: `https://dein-wiki.example.org/api/auth/callback/microsoft` (die Adresse aus `ORIGIN`).
+2. Auf der Übersichtsseite die _Anwendungs-ID (Client)_ als `MICROSOFT_CLIENT_ID` und die _Verzeichnis-ID (Mandant)_ als `MICROSOFT_TENANT_ID` eintragen.
+3. _Zertifikate & Geheimnisse → Neuer geheimer Clientschlüssel_: den **Wert** als `MICROSOFT_CLIENT_SECRET` eintragen. Er läuft ab (höchstens 24 Monate) – rechtzeitig einen neuen anlegen.
+4. Optional: _API-Berechtigungen → Administratorzustimmung erteilen_, damit niemand beim ersten Anmelden einzeln zustimmen muss (nötig sind nur `openid`, `profile`, `email`, `offline_access` und `User.Read`).
+5. Optional, wenn nicht alle im Tenant ins Wiki sollen: unter _Unternehmensanwendungen → ownWiki → Eigenschaften_ „Zuweisung erforderlich“ einschalten und unter _Benutzer und Gruppen_ festlegen, wer darf.
+
 ### Rechte pro Bereich
 
 Admins legen unter **Verwaltung** (Schild-Symbol oben rechts) Gruppen an, z. B. „HR“, und vergeben Rechte: für einen Bereich – einen Seitenpfad mit allem darunter, oder das ganze Wiki – an alle, eine Gruppe oder eine einzelne Person, jeweils _kein Zugriff_, _lesen_ oder _bearbeiten_.
@@ -170,22 +187,26 @@ Statt selbst zu bauen, kannst du auch das fertige Image aus der GitHub Container
 
 ## Konfiguration
 
-| Variable                | Bedeutung                                                                                                                                                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_DIALECT`      | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                            |
-| `DATABASE_URL`          | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                     |
-| `ORIGIN`                | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                         |
-| `BETTER_AUTH_SECRET`    | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                         |
-| `AUTH_MODE`             | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                 |
-| `ALLOW_SIGNUP`          | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                           |
-| `PORT`                  | Port des Servers, Standard `3000`                                                                                                                                                                                |
-| `ADDRESS_HEADER`        | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                             |
-| `BODY_SIZE_LIMIT`       | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                     |
-| `EMBEDDINGS_URL`        | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                       |
-| `EMBEDDINGS_MODEL`      | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                       |
-| `EMBEDDINGS_API_KEY`    | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                               |
-| `EMBEDDINGS_DIMENSIONS` | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                      |
-| `EMBEDDINGS_MIN_SCORE`  | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); für `bge-m3` `0.5`. Andere Modelle: höher setzen, wenn zu viel Unpassendes gefunden wird |
+| Variable                  | Bedeutung                                                                                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_DIALECT`        | `sqlite` (Standard) oder `postgresql`                                                                                                                                                                            |
+| `DATABASE_URL`            | SQLite: Pfad zur Datei, z. B. `./data/wiki.db` · PostgreSQL: Verbindungs-URL                                                                                                                                     |
+| `ORIGIN`                  | Öffentliche Adresse des Wikis. Wird für Anmeldung, die KI-Anbindung und absolute Links im PDF verwendet.                                                                                                         |
+| `BETTER_AUTH_SECRET`      | Geheimer Schlüssel für Sitzungen (mindestens 32 Zeichen)                                                                                                                                                         |
+| `AUTH_MODE`               | Wer was darf, siehe unten. Standard: `read-only`                                                                                                                                                                 |
+| `ALLOW_SIGNUP`            | Wer ein Konto anlegen darf, siehe unten. Standard: nur das erste Konto                                                                                                                                           |
+| `MICROSOFT_CLIENT_ID`     | Anmeldung mit Microsoft: Anwendungs-ID der App-Registrierung (siehe oben). Alle drei `MICROSOFT_*` zusammen schalten sie ein                                                                                     |
+| `MICROSOFT_CLIENT_SECRET` | Geheimer Clientschlüssel der App-Registrierung                                                                                                                                                                   |
+| `MICROSOFT_TENANT_ID`     | Verzeichnis-ID (Mandant) eurer Firma – nur Konten daraus kommen herein                                                                                                                                           |
+| `PASSWORD_LOGIN`          | `false`: nur Anmeldung mit Microsoft, kein Passwort. Standard: beides                                                                                                                                            |
+| `PORT`                    | Port des Servers, Standard `3000`                                                                                                                                                                                |
+| `ADDRESS_HEADER`          | Hinter einem Reverse-Proxy: Header mit der echten Client-IP, z. B. `X-Forwarded-For`                                                                                                                             |
+| `BODY_SIZE_LIMIT`         | Größte Anfrage, die der Server annimmt. Im Docker-Image `11M`, damit Uploads bis 10 MB gehen                                                                                                                     |
+| `EMBEDDINGS_URL`          | Adresse eines Embedding-Dienstes mit OpenAI-Schnittstelle, für die semantische Suche (siehe oben). Ohne: nur Volltextsuche                                                                                       |
+| `EMBEDDINGS_MODEL`        | Name des Embedding-Modells, z. B. `text-embedding-3-small`                                                                                                                                                       |
+| `EMBEDDINGS_API_KEY`      | API-Schlüssel des Dienstes, falls er einen braucht                                                                                                                                                               |
+| `EMBEDDINGS_DIMENSIONS`   | Optional: kürzere Vektoren anfordern, z. B. `512` bei `text-embedding-3-*` – spart Speicher                                                                                                                      |
+| `EMBEDDINGS_MIN_SCORE`    | Ab welcher Ähnlichkeit (0–1) eine Seite als inhaltlicher Treffer zählt. Standard `0.3` (passt zu `text-embedding-3-*`); für `bge-m3` `0.5`. Andere Modelle: höher setzen, wenn zu viel Unpassendes gefunden wird |
 
 **Zugriffsmodi (`AUTH_MODE`):**
 
