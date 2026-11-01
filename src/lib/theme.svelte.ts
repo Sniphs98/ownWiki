@@ -19,6 +19,12 @@ function applyTheme(mode: ThemeMode) {
 
 class ThemeStore {
 	mode = $state<ThemeMode>('system');
+	#systemDark = $state(prefersDark());
+
+	/** Whether the page shows dark right now — the chosen mode, or the system's. */
+	get dark() {
+		return this.mode === 'dark' || (this.mode === 'system' && this.#systemDark);
+	}
 
 	constructor() {
 		if (!browser) return;
@@ -26,7 +32,8 @@ class ThemeStore {
 		const stored = localStorage.getItem(STORAGE_KEY);
 		this.mode = stored === 'light' || stored === 'dark' ? stored : 'system';
 
-		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+		window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
+			this.#systemDark = event.matches;
 			if (this.mode === 'system') applyTheme('system');
 		});
 	}
