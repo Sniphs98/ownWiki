@@ -18,7 +18,7 @@ export const GET: RequestHandler = async (event) => {
 	return new Response(new Uint8Array(pdf), {
 		headers: {
 			'content-type': 'application/pdf',
-			'content-disposition': `attachment; filename="ownwiki-export.pdf"`
+			'content-disposition': `attachment; filename="wiki-export.pdf"`
 		}
 	});
 };

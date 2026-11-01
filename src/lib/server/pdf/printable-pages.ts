@@ -130,5 +130,5 @@ export async function resolveAllPrintablePages(access: PageAccess): Promise<Prin
 		});
 	}
 
-	return { pages, wikiTitle: 'ownWiki' };
+	return { pages, wikiTitle: 'Wiki' };
 }

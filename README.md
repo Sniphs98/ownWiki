@@ -1,4 +1,4 @@
-# ownWiki
+# Wiki
 
 A self-hosted wiki for technical documentation, how-tos and a team's shared knowledge — with a PDF export that looks exactly like the page in the browser, and a connection to AI assistants such as ChatGPT that can search, read and write the wiki as the person using them.
 
@@ -86,9 +86,9 @@ The search field at the top center searches the titles, paths and text of all pa
 
 ![Search results with a highlighted match](docs/screenshots/suche.png)
 
-On SQLite, ownWiki searches with FTS5; on PostgreSQL, with the database's German full-text configuration (with real stemming). The index is updated on every save and built automatically on first start.
+On SQLite, the wiki searches with FTS5; on PostgreSQL, with the database's German full-text configuration (with real stemming). The index is updated on every save and built automatically on first start.
 
-**Semantic search (optional):** with an embeddings service, the search also finds pages by meaning — "Datensicherung" (data backup) finds the section "Backup", the question "wie beantrage ich Urlaub?" (how do I request leave?) the page about leave requests. Such results appear among the full-text ones, marked **inhaltlich ähnlich** (similar in content); AI assistants search the same way. For this, every page is cut into sections and the service computes a vector (embedding) for each. New and changed pages are added within seconds, existing ones on first start. If the service can't be reached, ownWiki keeps searching by full text.
+**Semantic search (optional):** with an embeddings service, the search also finds pages by meaning — "Datensicherung" (data backup) finds the section "Backup", the question "wie beantrage ich Urlaub?" (how do I request leave?) the page about leave requests. Such results appear among the full-text ones, marked **inhaltlich ähnlich** (similar in content); AI assistants search the same way. For this, every page is cut into sections and the service computes a vector (embedding) for each. New and changed pages are added within seconds, existing ones on first start. If the service can't be reached, the wiki keeps searching by full text.
 
 Any service with OpenAI's embeddings API works (see `EMBEDDINGS_URL` below), for example:
 
@@ -96,7 +96,7 @@ Any service with OpenAI's embeddings API works (see `EMBEDDINGS_URL` below), for
 - **Azure OpenAI** (data in the EU): `EMBEDDINGS_URL=https://<resource>.openai.azure.com/openai/v1`, with your deployment's name as the model.
 - **Locally with [Ollama](https://ollama.com)**, without text leaving the server and without a GPU — easiest with the bundled container, see [Quick start](#quick-start-with-docker). Without Docker: `EMBEDDINGS_URL=http://localhost:11434/v1`, `EMBEDDINGS_MODEL=bge-m3` (after `ollama pull bge-m3`).
 
-You can switch between local and cloud at any time: after a model change, ownWiki embeds all pages again in the background and uses full-text search until then.
+You can switch between local and cloud at any time: after a model change, the wiki embeds all pages again in the background and uses full-text search until then.
 
 The service sees the text of all pages, including areas only a few people may read — otherwise those people couldn't find them. Who sees what in the results is still governed by the permissions. The vectors are kept in the wiki's own database (table `page_search_chunk`) and compared in memory; no database extension such as pgvector is needed.
 
@@ -137,11 +137,11 @@ With your company's Microsoft account (Entra ID), people log in with **Mit Micro
 
 **Setting it up (once, in the [Microsoft Entra admin center](https://entra.microsoft.com)):**
 
-1. _Applications → App registrations → New registration_: a name such as "ownWiki", supported account types _Accounts in this organizational directory only_ (single tenant), a redirect URI of type _Web_: `https://your-wiki.example.org/api/auth/callback/microsoft` (the address in `ORIGIN`, plus `BASE_PATH` if the wiki runs under a path: `https://example.org/wiki/api/auth/callback/microsoft`).
+1. _Applications → App registrations → New registration_: a name such as "Wiki", supported account types _Accounts in this organizational directory only_ (single tenant), a redirect URI of type _Web_: `https://your-wiki.example.org/api/auth/callback/microsoft` (the address in `ORIGIN`, plus `BASE_PATH` if the wiki runs under a path: `https://example.org/wiki/api/auth/callback/microsoft`).
 2. On the overview page, set the _Application (client) ID_ as `MICROSOFT_CLIENT_ID` and the _Directory (tenant) ID_ as `MICROSOFT_TENANT_ID`.
 3. _Certificates & secrets → New client secret_: set its **value** as `MICROSOFT_CLIENT_SECRET`. It expires (after at most 24 months): create a new one in time — the app can have two at once, so the switch needs no downtime.
 4. Optional: _API permissions → Grant admin consent_, so nobody has to consent individually on their first login (only `openid`, `profile`, `email`, `offline_access` and `User.Read` are needed).
-5. Optional, if not everyone in the tenant should get in: under _Enterprise applications → ownWiki → Properties_, turn on _Assignment required_ and choose who may under _Users and groups_.
+5. Optional, if not everyone in the tenant should get in: under _Enterprise applications → Wiki → Properties_, turn on _Assignment required_ and choose who may under _Users and groups_.
 
 ### Permissions per area
 
@@ -156,7 +156,7 @@ What someone may not read doesn't exist for them: the page is missing from the s
 
 ### AI assistants (MCP)
 
-ownWiki can serve as a "second brain" for AI assistants such as ChatGPT or Claude, over the [Model Context Protocol](https://modelcontextprotocol.io). The assistant can then search the wiki, read pages, list areas and tags, look up backlinks — and create, change, tag, move or append to pages. It also takes notes in the person's inbox on request ("notier dir das" — take a note of this) and sorts notes into the wiki together with them. Every change is a new version; the history shows who made it through which assistant (e.g. "Erika Muster über ChatGPT"). Assistants can't delete pages.
+The wiki can serve as a "second brain" for AI assistants such as ChatGPT or Claude, over the [Model Context Protocol](https://modelcontextprotocol.io). The assistant can then search the wiki, read pages, list areas and tags, look up backlinks — and create, change, tag, move or append to pages. It also takes notes in the person's inbox on request ("notier dir das" — take a note of this) and sorts notes into the wiki together with them. Every change is a new version; the history shows who made it through which assistant (e.g. "Erika Muster über ChatGPT"). Assistants can't delete pages.
 
 | Tool                                                                 | What it does                                                           |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
@@ -170,7 +170,7 @@ The address for the assistant is `https://your-wiki.example.org/mcp` (under a pa
 This needs `ORIGIN` to be set — without it, there's no MCP endpoint.
 
 - **ChatGPT Business/Enterprise:** an admin turns on developer mode in the workspace settings, creates a connector with the address above and "OAuth" authentication, and publishes it to the workspace. After that, everyone connects themselves on first use.
-- **Claude Code and other MCP clients:** add the address as an HTTP MCP server, e.g. `claude mcp add --transport http ownwiki https://your-wiki.example.org/mcp`.
+- **Claude Code and other MCP clients:** add the address as an HTTP MCP server, e.g. `claude mcp add --transport http wiki https://your-wiki.example.org/mcp`.
 
 ChatGPT calls the wiki from OpenAI's servers, not from your computer. The wiki doesn't have to be publicly reachable for that: OpenAI's [Secure MCP Tunnel](https://github.com/openai/tunnel-client) opens an outgoing connection from your own network.
 
@@ -204,7 +204,7 @@ Instead of building it yourself, you can use the ready-made image from the GitHu
 
 ## Behind a reverse proxy
 
-ownWiki runs behind any reverse proxy (Traefik, nginx, Caddy …), on a domain of its own (`https://wiki.example.org`) or under a path (`https://example.org/wiki`). For a path, set `BASE_PATH` — when the container starts, not when the image is built, so the published image works for both.
+The wiki runs behind any reverse proxy (Traefik, nginx, Caddy …), on a domain of its own (`https://wiki.example.org`) or under a path (`https://example.org/wiki`). For a path, set `BASE_PATH` — when the container starts, not when the image is built, so the published image works for both.
 
 - `ORIGIN` is the public address **without** the path: `https://example.org`, not `https://example.org/wiki`.
 - `ADDRESS_HEADER=X-Forwarded-For` with `XFF_DEPTH=1` (one proxy in front) makes the login rate limit see the visitors' real addresses instead of the proxy's.
@@ -228,19 +228,19 @@ services:
       - wikidata:/app/data
     labels:
       - traefik.enable=true
-      - traefik.http.services.ownwiki.loadbalancer.server.port=3000
+      - traefik.http.services.wiki.loadbalancer.server.port=3000
       # The wiki itself.
-      - traefik.http.routers.ownwiki.rule=Host(`example.org`) && (Path(`/wiki`) || PathPrefix(`/wiki/`))
-      - traefik.http.routers.ownwiki.entrypoints=websecure
-      - traefik.http.routers.ownwiki.tls.certresolver=letsencrypt
-      - traefik.http.routers.ownwiki.service=ownwiki
+      - traefik.http.routers.wiki.rule=Host(`example.org`) && (Path(`/wiki`) || PathPrefix(`/wiki/`))
+      - traefik.http.routers.wiki.entrypoints=websecure
+      - traefik.http.routers.wiki.tls.certresolver=letsencrypt
+      - traefik.http.routers.wiki.service=wiki
       # Where AI assistants look for how to log in: at the root, passed on under /wiki.
-      - traefik.http.routers.ownwiki-oauth.rule=Host(`example.org`) && (PathPrefix(`/.well-known/oauth-protected-resource/wiki`) || PathPrefix(`/.well-known/oauth-authorization-server/wiki`) || PathPrefix(`/.well-known/openid-configuration/wiki`))
-      - traefik.http.routers.ownwiki-oauth.entrypoints=websecure
-      - traefik.http.routers.ownwiki-oauth.tls.certresolver=letsencrypt
-      - traefik.http.routers.ownwiki-oauth.middlewares=ownwiki-oauth
-      - traefik.http.routers.ownwiki-oauth.service=ownwiki
-      - traefik.http.middlewares.ownwiki-oauth.addprefix.prefix=/wiki
+      - traefik.http.routers.wiki-oauth.rule=Host(`example.org`) && (PathPrefix(`/.well-known/oauth-protected-resource/wiki`) || PathPrefix(`/.well-known/oauth-authorization-server/wiki`) || PathPrefix(`/.well-known/openid-configuration/wiki`))
+      - traefik.http.routers.wiki-oauth.entrypoints=websecure
+      - traefik.http.routers.wiki-oauth.tls.certresolver=letsencrypt
+      - traefik.http.routers.wiki-oauth.middlewares=wiki-oauth
+      - traefik.http.routers.wiki-oauth.service=wiki
+      - traefik.http.middlewares.wiki-oauth.addprefix.prefix=/wiki
 
 volumes:
   wikidata:

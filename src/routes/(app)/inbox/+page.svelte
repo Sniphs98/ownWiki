@@ -11,7 +11,7 @@
 </script>
 
 <svelte:head>
-	<title>Inbox · ownWiki</title>
+	<title>Inbox · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-3xl flex-col gap-6 p-8">

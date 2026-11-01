@@ -73,7 +73,7 @@
 </script>
 
 <svelte:head>
-	<title>Einstellungen · ownWiki</title>
+	<title>Einstellungen · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto max-w-4xl p-8">

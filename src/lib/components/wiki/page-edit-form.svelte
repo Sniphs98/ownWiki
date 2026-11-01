@@ -125,7 +125,7 @@
 </script>
 
 <svelte:head>
-	<title>{title || 'Neue Seite'} bearbeiten · ownWiki</title>
+	<title>{title || 'Neue Seite'} bearbeiten · Wiki</title>
 </svelte:head>
 
 <svelte:window onkeydown={onKeydown} />
