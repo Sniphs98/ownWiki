@@ -25,6 +25,12 @@ const subpages = (page: import('@playwright/test').Page) =>
 		.last() // the innermost level: Handbuch's, not the whole e2e folder's
 		.getByRole('link');
 
+/** Picks an entry in the "…" menu of a tree item. */
+async function fromMenu(page: import('@playwright/test').Page, title: string, item: string) {
+	await page.getByRole('button', { name: `Mehr zu ${title}` }).click();
+	await page.getByRole('menuitem', { name: item }).click();
+}
+
 test('pinned pages move to the top of their level, for that person only', async ({ browser }) => {
 	const pia = await person(browser, 'Pia');
 	const otto = await person(browser, 'Otto');
@@ -32,7 +38,7 @@ test('pinned pages move to the top of their level, for that person only', async 
 	await pia.page.goto('/w/e2e/handbuch/betrieb');
 	await expect(subpages(pia.page)).toHaveText(['Betrieb', 'Einrichtung']);
 
-	await pia.page.getByRole('button', { name: 'Oben anpinnen: Einrichtung' }).click();
+	await fromMenu(pia.page, 'Einrichtung', 'Oben anpinnen');
 	await expect(subpages(pia.page)).toHaveText(['Einrichtung', 'Betrieb']);
 	await expect(
 		pia.page.getByRole('button', { name: 'Nicht mehr anpinnen: Einrichtung' })
@@ -53,31 +59,34 @@ test('pinned pages move to the top of their level, for that person only', async 
 
 test('without a login there is nothing to pin', async ({ page }) => {
 	await page.goto('/w/e2e/handbuch/betrieb');
-	await expect(page.getByRole('button', { name: /anpinnen/ })).toHaveCount(0);
+	await page.getByRole('button', { name: 'Mehr zu Betrieb' }).click();
+	await expect(page.getByRole('menuitem', { name: 'Link kopieren' })).toBeVisible();
+	await expect(page.getByRole('menuitem', { name: /anpinnen/ })).toHaveCount(0);
 });
 
-test('hovering a folder shows its own actions only, and they go away again', async ({
-	browser
-}) => {
+test('hovering an entry shows its own menu only, and it goes away again', async ({ browser }) => {
 	const { context, page } = await person(browser, 'Hugo');
 	await page.goto('/w/e2e/handbuch/betrieb');
-	const handbuchPin = page.getByRole('button', { name: 'Oben anpinnen: Handbuch' });
-	const betriebPin = page.getByRole('button', { name: 'Oben anpinnen: Betrieb' });
+	const handbuchMenu = page.getByRole('button', { name: 'Mehr zu Handbuch' });
+	const betriebMenu = page.getByRole('button', { name: 'Mehr zu Betrieb' });
 
 	await page.getByRole('link', { name: 'Handbuch', exact: true }).hover();
-	await expect(handbuchPin).toHaveCSS('opacity', '1');
-	await expect(betriebPin).toHaveCSS('opacity', '0');
+	await expect(handbuchMenu).toHaveCSS('opacity', '1');
+	await expect(betriebMenu).toHaveCSS('opacity', '0');
 
-	// Clicked and left: hidden again, though it still has the focus.
-	await handbuchPin.click();
+	// Open while the menu is open, hidden again once it's closed and left.
+	await handbuchMenu.click();
+	await page.mouse.move(600, 400);
+	await expect(handbuchMenu).toHaveCSS('opacity', '1');
+	await page.getByRole('menuitem', { name: 'Oben anpinnen' }).click();
 	await page.getByRole('heading', { level: 1 }).first().hover();
-	await expect(page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' })).toHaveCSS(
-		'opacity',
-		'1'
-	); // pinned ones always show their pin
-	await page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' }).click();
-	await page.getByRole('heading', { level: 1 }).first().hover();
-	await expect(handbuchPin).toHaveCSS('opacity', '0');
+	await expect(handbuchMenu).toHaveCSS('opacity', '0');
+
+	// Pinned ones always show their pin, which unpins them.
+	const pin = page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' });
+	await expect(pin).toHaveCSS('opacity', '1');
+	await pin.click();
+	await expect(pin).toHaveCount(0);
 
 	await context.close();
 });

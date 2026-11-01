@@ -12,7 +12,8 @@
 		pages,
 		canEdit,
 		pinned = [],
-		canPin = false
+		canPin = false,
+		canManageAccess = false
 	}: {
 		pages: PageSummary[];
 		canEdit: boolean;
@@ -20,9 +21,12 @@
 		pinned?: string[];
 		/** Pins are per person: only with a login. */
 		canPin?: boolean;
+		/** Admins get the rights dialog in each entry's menu. */
+		canManageAccess?: boolean;
 	} = $props();
 
 	const tree = $derived(buildPageTree(pages, pinned));
+	const pagePaths = $derived(pages.map((p) => p.path));
 
 	let newPageOpen = $state(false);
 </script>
@@ -35,7 +39,7 @@
 					{#snippet child({ props })}
 						<a {...props} href={resolve('/')}>
 							<BookOpenIcon />
-							<span class="font-semibold">ownWiki</span>
+							<span class="font-semibold">Wiki</span>
 						</a>
 					{/snippet}
 				</Sidebar.MenuButton>
@@ -57,7 +61,7 @@
 						<p class="px-2 py-1.5 text-sm text-muted-foreground">Noch keine Seiten.</p>
 					{/if}
 					{#each tree as node (node.fullPath)}
-						<PageTreeItem {node} {canEdit} {canPin} />
+						<PageTreeItem {node} {canEdit} {canPin} {canManageAccess} {pagePaths} />
 					{/each}
 				</Sidebar.Menu>
 			</Sidebar.GroupContent>

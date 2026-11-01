@@ -48,7 +48,13 @@
 <!-- h-svh: the window never scrolls — only <main> does, below the fixed
 	 header (and the editor toolbar sticks to the top of <main>). -->
 <Sidebar.Provider class="h-svh">
-	<PageSidebar pages={data.pages} {canEdit} pinned={data.pinned} canPin={!!data.user} />
+	<PageSidebar
+		pages={data.pages}
+		{canEdit}
+		pinned={data.pinned}
+		canPin={!!data.user}
+		canManageAccess={data.isAdmin && !!data.user}
+	/>
 	<Sidebar.Inset class="min-h-0">
 		<!-- Three columns, the outer two equally wide, so the search sits in the
 			 middle: page location left, search centered, settings & account right. -->
