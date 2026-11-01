@@ -63,7 +63,8 @@
 	const ON_HOVER =
 		'md:opacity-0 group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100';
 
-	// Right to left: the chevron (folders), the menu, and the pin of a pinned one.
+	// Right to left: the chevron (folders), the menu, and the pin of a pinned one —
+	// on hover too, like the menu; its place at the top shows it's pinned.
 	const isFolder = $derived(node.children.length > 0);
 	const menuOffset = $derived(isFolder ? 'right-6' : 'right-1');
 	const pinOffset = $derived(isFolder ? 'right-11' : 'right-6');
@@ -86,7 +87,7 @@
 {#snippet actions()}
 	{#if canPin && node.pinned}
 		<Sidebar.MenuAction
-			class={pinOffset}
+			class={cn(pinOffset, ON_HOVER)}
 			title="Nicht mehr anpinnen"
 			aria-pressed="true"
 			onclick={() => setPinned(false)}

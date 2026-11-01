@@ -82,8 +82,10 @@ test('hovering an entry shows its own menu only, and it goes away again', async 
 	await page.getByRole('heading', { level: 1 }).first().hover();
 	await expect(handbuchMenu).toHaveCSS('opacity', '0');
 
-	// Pinned ones always show their pin, which unpins them.
+	// A pinned one shows its pin on hover too, which unpins it.
 	const pin = page.getByRole('button', { name: 'Nicht mehr anpinnen: Handbuch' });
+	await expect(pin).toHaveCSS('opacity', '0');
+	await page.getByRole('link', { name: 'Handbuch', exact: true }).hover();
 	await expect(pin).toHaveCSS('opacity', '1');
 	await pin.click();
 	await expect(pin).toHaveCount(0);
