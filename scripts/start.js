@@ -11,12 +11,11 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
-	renameSync,
 	rmSync,
 	statSync,
 	writeFileSync
 } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BASE_PLACEHOLDER, normalizeBasePath } from './base-path.js';
 
@@ -40,26 +39,25 @@ function rewrite(dir) {
 	}
 }
 
-/** The browser's files sit in a folder named like the base path: client/__wiki_base_path__/. */
-function moveClientFiles() {
-	const client = join(target, 'client');
-	const placeholder = join(client, BASE_PLACEHOLDER.slice(1));
-	if (!existsSync(placeholder)) return;
-	if (basePath) {
-		const final = join(client, ...basePath.split('/').filter(Boolean));
-		mkdirSync(dirname(final), { recursive: true });
-		renameSync(placeholder, final);
-	} else {
-		for (const name of readdirSync(placeholder))
-			renameSync(join(placeholder, name), join(client, name));
-		rmSync(placeholder, { recursive: true });
+/**
+ * Copies the build, with the browser's files (in client/__wiki_base_path__/
+ * in the build) straight to where the base path puts them. Copied, not
+ * moved after copying: on Windows, a virus scanner holding a freshly copied
+ * file makes renaming its folder fail.
+ */
+function copyBuild() {
+	const placeholder = join(source, 'client', BASE_PLACEHOLDER.slice(1));
+	cpSync(source, target, { recursive: true, filter: (path) => path !== placeholder });
+	if (existsSync(placeholder)) {
+		const final = join(target, 'client', ...basePath.split('/').filter(Boolean));
+		mkdirSync(final, { recursive: true });
+		cpSync(placeholder, final, { recursive: true });
 	}
 }
 
-rmSync(target, { recursive: true, force: true });
-cpSync(source, target, { recursive: true });
+rmSync(target, { recursive: true, force: true, maxRetries: 5 });
+copyBuild();
 rewrite(target);
-moveClientFiles();
 console.log(`[start] serving under "${basePath || '/'}" from ${target}`);
 
 await import(pathToFileURL(join(target, 'index.js')).href);
