@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.query ? `„${data.query}“ – Suche` : 'Suche'} · ownWiki</title>
+	<title>{data.query ? `„${data.query}“ – Suche` : 'Suche'} · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl p-8">

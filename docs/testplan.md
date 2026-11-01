@@ -1,6 +1,6 @@
 # Testplan
 
-Wie ownWiki auf Fehler geprüft wird: welche Bereiche, mit welchen Mitteln, und
+Wie das Wiki auf Fehler geprüft wird: welche Bereiche, mit welchen Mitteln, und
 was eine Prüfrunde gefunden hat. Die gefundenen Fehler haben jeweils einen Test,
 der sie künftig abfängt.
 

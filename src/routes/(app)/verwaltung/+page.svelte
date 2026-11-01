@@ -56,7 +56,7 @@
 </script>
 
 <svelte:head>
-	<title>Verwaltung · ownWiki</title>
+	<title>Verwaltung · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto flex max-w-4xl flex-col gap-6 p-8">

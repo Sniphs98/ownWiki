@@ -43,7 +43,7 @@ export const DIAGRAM_TEMPLATES: Record<DiagramKind, string> = {
 		{
 			type: 'excalidraw',
 			version: 2,
-			source: 'ownWiki',
+			source: 'Wiki',
 			elements: [],
 			appState: { viewBackgroundColor: '#ffffff' },
 			files: {}

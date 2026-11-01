@@ -99,10 +99,10 @@ const TAGS = z
  */
 export function createWikiMcpServer(origin: string, actor: McpActor) {
 	const server = new McpServer(
-		{ name: 'ownwiki', version: '1.0.0' },
+		{ name: 'wiki', version: '1.0.0' },
 		{
 			instructions:
-				'ownWiki ist das persönliche Wiki (Second Brain) des Nutzers, in Markdown. ' +
+				'Dies ist das Wiki (Second Brain) des Nutzers, in Markdown. ' +
 				'Seiten werden über ihren Pfad angesprochen. Erst mit `search` suchen, dann mit ' +
 				'`fetch` lesen. `[[Seitenname]]` im Text ist ein Link auf eine andere Seite. ' +
 				'Die erste Zeile einer Seite ist eine Überschrift (`# Titel`) und ihr Titel. ' +

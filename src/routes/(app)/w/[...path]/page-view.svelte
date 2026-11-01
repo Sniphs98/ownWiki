@@ -40,7 +40,7 @@
 {/snippet}
 
 <svelte:head>
-	<title>{data.version.title} · ownWiki</title>
+	<title>{data.version.title} · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto box-content max-w-[calc(100%-4rem)] p-8" style:width={PRINT_TEXT_WIDTH}>

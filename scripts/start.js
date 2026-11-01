@@ -40,7 +40,7 @@ function rewrite(dir) {
 	}
 }
 
-/** The browser's files sit in a folder named like the base path: client/__ownwiki_base_path__/. */
+/** The browser's files sit in a folder named like the base path: client/__wiki_base_path__/. */
 function moveClientFiles() {
 	const client = join(target, 'client');
 	const placeholder = join(client, BASE_PLACEHOLDER.slice(1));

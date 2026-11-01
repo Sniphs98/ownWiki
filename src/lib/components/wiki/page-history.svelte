@@ -42,7 +42,7 @@
 </script>
 
 <svelte:head>
-	<title>Versionen von {data.page.title} · ownWiki</title>
+	<title>Versionen von {data.page.title} · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl p-8">

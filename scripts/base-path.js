@@ -5,7 +5,7 @@
 // writes the real one in its place.
 
 /** @type {`/${string}`} */
-export const BASE_PLACEHOLDER = '/__ownwiki_base_path__';
+export const BASE_PLACEHOLDER = '/__wiki_base_path__';
 
 /**
  * BASE_PATH as SvelteKit wants a base path: "" for the root, otherwise

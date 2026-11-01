@@ -6,7 +6,7 @@
 </script>
 
 <svelte:head>
-	<title>#{data.tag} · ownWiki</title>
+	<title>#{data.tag} · Wiki</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl p-8">

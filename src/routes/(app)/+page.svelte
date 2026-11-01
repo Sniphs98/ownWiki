@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>ownWiki</title>
+	<title>Wiki</title>
 </svelte:head>
 
 <div class="mx-auto max-w-3xl p-8">
